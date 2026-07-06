@@ -1,0 +1,10 @@
+{
+  "name": "firedeck",
+  "version": "0.1.0",
+  "description": "An opinionated platform for building full stack applications with React, Vite and Firebase",
+  "main": "index.js",
+  "repository": "https://github.com/kwameopareasiedu/firedeck",
+  "author": "Kwame Opare Asiedu",
+  "license": "MIT",
+  "private": true
+}
