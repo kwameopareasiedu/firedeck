@@ -5,6 +5,9 @@
       "dependsOn": ["^build"],
       "outputs": ["bin/cli.js"]
     },
+    "cli": {
+      "dependsOn": ["^cli"]
+    },
     "dev": {
       "persistent": true,
       "cache": false

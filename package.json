@@ -7,9 +7,14 @@
   "author": "Kwame Opare Asiedu",
   "license": "MIT",
   "private": true,
+  "packageManager": "yarn@1.22.22",
   "workspaces": [
     "modules/*"
   ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "cli": "turbo run cli"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.6.0",
