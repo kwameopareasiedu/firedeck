@@ -5,6 +5,9 @@
   "main": "index.js",
   "author": "Kwame Opare Asiedu",
   "license": "MIT",
+  "bin": {
+    "firedeck": "bin/index.js"
+  },
   "scripts": {
     "dev": "rollup -c -w --no-watch.clearScreen",
     "build": "rollup -c",

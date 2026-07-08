@@ -1,13 +1,11 @@
-interface ProjectOptions {
+export type FSContents = { [path: string]: { content: string; extension?: string } };
+
+export const generateProjectContents = (opts: {
   name: string;
   description: string;
   version: string;
   author: string;
-}
-
-export const generateProjectContents = (
-  opts: ProjectOptions,
-): { [path: string]: { content: string; extension?: string } } => {
+}): FSContents => {
   return {
     "package.json": {
       content: `
@@ -83,6 +81,11 @@ export const generateProjectContents = (
       extension: "json",
     },
 
+    "firedeck.json": {
+      content: `
+      {}`,
+    },
+
     "modules/main/client/pages/index.route.tsx": {
       content: `
       import { definePage } from "firedeck";
@@ -113,4 +116,43 @@ export const generateProjectContents = (
       content: ``,
     },
   };
+};
+
+export const generateModuleContents = (args: {
+  name: string;
+  components: "all" | "client" | "server";
+}): FSContents => {
+  const contents: FSContents = {};
+
+  if (["all", "client"].includes(args.components)) {
+    contents[`modules/${args.name}/client/pages/index.route.tsx`] = {
+      content: `
+      import { definePage } from "firedeck";
+      
+      export default definePage({
+        page() {
+          return (
+            <div className="grid place-items-center">
+              <p>Module: ${args.name} Home</p>
+            </div>
+          );
+        },
+      });`,
+    };
+  }
+
+  if (["all", "server"].includes(args.components)) {
+    contents[`modules/${args.name}/server/hello.ts`] = {
+      content: `
+      import { defineFunction } from "firedeck";
+      
+      export default defineFunction({
+        async handler() {
+          console.log("Hello Firedeck");
+        },
+      });`,
+    };
+  }
+
+  return contents;
 };

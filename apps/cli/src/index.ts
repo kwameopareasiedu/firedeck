@@ -1,8 +1,11 @@
+#!/usr/bin/env node
+
 import fs from "fs-extra";
 import { resolve } from "node:path";
 import { Command } from "commander";
 import { init } from "@/init";
 import { createModule } from "@/module";
+import { cwdIsRoot } from "@/utils";
 
 const packageInfo = JSON.parse(
   fs.readFileSync(resolve(__dirname, "../package.json"), { encoding: "utf-8" }),
@@ -31,6 +34,11 @@ moduleCli
   .action(async (name, opts) => {
     if (opts.clientOnly && opts.serverOnly)
       throw new Error("--client-only and --server-only cannot be specified at the same time");
+
+    if (!cwdIsRoot())
+      throw new Error(
+        "Cannot find firedeck.json. Make sure this command is run at the project root",
+      );
 
     await createModule({
       name,

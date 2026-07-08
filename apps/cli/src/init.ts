@@ -1,9 +1,8 @@
 import fs from "fs-extra";
 import { input } from "@inquirer/prompts";
 import { generateProjectContents } from "@/templates";
-import { resolve, extname, relative } from "node:path";
-import { format } from "prettier";
-import { getPrettierConfig } from "@/utils";
+import { relative } from "node:path";
+import { writeFileContents } from "@/utils";
 
 export async function init(args: { rootDir: string }) {
   if (!fs.existsSync(args.rootDir)) {
@@ -41,18 +40,7 @@ export async function init(args: { rootDir: string }) {
     author: projectAuthor,
   });
 
-  for (const relativePath in projectContents) {
-    const filePath = resolve(args.rootDir, relativePath);
-    const fileProperties = projectContents[relativePath];
-    const fileExt = fileProperties.extension || extname(filePath);
-    const fileContent = await format(
-      fileProperties.content,
-      getPrettierConfig({ filePath: "a." + fileExt }),
-    );
-
-    fs.ensureFileSync(filePath);
-    fs.writeFileSync(filePath, Buffer.from(fileContent, "utf-8"));
-  }
+  await writeFileContents(projectContents, args.rootDir);
 
   console.log("\nNext steps");
   console.log(`1. cd ${relative(process.cwd(), args.rootDir)}`);
