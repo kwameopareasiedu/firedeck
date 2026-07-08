@@ -82,5 +82,35 @@ export const generateProjectContents = (
       }`,
       extension: "json",
     },
+
+    "modules/main/client/pages/index.route.tsx": {
+      content: `
+      import { definePage } from "firedeck";
+      
+      export default definePage({
+        page() {
+          return (
+            <div className="grid place-items-center">
+              <p>Welcome to Firedeck</p>
+            </div>
+          );
+        },
+      });`,
+    },
+
+    "modules/main/server/hello.ts": {
+      content: `
+      import { defineFunction } from "firedeck";
+      
+      export default defineFunction({
+        async handler() {
+          console.log("Hello Firedeck");
+        },
+      });`,
+    },
+
+    "modules/shared/client/components/index.tsx": {
+      content: ``,
+    },
   };
 };

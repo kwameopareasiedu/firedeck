@@ -54,9 +54,6 @@ export async function init(args: { rootDir: string }) {
     fs.writeFileSync(filePath, Buffer.from(fileContent, "utf-8"));
   }
 
-  fs.ensureDirSync(resolve(args.rootDir, ".firedeck"));
-  fs.ensureDirSync(resolve(args.rootDir, "modules"));
-
   console.log("\nNext steps");
   console.log(`1. cd ${relative(process.cwd(), args.rootDir)}`);
   console.log(`2. npm install`);

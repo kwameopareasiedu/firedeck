@@ -44,7 +44,7 @@ The `config.json` allows module customization. It's properties are defined below
 
 ## CLI
 
-| Command           | Description                                                         |
-|-------------------|---------------------------------------------------------------------|
-| `init`            | Initializes the project folder structure and copies templates files |
-| `module new NAME` | Creates a new module                                                |
+| Command              | Description                                                         |
+|----------------------|---------------------------------------------------------------------|
+| `init`               | Initializes the project folder structure and copies templates files |
+| `module create NAME` | Creates a new module                                                |
