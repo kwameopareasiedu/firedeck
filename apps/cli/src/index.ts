@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import { Command } from "commander";
 import { init } from "@/init";
 import { createModule } from "@/module";
-import { cwdIsRoot } from "@/utils";
+import { cwdIsRoot, parseErrorMessage } from "@/utils";
 
 const packageInfo = JSON.parse(
   fs.readFileSync(resolve(__dirname, "../package.json"), { encoding: "utf-8" }),
@@ -19,8 +19,13 @@ cli
   .command("init <rootDir>")
   .description("Create a new Firedeck project at the specified directory <rootDir>")
   .action(async (rootDir) => {
-    const absRootDirectory = resolve(process.cwd(), rootDir);
-    await init({ rootDir: absRootDirectory });
+    try {
+      const absRootDirectory = resolve(process.cwd(), rootDir);
+      await init({ rootDir: absRootDirectory });
+    } catch (err) {
+      console.error(parseErrorMessage(err));
+      process.exit(-1);
+    }
   });
 
 const moduleCli = new Command("module");
@@ -32,18 +37,20 @@ moduleCli
   .option("--server-only", "server-only module")
   .description("Create a new Firedeck module named <name> with client and server components")
   .action(async (name, opts) => {
-    if (opts.clientOnly && opts.serverOnly)
-      throw new Error("--client-only and --server-only cannot be specified at the same time");
+    try {
+      if (opts.clientOnly && opts.serverOnly)
+        throw "--client-only and --server-only cannot be specified at the same time";
+      else if (!cwdIsRoot())
+        throw "cannot find 'firedeck.json'. make sure this command is run at the project root";
 
-    if (!cwdIsRoot())
-      throw new Error(
-        "Cannot find firedeck.json. Make sure this command is run at the project root",
-      );
-
-    await createModule({
-      name,
-      components: opts.clientOnly ? "client" : opts.serverOnly ? "server" : undefined,
-    });
+      await createModule({
+        name,
+        components: opts.clientOnly ? "client" : opts.serverOnly ? "server" : undefined,
+      });
+    } catch (err) {
+      console.error(parseErrorMessage(err));
+      process.exit(-1);
+    }
   });
 
 cli.addCommand(moduleCli);

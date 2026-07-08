@@ -34,3 +34,9 @@ export const writeFileContents = async (contents: FSContents, rootDir: string) =
 export const cwdIsRoot = () => {
   return fs.existsSync(resolve(process.cwd(), "firedeck.json"));
 };
+
+export const parseErrorMessage = (err: unknown) => {
+  if (typeof err === "string") return err;
+  else if (typeof err === "object") return (err as Record<string, string>).message;
+  else return (err as object).toString();
+};

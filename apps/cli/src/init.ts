@@ -8,7 +8,7 @@ export async function init(args: { rootDir: string }) {
   if (!fs.existsSync(args.rootDir)) {
     fs.ensureDirSync(args.rootDir);
   } else if (fs.readdirSync(args.rootDir).length !== 0) {
-    throw new Error(`${args.rootDir}: directory is not empty`);
+    throw `./${relative(process.cwd(), args.rootDir)}: directory is not empty`;
   }
 
   console.log(
