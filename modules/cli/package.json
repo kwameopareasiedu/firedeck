@@ -11,8 +11,10 @@
     "cli": "node --env-file=.env.local bin/index.js"
   },
   "dependencies": {
+    "@inquirer/prompts": "^8.5.2",
     "commander": "^15.0.0",
-    "fs-extra": "^11.3.6"
+    "fs-extra": "^11.3.6",
+    "prettier": "^3.9.4"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^29.0.3",
