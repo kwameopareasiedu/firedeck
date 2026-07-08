@@ -9,7 +9,7 @@
   "private": true,
   "packageManager": "yarn@1.22.22",
   "workspaces": [
-    "modules/*"
+    "apps/*"
   ],
   "scripts": {
     "dev": "turbo run dev",
