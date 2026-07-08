@@ -40,7 +40,7 @@ export async function init(args: { rootDir: string }) {
     author: projectAuthor,
   });
 
-  await writeFileContents(projectContents, args.rootDir);
+  await writeFileContents(args.rootDir, projectContents);
 
   console.log("\nNext steps");
   console.log(`1. cd ${relative(process.cwd(), args.rootDir)}`);

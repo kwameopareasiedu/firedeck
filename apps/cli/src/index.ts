@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 import fs from "fs-extra";
-import { resolve } from "node:path";
+import { resolve, isAbsolute } from "node:path";
 import { Command } from "commander";
 import { init } from "@/init";
-import { createModule } from "@/module";
+import { analyzeModules, createModule } from "@/module";
 import { cwdIsRoot, parseErrorMessage } from "@/utils";
 
 const packageInfo = JSON.parse(
@@ -20,8 +20,8 @@ cli
   .description("Create a new Firedeck project at the specified directory <rootDir>")
   .action(async (rootDir) => {
     try {
-      const absRootDirectory = resolve(process.cwd(), rootDir);
-      await init({ rootDir: absRootDirectory });
+      rootDir = isAbsolute(rootDir) ? rootDir : resolve(process.cwd(), rootDir);
+      await init({ rootDir });
     } catch (err) {
       console.error(parseErrorMessage(err));
       process.exit(-1);
@@ -45,6 +45,7 @@ moduleCli
 
       await createModule({
         name,
+        rootDir: process.cwd(),
         components: opts.clientOnly ? "client" : opts.serverOnly ? "server" : undefined,
       });
     } catch (err) {
@@ -52,6 +53,13 @@ moduleCli
       process.exit(-1);
     }
   });
+
+moduleCli.command("analyze").action(async () => {
+  if (!cwdIsRoot())
+    throw "cannot find 'firedeck.json'. make sure this command is run at the project root";
+
+  await analyzeModules({ rootDir: process.cwd() });
+});
 
 cli.addCommand(moduleCli);
 

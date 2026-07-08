@@ -1,11 +1,11 @@
-export type FSContents = { [path: string]: { content: string; extension?: string } };
+import { TemplatePaths } from "@/types";
 
 export const generateProjectContents = (opts: {
   name: string;
   description: string;
   version: string;
   author: string;
-}): FSContents => {
+}): TemplatePaths => {
   return {
     "package.json": {
       content: `
@@ -89,7 +89,7 @@ export const generateProjectContents = (opts: {
     "modules/main/client/pages/index.route.tsx": {
       content: `
       import { definePage } from "firedeck";
-      
+
       export default definePage({
         page() {
           return (
@@ -104,7 +104,7 @@ export const generateProjectContents = (opts: {
     "modules/main/server/hello.ts": {
       content: `
       import { defineFunction } from "firedeck";
-      
+
       export default defineFunction({
         async handler() {
           console.log("Hello Firedeck");
@@ -121,8 +121,8 @@ export const generateProjectContents = (opts: {
 export const generateModuleContents = (args: {
   name: string;
   components: "all" | "client" | "server";
-}): FSContents => {
-  const contents: FSContents = {};
+}): TemplatePaths => {
+  const contents: TemplatePaths = {};
 
   if (["all", "client"].includes(args.components)) {
     contents[`modules/${args.name}/client/pages/index.route.tsx`] = {
@@ -155,4 +155,69 @@ export const generateModuleContents = (args: {
   }
 
   return contents;
+};
+
+export const generateRuntime = (args: {
+  moduleName: string;
+  moduleDescription: string;
+  moduleVersion: string;
+}): TemplatePaths => {
+  return {
+    "package.json": {
+      content: `
+      {
+        "name": "${args.moduleName}",
+        "version": "${args.moduleVersion}",
+        "description": "${args.moduleDescription}",
+        "private": true,
+        "type": "module",
+        "packageManager": "yarn@1.22.22",
+        "workspaces": [
+          "modules/*"
+        ],
+        "scripts": {
+          "dev": "vite",
+          "build": "tsc -b && vite build",
+          "preview": "vite preview"
+        },
+        "dependencies": {
+          "turbo": "^2.10.4",
+        }
+      }`,
+    },
+
+    "turbo.json": {
+      content: `
+      {
+        "$schema": "https://turbo.build/schema.json",
+        "tasks": {
+          "dev": {
+            "persistent": true,
+            "cache": false
+          },
+          "build": {
+            "dependsOn": ["^build"],
+            "outputs": ["apps/**/dist/**", "apps/**/lib/**", "apps/**/bin/**"]
+          },
+          "//#emulate": {
+            "persistent": true
+          }
+        }
+      }`,
+    },
+
+    ".gitignore": {
+      content: `
+      .idea
+      .turbo
+      .firebase
+      node_modules
+      dist
+      .env
+      .env.local
+      *.log
+      firebase-export-*`,
+      extension: "md",
+    },
+  };
 };

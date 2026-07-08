@@ -42,6 +42,17 @@ The `config.json` allows module customization. It's properties are defined below
 |----------|-------------|---------------|----------|
 |          |             |               |          |
 
+## Runtime
+
+During development, Firedeck emits a Turbo monorepo project to `.firedeck/runtime`. This monorepo is built from the
+analysis of the `modules` directory which contains the user code.
+
+Each module in the `modules` directory maps to the following:
+
+- A standalone Vite application which serves the `client` component
+- A standalone functions directory which hosts the `server` component, configured in the `.firebaserc` and
+  `firebase.json` config files.
+
 ## CLI
 
 | Command              | Description                                                         |

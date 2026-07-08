@@ -1,7 +1,7 @@
 import { format, Options } from "prettier";
-import { FSContents } from "@/templates";
 import { extname, resolve } from "node:path";
 import fs from "fs-extra";
+import { TemplatePaths } from "@/types";
 
 export const getPrettierConfig = (args: { filePath: string }): Options => ({
   filepath: args.filePath,
@@ -16,7 +16,7 @@ export const getPrettierConfig = (args: { filePath: string }): Options => ({
   arrowParens: "always",
 });
 
-export const writeFileContents = async (contents: FSContents, rootDir: string) => {
+export const writeFileContents = async (rootDir: string, contents: TemplatePaths) => {
   for (const relativePath in contents) {
     const filePath = resolve(rootDir, relativePath);
     const fileProperties = contents[relativePath];
