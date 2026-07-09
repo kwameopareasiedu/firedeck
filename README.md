@@ -21,13 +21,12 @@ A module directory will have the following structure:
 
 ```
 <module-name>/
-  - config.json (Optional)
   - server/
-    - <function #1>.ts
-    - <function #2>.ts
+    - hello.ts
   - client/
-    - path/
-    - index.tsx
+    - pages/
+      - index.route.tsx
+    - index.html
 ```
 
 The server functions defined by the module will be available to the client via the `useApi` hook. This hook is
@@ -52,6 +51,29 @@ Each module in the `modules` directory maps to the following:
 - A standalone Vite application which serves the `client` component
 - A standalone functions directory which hosts the `server` component, configured in the `.firebaserc` and
   `firebase.json` config files.
+
+When the `dev` command is run, the user code is statically analyzed to create necessary data structures (JSON
+serializable) to create the above-mentioned applications.
+
+After this two process run concurrently to watch the user code for any changes and regenerate the application files
+where necessary and also to run the generated applications.
+
+The flow is summed up in the diagram below:
+
+```
+                     Run dev
+                        ↓
+                  Static analyis
+                        ↓
+              Generate monorepo files
+                        ↓
+               ―――――――――――――――――――
+              ↓                   ↓
+       Watch user modules    Run monorepo
+        for changes and      application
+        update monorepo  
+             files
+```
 
 ## CLI
 

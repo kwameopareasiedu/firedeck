@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 import fs from "fs-extra";
-import { resolve, isAbsolute } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 import { Command } from "commander";
-import { init } from "@/init";
-import { analyzeModules, createModule } from "@/module";
 import { cwdIsRoot, parseErrorMessage } from "@/utils";
+import { createModule, createRuntime, init } from "@/functions";
+import { input } from "@inquirer/prompts";
 
 const packageInfo = JSON.parse(
   fs.readFileSync(resolve(__dirname, "../package.json"), { encoding: "utf-8" }),
@@ -21,12 +21,42 @@ cli
   .action(async (rootDir) => {
     try {
       rootDir = isAbsolute(rootDir) ? rootDir : resolve(process.cwd(), rootDir);
-      await init({ rootDir });
+
+      console.log(
+        `
+███████╗ ██╗ ██████╗  ███████╗ ██████╗  ███████╗  ██████╗ ██╗  ██╗
+██╔════╝ ██║ ██╔══██╗ ██╔════╝ ██╔══██╗ ██╔════╝ ██╔════╝ ██║ ██╔╝
+█████╗   ██║ ██████╔╝ █████╗   ██║  ██║ █████╗   ██║      █████╔╝ 
+██╔══╝   ██║ ██╔══██╗ ██╔══╝   ██║  ██║ ██╔══╝   ██║      ██╔═██╗ 
+██║      ██║ ██║  ██║ ███████╗ ██████╔╝ ███████╗ ╚██████╗ ██║  ██╗
+╚═╝      ╚═╝ ╚═╝  ╚═╝ ╚══════╝ ╚═════╝  ╚══════╝  ╚═════╝ ╚═╝  ╚═╝`,
+      );
+
+      const projectName = await input({
+        message: "Name:",
+        default: "new-project",
+        pattern: /^[a-z0-9-_]{1,214}$/,
+      });
+      const projectDescription = await input({
+        message: "Description:",
+        default: "A fun little test project",
+      });
+      const projectVersion = await input({ message: "Version:", default: "0.1.0" });
+      const projectAuthor = await input({ message: "Author:", default: "Kwame" });
+
+      await init({ rootDir, projectName, projectDescription, projectVersion, projectAuthor });
     } catch (err) {
       console.error(parseErrorMessage(err));
       process.exit(-1);
     }
   });
+
+cli.command("run").action(async () => {
+  if (!cwdIsRoot())
+    throw "cannot find 'firedeck.json'. make sure this command is run at the project root";
+
+  await createRuntime({ rootDir: process.cwd() });
+});
 
 const moduleCli = new Command("module");
 moduleCli.description("Manages firedeck modules in the project");
@@ -53,13 +83,6 @@ moduleCli
       process.exit(-1);
     }
   });
-
-moduleCli.command("analyze").action(async () => {
-  if (!cwdIsRoot())
-    throw "cannot find 'firedeck.json'. make sure this command is run at the project root";
-
-  await analyzeModules({ rootDir: process.cwd() });
-});
 
 cli.addCommand(moduleCli);
 
