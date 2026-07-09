@@ -1,5 +1,4 @@
 import { defineConfig } from "rollup";
-import { dts } from "rollup-plugin-dts";
 import nodeResolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import typescript from "@rollup/plugin-typescript";
@@ -25,9 +24,9 @@ export default defineConfig([
     external: external,
   },
   {
-    input: "src/functions.ts",
-    output: { file: "temp/functions.d.ts", format: "commonjs" },
-    plugins: [nodeResolve(), commonjs(), typescript(), typescriptPaths(), dts()],
+    input: "src/utils.ts",
+    output: { file: "temp/utils.js", format: "commonjs" },
+    plugins: [nodeResolve(), commonjs(), typescript(), typescriptPaths()],
     treeshake: { moduleSideEffects: false },
     external: external,
   },

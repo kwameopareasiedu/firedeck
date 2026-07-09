@@ -12,7 +12,7 @@
     "dev": "rollup -c -w --no-watch.clearScreen",
     "build": "rollup -c",
     "cli": "node --env-file=.env.local bin/index.js",
-    "test": "ava"
+    "test": "ava --serial --fail-fast"
   },
   "dependencies": {
     "@inquirer/prompts": "^8.5.2",

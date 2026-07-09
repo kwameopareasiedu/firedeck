@@ -12,12 +12,8 @@ export interface Workspace {
   }[];
 }
 
-export type WorkspaceEvent =
-  | { type: "module-added"; moduleName: string }
-  | { type: "module-removed"; moduleName: string }
-  | { type: "module-renamed"; moduleName: string; oldModuleName: string }
-  | { type: "module-component-added"; moduleName: string; component: "client" | "server" }
-  | { type: "module-component-removed"; moduleName: string; component: "client" | "server" }
-  | { type: "route-added"; moduleName: string; routePath: string }
-  | { type: "route-removed"; moduleName: string; routePath: string }
-  | { type: "route-renamed"; moduleName: string; routePath: string; oldRoutePath: string };
+export type WorkspaceChange =
+  | { type: "client-added"; clientName: string }
+  | { type: "client-removed"; clientName: string }
+  | { type: "client-renamed"; oldClientName: string; newClientName: string }
+  | { type: "client-routes-modified"; clientName: string };

@@ -7,7 +7,7 @@ import {
   generateRuntimeClientHierarchy,
 } from "@/templates";
 import { pathIsFiredeckRoot, writeOutputHierarchy } from "@/utils";
-import { ModuleComponents, Workspace } from "@/types";
+import { ModuleComponents, Workspace, WorkspaceChange } from "@/types";
 
 export async function init(args: {
   rootDir: string;
@@ -58,7 +58,7 @@ export async function createModule(args: {
 }
 
 export async function createRuntime(args: { rootDir: string }) {
-  const runtime = await analyzeModules({ rootDir: args.rootDir });
+  const runtime = await analyzeProject({ rootDir: args.rootDir });
   const runtimeRoot = resolve(args.rootDir, ".firedeck/runtime");
   const runtimeRootHierarchy = generateRuntimeRootHierarchy();
 
@@ -72,7 +72,7 @@ export async function createRuntime(args: { rootDir: string }) {
   }
 }
 
-async function analyzeModules(args: { rootDir: string }): Promise<Workspace> {
+export async function analyzeProject(args: { rootDir: string }) {
   if (!pathIsFiredeckRoot(args.rootDir))
     throw `${args.rootDir}: directory is not a valid Firedeck project`;
 
@@ -133,4 +133,45 @@ async function analyzeModules(args: { rootDir: string }): Promise<Workspace> {
   }
 
   return workspace;
+}
+
+export function compareWorkspaces(w1: Workspace, w2: Workspace) {
+  const changes: WorkspaceChange[] = [];
+
+  for (let cIdx = 0; cIdx < Math.max(w1.clients.length, w2.clients.length); cIdx++) {
+    const w1c = w1.clients[cIdx];
+    const w2c = w2.clients[cIdx];
+
+    if (!w1c && w2c) {
+      changes.push({
+        type: "client-added",
+        clientName: w2c.name,
+      });
+    } else if (w1c && !w2c) {
+      changes.push({
+        type: "client-removed",
+        clientName: w1c.name,
+      });
+    } else if (w1c && w2c) {
+      if (w1c.name !== w2c.name) {
+        changes.push({
+          type: "client-renamed",
+          oldClientName: w1c.name,
+          newClientName: w2c.name,
+        });
+      }
+
+      for (let rIdx = 0; rIdx < Math.max(w1c.routes.length, w2c.routes.length); rIdx++) {
+        const w1cr = w1c.routes[rIdx];
+        const w2cr = w2c.routes[rIdx];
+
+        if ((!w1cr && w2cr) || (w1cr && !w2cr) || w1cr.importPath !== w2cr.importPath) {
+          changes.push({ type: "client-routes-modified", clientName: w2c.name });
+          break;
+        }
+      }
+    }
+  }
+
+  return changes;
 }
