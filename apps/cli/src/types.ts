@@ -5,6 +5,8 @@ export type OutputHierarchy = { [path: string]: OutputNode };
 export interface RouteNode {
   pageImportPath: string | null;
   layoutImportPath: string | null;
+  placeholderImportPath: string | null;
+  guardImportPath: string | null;
   urlPath: string | null;
   children: RouteNode[];
 }

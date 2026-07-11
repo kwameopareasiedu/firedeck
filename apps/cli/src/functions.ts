@@ -105,6 +105,24 @@ export async function analyzeProject(args: { rootDir: string }) {
         const layoutImportPath =
           layoutFilePaths.length > 0 ? `@/${relative(modulesRoot, layoutFilePaths[0])}.tsx` : null;
 
+        const placeholderFilePaths = dirContentPaths.filter(
+          (itemPath) => fs.lstatSync(itemPath).isFile() && itemPath.endsWith("placeholder.tsx"),
+        );
+        if (placeholderFilePaths.length > 1) throw `${dir} contains multiple placeholder files`;
+
+        const placeholderImportPath =
+          placeholderFilePaths.length > 0
+            ? `@/${relative(modulesRoot, placeholderFilePaths[0])}.tsx`
+            : null;
+
+        const guardFilePaths = dirContentPaths.filter(
+          (itemPath) => fs.lstatSync(itemPath).isFile() && itemPath.endsWith("guard.ts"),
+        );
+        if (guardFilePaths.length > 1) throw `${dir} contains multiple guard files`;
+
+        const guardImportPath =
+          guardFilePaths.length > 0 ? `@/${relative(modulesRoot, guardFilePaths[0])}.tsx` : null;
+
         const urlPath = pageImportPath
           ? "/" +
             relative(pagesRoot, dir)
@@ -130,6 +148,8 @@ export async function analyzeProject(args: { rootDir: string }) {
         return {
           pageImportPath: pageImportPath,
           layoutImportPath: layoutImportPath,
+          placeholderImportPath: placeholderImportPath,
+          guardImportPath: guardImportPath,
           urlPath: urlPath,
           children: subDirectories.map((subDir) => {
             return discoverRoutes(subDir);
@@ -254,24 +274,24 @@ export async function applyWorkspaceChanges(args: { rootDir: string; changes: Wo
   }
 }
 
-// function createRoutingSource(routes: Workspace["clients"][number]["routes"]) {
-//   const lines: string[] = [
-//     `
-//     import { type ReactNode, lazy, Suspense } from "react";
-//     import { createBrowserRouter, redirect } from "react-router";
-//
-//     function withSuspense(child: ReactNode) {
-//       return (
-//         <Suspense
-//           fallback={
-//             <div className="w-screen h-full grid place-items-center">
-//               <Spinner />
-//             </div>
-//           }>
-//           {child}
-//         </Suspense>
-//       );
-//     }
-//     `,
-//   ];
-// }
+function createRoutingSource(routes: RouteNode) {
+  const lines: string[] = [
+    `
+    import { type ReactNode, lazy, Suspense } from "react";
+    import { createBrowserRouter, redirect } from "react-router";
+
+    function withSuspense(child: ReactNode) {
+      return (
+        <Suspense
+          fallback={
+            <div className="w-screen h-full grid place-items-center">
+              <Spinner />
+            </div>
+          }>
+          {child}
+        </Suspense>
+      );
+    }
+    `,
+  ];
+}

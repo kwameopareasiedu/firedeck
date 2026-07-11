@@ -54,8 +54,10 @@ The client directory copies [Next.js app-router]() structure and has a structure
       - (dashboard)/
         - dashboard-layout.tsx
         - dashboard-page.tsx
+        - dashboard-guard.ts
         - users
           - users-page.tsx
+          - users-placeholder.tsx
           - [userId]/
             - user-details-page.tsx
   - index.html
@@ -65,10 +67,12 @@ A runtime, Firedeck builds the router that links to pages using an approach call
 approach, firedeck examines the `client/pages` directory in a depth-first manner searching for the following files
 within each directory:
 
-| File          | Description                                                                           |
-|---------------|---------------------------------------------------------------------------------------|
-| `*page.tsx`   | Defines the page component to display for the generated URL for the directory path    |
-| `*layout.tsx` | Defines the layout component to use for the generated URL tree for the directory path |
+| File               | Description                                                                           |
+|--------------------|---------------------------------------------------------------------------------------|
+| `*page.tsx`        | Defines the page component to display for the generated URL for the directory path    |
+| `*layout.tsx`      | Defines the layout component to use for the generated URL tree for the directory path |
+| `*placeholder.tsx` | Defines the component to display while the page component is being fetched            |
+| `*guard.ts`        | Defines the function to control access to the page component                          |
 
 Using a suffix-based convention avoids naming every page, `page.tsx` or `layout.tsx`, which would lead to editor fatigue
 and affect the developer experience.
@@ -84,17 +88,9 @@ export default function IndexPage() {
         </div>
     );
 }
-
-// Optional "guard" export. Access control for when to display the default component
-export function guard() {
-}
-
-// Optional "loader" export. Loader component to display while default component is being fetched
-export function loader() {
-}
 ```
 
-while a layout file would resemble the snippet below:
+A layout file would resemble the snippet below:
 
 ```typescript jsx
 import {Outlet} from "react-router";
@@ -106,6 +102,27 @@ export default function IndexLayout() {
             <Outlet/>
         </div>
     );
+}
+```
+
+A placeholder file would resemble the snippet below:
+
+```typescript jsx
+// Required default export. The component which is displayed while the page component is fetched
+export default function IndexPlaceholder() {
+    return <p className="text-center">Please wait</p>;
+}
+```
+
+A guard file would resemble the snippet below:
+
+```typescript jsx
+// import { redirect } from "react-router";
+
+// Required default export. The component which is displayed while the page component is fetched
+export default function indexGuard() {
+    return true; // Allow access
+    // return redirect("redirect-path"); // Redirect to another page
 }
 ```
 
