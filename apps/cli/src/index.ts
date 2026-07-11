@@ -4,7 +4,7 @@ import fs from "fs-extra";
 import { isAbsolute, resolve } from "node:path";
 import { Command } from "commander";
 import { cwdIsRoot, parseErrorMessage } from "@/utils";
-import { createModule, createRuntime, init } from "@/functions";
+import { createModule, init } from "@/functions";
 import { input } from "@inquirer/prompts";
 
 const packageInfo = JSON.parse(
@@ -50,13 +50,6 @@ cli
       process.exit(-1);
     }
   });
-
-cli.command("run").action(async () => {
-  if (!cwdIsRoot())
-    throw "cannot find 'firedeck.json'. make sure this command is run at the project root";
-
-  await createRuntime({ rootDir: process.cwd() });
-});
 
 const moduleCli = new Command("module");
 moduleCli.description("Manages firedeck modules in the project");

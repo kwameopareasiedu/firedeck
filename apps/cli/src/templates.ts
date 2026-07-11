@@ -22,7 +22,9 @@ export function generateProjectHierarchy(opts: {
         },
         "devDependencies": {
           "firedeck": "^0.1.0",
-          "prettier": "3.9.4"
+          "prettier": "3.9.4",
+          "react": "^19.2.7",
+          "react-dom": "^19.2.7"
         }
       }`,
     },
@@ -86,20 +88,20 @@ export function generateProjectHierarchy(opts: {
       {}`,
     },
 
-    "modules/main/client/pages/index.route.tsx": {
-      content: `
-      import { definePage } from "firedeck";
-
-      export default definePage({
-        page() {
-          return (
-            <div className="grid place-items-center">
-              <p>Welcome to Firedeck</p>
-            </div>
-          );
-        },
-      });`,
-    },
+    // "modules/main/client/pages/index.route.tsx": {
+    //   content: `
+    //   import { definePage } from "firedeck";
+    //
+    //   export default definePage({
+    //     page() {
+    //       return (
+    //         <div className="grid place-items-center">
+    //           <p>Welcome to Firedeck</p>
+    //         </div>
+    //       );
+    //     },
+    //   });`,
+    // },
 
     "modules/main/server/hello.ts": {
       content: `
@@ -162,7 +164,7 @@ export function generateRuntimeRootHierarchy(): OutputHierarchy {
     "package.json": {
       content: `
       {
-        "name": "firedeck-monorepo",
+        "name": "firedeck-runtime",
         "version": "0.0.0",
         "private": true,
         "type": "module",
@@ -216,12 +218,12 @@ export function generateRuntimeRootHierarchy(): OutputHierarchy {
   };
 }
 
-export function generateRuntimeClientHierarchy(args: { moduleName: string }): OutputHierarchy {
+export function generateRuntimeClientHierarchy(args: { clientName: string }): OutputHierarchy {
   return {
     "package.json": {
       content: `
       {
-        "name": "${args.moduleName}",
+        "name": "${args.clientName}",
         "private": true,
         "version": "0.0.0",
         "type": "module",
@@ -252,12 +254,14 @@ export function generateRuntimeClientHierarchy(args: { moduleName: string }): Ou
       import react from '@vitejs/plugin-react'
       import { resolve } from "node:path";
       
+      const __dirname = import.meta.dirname;
+      
       // https://vite.dev/config/
       export default defineConfig({
         plugins: [react()],
         resolve: {
           alias: {
-            "@": resolve(__dirname, "../../modules"),
+            "@": resolve(__dirname, "../../../../modules"),
           },
         }
       })`,
@@ -283,12 +287,12 @@ export function generateRuntimeClientHierarchy(args: { moduleName: string }): Ou
           "noFallthroughCasesInSwitch": true,
           "noUncheckedSideEffectImports": true,
           "baseUrl": ".",
-          "rootDir": "../../",
+          "rootDir": "../../../../",
           "paths": {
-            "@/*": ["../../modules/*"],
+            "@/*": ["../../../../modules/*"],
           }
         },
-        "include": ["src", "../../modules"]
+        "include": ["src", "../../../../modules"]
       }`,
     },
 
@@ -366,7 +370,7 @@ export function generateRuntimeClientHierarchy(args: { moduleName: string }): Ou
           <meta charset="UTF-8" />
           <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>${args.moduleName}</title>
+          <title>${args.clientName}</title>
         </head>
         <body>
           <div id="root"></div>
@@ -389,16 +393,7 @@ export function generateRuntimeClientHierarchy(args: { moduleName: string }): Ou
       
       createRoot(document.getElementById("root")!).render(
         <StrictMode>
-          <pre>
-            <code>
-              <p>███████╗ ██╗ ██████╗  ███████╗ ██████╗  ███████╗  ██████╗ ██╗  ██╗</p>
-              <p>██╔════╝ ██║ ██╔══██╗ ██╔════╝ ██╔══██╗ ██╔════╝ ██╔════╝ ██║ ██╔╝</p>
-              <p>█████╗   ██║ ██████╔╝ █████╗   ██║  ██║ █████╗   ██║      █████╔╝</p> 
-              <p>██╔══╝   ██║ ██╔══██╗ ██╔══╝   ██║  ██║ ██╔══╝   ██║      ██╔═██╗</p> 
-              <p>██║      ██║ ██║  ██║ ███████╗ ██████╔╝ ███████╗ ╚██████╗ ██║  ██╗</p>
-              <p>╚═╝      ╚═╝ ╚═╝  ╚═╝ ╚══════╝ ╚═════╝  ╚══════╝  ╚═════╝ ╚═╝  ╚═╝</p>
-            </code>
-          </pre>
+          <p>Hello Firedeck</p>
         </StrictMode>,
       );`,
     },

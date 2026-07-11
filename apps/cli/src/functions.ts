@@ -2,12 +2,12 @@ import fs from "fs-extra";
 import { relative, resolve, sep } from "node:path";
 import {
   generateModuleHierarchy,
-  generateRuntimeRootHierarchy,
   generateProjectHierarchy,
   generateRuntimeClientHierarchy,
+  generateRuntimeRootHierarchy,
 } from "@/templates";
 import { pathIsFiredeckRoot, writeOutputHierarchy } from "@/utils";
-import { ModuleComponents, Workspace, WorkspaceChange } from "@/types";
+import { ModuleComponents, RouteNode, Workspace, WorkspaceChange } from "@/types";
 
 export async function init(args: {
   rootDir: string;
@@ -57,21 +57,6 @@ export async function createModule(args: {
   console.log(`Created new module '${args.name}': ${modulesRoot}`);
 }
 
-export async function createRuntime(args: { rootDir: string }) {
-  const runtime = await analyzeProject({ rootDir: args.rootDir });
-  const runtimeRoot = resolve(args.rootDir, ".firedeck/runtime");
-  const runtimeRootHierarchy = generateRuntimeRootHierarchy();
-
-  await writeOutputHierarchy(runtimeRoot, runtimeRootHierarchy);
-
-  for (const client of runtime.clients) {
-    const clientRoot = resolve(runtimeRoot, "modules", client.name);
-    const runtimeClientHierarchy = generateRuntimeClientHierarchy({ moduleName: client.name });
-
-    await writeOutputHierarchy(clientRoot, runtimeClientHierarchy);
-  }
-}
-
 export async function analyzeProject(args: { rootDir: string }) {
   if (!pathIsFiredeckRoot(args.rootDir))
     throw `${args.rootDir}: directory is not a valid Firedeck project`;
@@ -90,42 +75,71 @@ export async function analyzeProject(args: { rootDir: string }) {
     const clientRoot = resolve(moduleRoot, "client");
 
     if (fs.existsSync(clientRoot)) {
-      const workspaceClient: Workspace["clients"][number] = {
-        name: moduleName,
-        routes: [],
-      };
-
       const pagesRoot = resolve(clientRoot, "pages");
       if (!fs.existsSync(pagesRoot)) throw `${moduleName}/client/pages directory not found`;
 
-      const pagePaths = fs.readdirSync(pagesRoot, { encoding: "utf-8", recursive: true });
-      const routeFilePaths = pagePaths
-        .map((pagePath) => resolve(pagesRoot, pagePath))
-        .filter((pagePath) => fs.lstatSync(pagePath).isFile() && pagePath.endsWith(".route.tsx"));
+      function discoverRoutes(dir: string): RouteNode {
+        const dirContentPaths = fs
+          .readdirSync(dir, { encoding: "utf-8" })
+          .map((itemName) => resolve(dir, itemName));
 
-      const routes: Workspace["clients"][number]["routes"] = routeFilePaths.map((routeFilePath) => {
-        const relativeRouteFilePath = relative(pagesRoot, routeFilePath).split(".route.tsx")[0];
-        const filePathSegments = relativeRouteFilePath
-          .split(sep)
-          .filter((segment) => segment !== "index")
-          .map((segment) => {
-            const pathParamRegex = /^\[(\w+)]$/;
+        const dirIsRoutable = !/\(\w+\)/.test(dir.split(sep).slice(-1)[0]);
 
-            if (!pathParamRegex.test(segment)) return segment;
+        const pageFilePaths = dirContentPaths.filter(
+          (itemPath) => fs.lstatSync(itemPath).isFile() && itemPath.endsWith("page.tsx"),
+        );
+        if (pageFilePaths.length > 1) throw `${dir} contains multiple page files`;
+        if (!dirIsRoutable && pageFilePaths.length > 0)
+          console.warn(`ignoring '${pageFilePaths[0]}' from routes since ${dir} is not routable`);
 
-            const matches = pathParamRegex.exec(segment);
-            if (!matches) return segment;
+        const pageImportPath =
+          dirIsRoutable && pageFilePaths.length > 0
+            ? `@/${relative(modulesRoot, pageFilePaths[0])}.tsx`
+            : null;
 
-            return ":" + matches[1];
-          });
+        const layoutFilePaths = dirContentPaths.filter(
+          (itemPath) => fs.lstatSync(itemPath).isFile() && itemPath.endsWith("layout.tsx"),
+        );
+        if (layoutFilePaths.length > 1) throw `${dir} contains multiple layout files`;
+
+        const layoutImportPath =
+          layoutFilePaths.length > 0 ? `@/${relative(modulesRoot, layoutFilePaths[0])}.tsx` : null;
+
+        const urlPath = pageImportPath
+          ? "/" +
+            relative(pagesRoot, dir)
+              .split(sep)
+              .filter((segment) => !/^\(\w+\)$/.test(segment))
+              .map((segment) => {
+                const pathParamRegex = /^\[(\w+)]$/;
+
+                if (!pathParamRegex.test(segment)) return segment;
+
+                const matches = pathParamRegex.exec(segment);
+                if (!matches) return segment;
+
+                return ":" + matches[1];
+              })
+              .join("/")
+          : null;
+
+        const subDirectories = dirContentPaths.filter((itemPath) =>
+          fs.lstatSync(itemPath).isDirectory(),
+        );
 
         return {
-          urlPath: "/" + filePathSegments.join("/"),
-          importPath: "@/" + relative(modulesRoot, routeFilePath),
+          pageImportPath: pageImportPath,
+          layoutImportPath: layoutImportPath,
+          urlPath: urlPath,
+          children: subDirectories.map((subDir) => {
+            return discoverRoutes(subDir);
+          }),
         };
-      });
+      }
 
-      workspaceClient.routes.push(...routes);
+      const routeNode = discoverRoutes(pagesRoot);
+
+      const workspaceClient: Workspace["clients"][number] = { name: moduleName, routes: routeNode };
       workspace.clients.push(workspaceClient);
     }
 
@@ -135,8 +149,14 @@ export async function analyzeProject(args: { rootDir: string }) {
   return workspace;
 }
 
-export function compareWorkspaces(w1: Workspace, w2: Workspace) {
+export function compareWorkspaces(w1: Workspace | null, w2: Workspace) {
   const changes: WorkspaceChange[] = [];
+
+  if (!w1) {
+    changes.push({ type: "create-runtime" });
+
+    w1 = { clients: [] };
+  }
 
   for (let cIdx = 0; cIdx < Math.max(w1.clients.length, w2.clients.length); cIdx++) {
     const w1c = w1.clients[cIdx];
@@ -144,34 +164,114 @@ export function compareWorkspaces(w1: Workspace, w2: Workspace) {
 
     if (!w1c && w2c) {
       changes.push({
-        type: "client-added",
+        type: "add-client",
         clientName: w2c.name,
       });
     } else if (w1c && !w2c) {
       changes.push({
-        type: "client-removed",
+        type: "remove-client",
         clientName: w1c.name,
       });
     } else if (w1c && w2c) {
       if (w1c.name !== w2c.name) {
         changes.push({
-          type: "client-renamed",
+          type: "rename-client",
           oldClientName: w1c.name,
           newClientName: w2c.name,
         });
       }
 
-      for (let rIdx = 0; rIdx < Math.max(w1c.routes.length, w2c.routes.length); rIdx++) {
-        const w1cr = w1c.routes[rIdx];
-        const w2cr = w2c.routes[rIdx];
-
-        if ((!w1cr && w2cr) || (w1cr && !w2cr) || w1cr.importPath !== w2cr.importPath) {
-          changes.push({ type: "client-routes-modified", clientName: w2c.name });
-          break;
-        }
+      if (JSON.stringify(w1c.routes) !== JSON.stringify(w2c.routes)) {
+        changes.push({ type: "update-client-routes", clientName: w2c.name });
       }
     }
   }
 
   return changes;
 }
+
+export async function applyWorkspaceChanges(args: { rootDir: string; changes: WorkspaceChange[] }) {
+  if (!pathIsFiredeckRoot(args.rootDir))
+    throw `${args.rootDir}: directory is not a valid Firedeck project`;
+
+  for (const change of args.changes) {
+    console.log("CHANGE:", change);
+
+    switch (change.type) {
+      case "create-runtime": {
+        const runtimeRoot = resolve(args.rootDir, ".firedeck/runtime");
+        fs.removeSync(runtimeRoot);
+        fs.ensureDirSync(runtimeRoot);
+
+        const runtimeRootHierarchy = generateRuntimeRootHierarchy();
+        await writeOutputHierarchy(runtimeRoot, runtimeRootHierarchy);
+
+        break;
+      }
+      case "add-client": {
+        const runtimeClientRoot = resolve(
+          args.rootDir,
+          ".firedeck/runtime/modules",
+          change.clientName,
+        );
+
+        const runtimeClientRootHierarchy = generateRuntimeClientHierarchy({
+          clientName: change.clientName,
+        });
+        await writeOutputHierarchy(runtimeClientRoot, runtimeClientRootHierarchy);
+
+        break;
+      }
+      case "remove-client": {
+        const runtimeClientRoot = resolve(
+          args.rootDir,
+          ".firedeck/runtime/modules",
+          change.clientName,
+        );
+
+        fs.removeSync(runtimeClientRoot);
+        break;
+      }
+      case "rename-client": {
+        const oldRuntimeClientRoot = resolve(
+          args.rootDir,
+          ".firedeck/runtime/modules",
+          change.oldClientName,
+        );
+
+        const newRuntimeClientRoot = resolve(
+          args.rootDir,
+          ".firedeck/runtime/modules",
+          change.newClientName,
+        );
+
+        fs.renameSync(oldRuntimeClientRoot, newRuntimeClientRoot);
+        break;
+      }
+      case "update-client-routes":
+        break;
+    }
+  }
+}
+
+// function createRoutingSource(routes: Workspace["clients"][number]["routes"]) {
+//   const lines: string[] = [
+//     `
+//     import { type ReactNode, lazy, Suspense } from "react";
+//     import { createBrowserRouter, redirect } from "react-router";
+//
+//     function withSuspense(child: ReactNode) {
+//       return (
+//         <Suspense
+//           fallback={
+//             <div className="w-screen h-full grid place-items-center">
+//               <Spinner />
+//             </div>
+//           }>
+//           {child}
+//         </Suspense>
+//       );
+//     }
+//     `,
+//   ];
+// }
