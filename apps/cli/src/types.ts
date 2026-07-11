@@ -3,6 +3,7 @@ export type OutputNode = { content: string; extension?: string };
 export type OutputHierarchy = { [path: string]: OutputNode };
 
 export interface RouteNode {
+  name: string | null;
   pageImportPath: string | null;
   layoutImportPath: string | null;
   placeholderImportPath: string | null;

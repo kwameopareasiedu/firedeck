@@ -5,6 +5,7 @@ import {
   analyzeProject,
   applyWorkspaceChanges,
   compareWorkspaces,
+  createRouterSource,
   init,
 } from "../temp/functions.js";
 import { writeOutputHierarchy } from "../temp/utils.js";
@@ -51,13 +52,27 @@ test("analyze-project", async (t) => {
   });
 
   const mainModuleClientHierarchy = {
-    "modules/main/client/pages/index-page.tsx": { content: "" },
-    "modules/main/client/pages/(public)/landing/landing-page.tsx": { content: "" },
-    "modules/main/client/pages/(public)/contact/contact-page.tsx": { content: "" },
-    "modules/main/client/pages/(public)/features/features-page.tsx": { content: "" },
-    "modules/main/client/pages/(dashboard)/dashboard-layout.tsx": { content: "" },
-    "modules/main/client/pages/(dashboard)/users/users-page.tsx": { content: "" },
-    "modules/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx": { content: "" },
+    "modules/main/client/pages/index-page.tsx": {
+      content: "export default function IndexPage() {}",
+    },
+    "modules/main/client/pages/(public)/landing/landing-page.tsx": {
+      content: "const LandingPage = () => {};export default LandingPage",
+    },
+    "modules/main/client/pages/(public)/contact/contact-page.tsx": {
+      content: "function ContactPage() {}; export default ContactPage",
+    },
+    "modules/main/client/pages/(public)/features/features-page.tsx": {
+      content: "export default function FeaturesPage() {}",
+    },
+    "modules/main/client/pages/(dashboard)/dashboard-layout.tsx": {
+      content: "export default function DashboardLayout() {}",
+    },
+    "modules/main/client/pages/(dashboard)/users/users-page.tsx": {
+      content: "export default function UsersPage() {}",
+    },
+    "modules/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx": {
+      content: "export default function UserDetailsPage() {}",
+    },
   };
 
   await writeOutputHierarchy(testRoot, mainModuleClientHierarchy);
@@ -66,29 +81,33 @@ test("analyze-project", async (t) => {
 
   t.is(workspace.clients.length, 1);
   t.deepEqual(workspace.clients[0].routes, {
-    pageImportPath: "@/main/client/pages/index-page.tsx.tsx",
+    name: "IndexPage",
+    pageImportPath: "@/main/client/pages/index-page.tsx",
     layoutImportPath: null,
     placeholderImportPath: null,
     guardImportPath: null,
     urlPath: "/",
     children: [
       {
+        name: null,
         pageImportPath: null,
-        layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx.tsx",
+        layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
         placeholderImportPath: null,
         guardImportPath: null,
         urlPath: null,
         children: [
           {
-            pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx.tsx",
+            name: "UsersPage",
+            pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx",
             layoutImportPath: null,
             placeholderImportPath: null,
             guardImportPath: null,
             urlPath: "/users",
             children: [
               {
+                name: "UserDetailsPage",
                 pageImportPath:
-                  "@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx.tsx",
+                  "@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx",
                 layoutImportPath: null,
                 placeholderImportPath: null,
                 guardImportPath: null,
@@ -100,6 +119,7 @@ test("analyze-project", async (t) => {
         ],
       },
       {
+        name: null,
         pageImportPath: null,
         layoutImportPath: null,
         placeholderImportPath: null,
@@ -107,7 +127,8 @@ test("analyze-project", async (t) => {
         urlPath: null,
         children: [
           {
-            pageImportPath: "@/main/client/pages/(public)/contact/contact-page.tsx.tsx",
+            name: "ContactPage",
+            pageImportPath: "@/main/client/pages/(public)/contact/contact-page.tsx",
             layoutImportPath: null,
             placeholderImportPath: null,
             guardImportPath: null,
@@ -115,7 +136,8 @@ test("analyze-project", async (t) => {
             children: [],
           },
           {
-            pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx.tsx",
+            name: "FeaturesPage",
+            pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx",
             layoutImportPath: null,
             placeholderImportPath: null,
             guardImportPath: null,
@@ -123,7 +145,8 @@ test("analyze-project", async (t) => {
             children: [],
           },
           {
-            pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx.tsx",
+            name: "LandingPage",
+            pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx",
             layoutImportPath: null,
             placeholderImportPath: null,
             guardImportPath: null,
@@ -142,29 +165,33 @@ test("compare-workspaces", async (t) => {
       {
         name: "main",
         routes: {
-          pageImportPath: "@/main/client/pages/index-page.tsx.tsx",
+          name: "IndexPage",
+          pageImportPath: "@/main/client/pages/index-page.tsx",
           layoutImportPath: null,
           placeholderImportPath: null,
           guardImportPath: null,
           urlPath: "/",
           children: [
             {
+              name: null,
               pageImportPath: null,
-              layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx.tsx",
+              layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
               urlPath: null,
               placeholderImportPath: null,
               guardImportPath: null,
               children: [
                 {
-                  pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx.tsx",
+                  name: "UsersPage",
+                  pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
                   urlPath: "/users",
                   children: [
                     {
+                      name: "UserDetailsPage",
                       pageImportPath:
-                        "@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx.tsx",
+                        "@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx",
                       layoutImportPath: null,
                       placeholderImportPath: null,
                       guardImportPath: null,
@@ -176,6 +203,7 @@ test("compare-workspaces", async (t) => {
               ],
             },
             {
+              name: null,
               pageImportPath: null,
               layoutImportPath: null,
               placeholderImportPath: null,
@@ -183,7 +211,8 @@ test("compare-workspaces", async (t) => {
               urlPath: null,
               children: [
                 {
-                  pageImportPath: "@/main/client/pages/(public)/contact/contact-page.tsx.tsx",
+                  name: "ContactPage",
+                  pageImportPath: "@/main/client/pages/(public)/contact/contact-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -191,7 +220,8 @@ test("compare-workspaces", async (t) => {
                   children: [],
                 },
                 {
-                  pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx.tsx",
+                  name: "FeaturesPage",
+                  pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -199,7 +229,8 @@ test("compare-workspaces", async (t) => {
                   children: [],
                 },
                 {
-                  pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx.tsx",
+                  name: "LandingPage",
+                  pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -219,29 +250,33 @@ test("compare-workspaces", async (t) => {
       {
         name: "main",
         routes: {
-          pageImportPath: "@/main/client/pages/index-page.tsx.tsx",
+          name: "IndexPage",
+          pageImportPath: "@/main/client/pages/index-page.tsx",
           layoutImportPath: null,
           placeholderImportPath: null,
           guardImportPath: null,
           urlPath: "/",
           children: [
             {
+              name: null,
               pageImportPath: null,
-              layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx.tsx",
+              layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
               placeholderImportPath: null,
               guardImportPath: null,
               urlPath: null,
               children: [
                 {
-                  pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx.tsx",
+                  name: "UsersPage",
+                  pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
                   urlPath: "/users",
                   children: [
                     {
+                      name: "UserDetailsPage",
                       pageImportPath:
-                        "@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx.tsx",
+                        "@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx",
                       layoutImportPath: null,
                       placeholderImportPath: null,
                       guardImportPath: null,
@@ -253,6 +288,7 @@ test("compare-workspaces", async (t) => {
               ],
             },
             {
+              name: null,
               pageImportPath: null,
               layoutImportPath: null,
               placeholderImportPath: null,
@@ -260,7 +296,8 @@ test("compare-workspaces", async (t) => {
               urlPath: null,
               children: [
                 {
-                  pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx.tsx",
+                  name: "FeaturesPage",
+                  pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -268,7 +305,8 @@ test("compare-workspaces", async (t) => {
                   children: [],
                 },
                 {
-                  pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx.tsx",
+                  name: "LandingPage",
+                  pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -292,29 +330,33 @@ test("compare-workspaces", async (t) => {
       {
         name: "external",
         routes: {
-          pageImportPath: "@/main/client/pages/index-page.tsx.tsx",
+          name: "IndexPage",
+          pageImportPath: "@/main/client/pages/index-page.tsx",
           layoutImportPath: null,
           placeholderImportPath: null,
           guardImportPath: null,
           urlPath: "/",
           children: [
             {
+              name: null,
               pageImportPath: null,
-              layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx.tsx",
+              layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
               placeholderImportPath: null,
               guardImportPath: null,
               urlPath: null,
               children: [
                 {
-                  pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx.tsx",
+                  name: "UsersPage",
+                  pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
                   urlPath: "/users",
                   children: [
                     {
+                      name: "UserDetailsPage",
                       pageImportPath:
-                        "@/main/client/pages/(dashboard)/users/[userId]/user-detail-page.tsx.tsx",
+                        "@/main/client/pages/(dashboard)/users/[userId]/user-detail-page.tsx",
                       layoutImportPath: null,
                       placeholderImportPath: null,
                       guardImportPath: null,
@@ -326,6 +368,7 @@ test("compare-workspaces", async (t) => {
               ],
             },
             {
+              name: null,
               pageImportPath: null,
               layoutImportPath: null,
               placeholderImportPath: null,
@@ -333,7 +376,8 @@ test("compare-workspaces", async (t) => {
               urlPath: null,
               children: [
                 {
-                  pageImportPath: "@/main/client/pages/(public)/contact/contact-page.tsx.tsx",
+                  name: "ContactPage",
+                  pageImportPath: "@/main/client/pages/(public)/contact/contact-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -341,7 +385,8 @@ test("compare-workspaces", async (t) => {
                   children: [],
                 },
                 {
-                  pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx.tsx",
+                  name: "FeaturesPage",
+                  pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -349,7 +394,8 @@ test("compare-workspaces", async (t) => {
                   children: [],
                 },
                 {
-                  pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx.tsx",
+                  name: "LandingPage",
+                  pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -364,7 +410,7 @@ test("compare-workspaces", async (t) => {
       {
         name: "admin",
         routes: {
-          pageImportPath: "@/main/client/pages/index-page.tsx.tsx",
+          pageImportPath: "@/main/client/pages/index-page.tsx",
           layoutImportPath: null,
           placeholderImportPath: null,
           guardImportPath: null,
@@ -429,6 +475,89 @@ test("apply-workspace-changes", async (t) => {
 
   const changes = compareWorkspaces(null, targetWorkspace);
   await applyWorkspaceChanges({ rootDir: testRoot, changes });
+
+  t.pass();
+});
+
+test("create-router-source", async (t) => {
+  const routerSource = await createRouterSource({
+    pageImportPath: "@/main/client/pages/index-page.tsx",
+    layoutImportPath: null,
+    placeholderImportPath: null,
+    guardImportPath: null,
+    urlPath: "/",
+    children: [
+      {
+        name: null,
+        pageImportPath: null,
+        layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
+        placeholderImportPath: null,
+        guardImportPath: null,
+        urlPath: null,
+        children: [
+          {
+            name: "UsersPage",
+            pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx",
+            layoutImportPath: null,
+            placeholderImportPath: null,
+            guardImportPath: null,
+            urlPath: "/users",
+            children: [
+              {
+                name: "UserDetailsPage",
+                pageImportPath:
+                  "@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx",
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: "/users/:userId",
+                children: [],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        name: null,
+        pageImportPath: null,
+        layoutImportPath: null,
+        placeholderImportPath: null,
+        guardImportPath: null,
+        urlPath: null,
+        children: [
+          {
+            name: "ContactPage",
+            pageImportPath: "@/main/client/pages/(public)/contact/contact-page.tsx",
+            layoutImportPath: null,
+            placeholderImportPath: null,
+            guardImportPath: null,
+            urlPath: "/contact",
+            children: [],
+          },
+          {
+            name: "FeaturesPage",
+            pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx",
+            layoutImportPath: null,
+            placeholderImportPath: null,
+            guardImportPath: null,
+            urlPath: "/features",
+            children: [],
+          },
+          {
+            name: "LandingPage",
+            pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx",
+            layoutImportPath: null,
+            placeholderImportPath: null,
+            guardImportPath: null,
+            urlPath: "/landing",
+            children: [],
+          },
+        ],
+      },
+    ],
+  });
+
+  console.log(routerSource);
 
   t.pass();
 });

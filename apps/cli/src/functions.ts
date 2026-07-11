@@ -6,8 +6,11 @@ import {
   generateRuntimeClientHierarchy,
   generateRuntimeRootHierarchy,
 } from "@/templates";
-import { pathIsFiredeckRoot, writeOutputHierarchy } from "@/utils";
+import { getPrettierConfig, pathIsFiredeckRoot, writeOutputHierarchy } from "@/utils";
 import { ModuleComponents, RouteNode, Workspace, WorkspaceChange } from "@/types";
+import { format } from "prettier";
+import * as acorn from "acorn";
+import * as walk from "acorn-walk";
 
 export async function init(args: {
   rootDir: string;
@@ -79,6 +82,8 @@ export async function analyzeProject(args: { rootDir: string }) {
       if (!fs.existsSync(pagesRoot)) throw `${moduleName}/client/pages directory not found`;
 
       function discoverRoutes(dir: string): RouteNode {
+        const relativeDir = relative(args.rootDir, dir);
+
         const dirContentPaths = fs
           .readdirSync(dir, { encoding: "utf-8" })
           .map((itemName) => resolve(dir, itemName));
@@ -88,40 +93,41 @@ export async function analyzeProject(args: { rootDir: string }) {
         const pageFilePaths = dirContentPaths.filter(
           (itemPath) => fs.lstatSync(itemPath).isFile() && itemPath.endsWith("page.tsx"),
         );
-        if (pageFilePaths.length > 1) throw `${dir} contains multiple page files`;
+        if (pageFilePaths.length > 1) throw `${relativeDir} contains multiple page files`;
         if (!dirIsRoutable && pageFilePaths.length > 0)
-          console.warn(`ignoring '${pageFilePaths[0]}' from routes since ${dir} is not routable`);
+          throw `${relativeDir} is not routable but contains page file: ${pageFilePaths[0]}`;
 
         const pageImportPath =
           dirIsRoutable && pageFilePaths.length > 0
-            ? `@/${relative(modulesRoot, pageFilePaths[0])}.tsx`
+            ? `@/${relative(modulesRoot, pageFilePaths[0])}`
             : null;
 
         const layoutFilePaths = dirContentPaths.filter(
           (itemPath) => fs.lstatSync(itemPath).isFile() && itemPath.endsWith("layout.tsx"),
         );
-        if (layoutFilePaths.length > 1) throw `${dir} contains multiple layout files`;
+        if (layoutFilePaths.length > 1) throw `${relativeDir} contains multiple layout files`;
 
         const layoutImportPath =
-          layoutFilePaths.length > 0 ? `@/${relative(modulesRoot, layoutFilePaths[0])}.tsx` : null;
+          layoutFilePaths.length > 0 ? `@/${relative(modulesRoot, layoutFilePaths[0])}` : null;
 
         const placeholderFilePaths = dirContentPaths.filter(
           (itemPath) => fs.lstatSync(itemPath).isFile() && itemPath.endsWith("placeholder.tsx"),
         );
-        if (placeholderFilePaths.length > 1) throw `${dir} contains multiple placeholder files`;
+        if (placeholderFilePaths.length > 1)
+          throw `${relativeDir} contains multiple placeholder files`;
 
         const placeholderImportPath =
           placeholderFilePaths.length > 0
-            ? `@/${relative(modulesRoot, placeholderFilePaths[0])}.tsx`
+            ? `@/${relative(modulesRoot, placeholderFilePaths[0])}`
             : null;
 
         const guardFilePaths = dirContentPaths.filter(
           (itemPath) => fs.lstatSync(itemPath).isFile() && itemPath.endsWith("guard.ts"),
         );
-        if (guardFilePaths.length > 1) throw `${dir} contains multiple guard files`;
+        if (guardFilePaths.length > 1) throw `${relativeDir} contains multiple guard files`;
 
         const guardImportPath =
-          guardFilePaths.length > 0 ? `@/${relative(modulesRoot, guardFilePaths[0])}.tsx` : null;
+          guardFilePaths.length > 0 ? `@/${relative(modulesRoot, guardFilePaths[0])}` : null;
 
         const urlPath = pageImportPath
           ? "/" +
@@ -141,11 +147,37 @@ export async function analyzeProject(args: { rootDir: string }) {
               .join("/")
           : null;
 
+        const routeName = ((): string | null => {
+          const pageFilePath = pageFilePaths[0];
+
+          if (!pageFilePath) return null;
+
+          const pageFileSource = fs.readFileSync(pageFilePath, { encoding: "utf-8" });
+          const ast = acorn.parse(pageFileSource, { ecmaVersion: "latest", sourceType: "module" });
+          let routeName: string | null = null;
+
+          walk.simple(ast, {
+            ExportDefaultDeclaration: (node) => {
+              if (node.declaration.type === "FunctionDeclaration") {
+                routeName = (node.declaration as acorn.FunctionDeclaration).id?.name;
+              } else if (node.declaration.type === "Identifier") {
+                routeName = (node.declaration as acorn.Identifier).name;
+              }
+            },
+          });
+
+          return routeName;
+        })();
+
+        if (pageImportPath && !routeName)
+          throw `${relativeDir} must export a named default function. (e.g. export default function Name() {})`;
+
         const subDirectories = dirContentPaths.filter((itemPath) =>
           fs.lstatSync(itemPath).isDirectory(),
         );
 
         return {
+          name: routeName,
           pageImportPath: pageImportPath,
           layoutImportPath: layoutImportPath,
           placeholderImportPath: placeholderImportPath,
@@ -274,11 +306,39 @@ export async function applyWorkspaceChanges(args: { rootDir: string; changes: Wo
   }
 }
 
-function createRoutingSource(routes: RouteNode) {
-  const lines: string[] = [
-    `
+export async function createRouterSource(routes: RouteNode) {
+  function flattenRoutes(route: RouteNode): RouteNode[] {
+    return [
+      { ...route, children: [] },
+      ...route.children.reduce((flats, childRoute) => {
+        return [...flats, ...flattenRoutes(childRoute)];
+      }, [] as RouteNode[]),
+    ];
+  }
+
+  const flattenedRoutes = flattenRoutes(routes);
+
+  const routerSource = `
     import { type ReactNode, lazy, Suspense } from "react";
     import { createBrowserRouter, redirect } from "react-router";
+    
+    ${flattenedRoutes.reduce((importSrc, route, idx) => {
+      const routeImports = [];
+
+      if (route.pageImportPath)
+        routeImports.push(`const R${idx}Page = lazy(() => import("${route.pageImportPath}"));`);
+
+      if (route.layoutImportPath)
+        routeImports.push(`import R${idx}Layout from "${route.layoutImportPath}";`);
+
+      if (route.placeholderImportPath)
+        routeImports.push(`import R${idx}Placeholder from "${route.placeholderImportPath}";`);
+
+      if (route.guardImportPath)
+        routeImports.push(`import r${idx}Guard from "${route.guardImportPath}";`);
+
+      return importSrc + routeImports.join("\n") + "\n";
+    }, "")};
 
     function withSuspense(child: ReactNode) {
       return (
@@ -291,7 +351,7 @@ function createRoutingSource(routes: RouteNode) {
           {child}
         </Suspense>
       );
-    }
-    `,
-  ];
+    }`;
+
+  return format(routerSource, getPrettierConfig({ filePath: "a.tsx" }));
 }

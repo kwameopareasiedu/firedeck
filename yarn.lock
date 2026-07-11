@@ -698,7 +698,7 @@ acorn-walk@^8.3.5:
   dependencies:
     acorn "^8.11.0"
 
-acorn@^8.11.0, acorn@^8.16.0, acorn@^8.6.0:
+acorn@^8.11.0, acorn@^8.16.0, acorn@^8.17.0, acorn@^8.6.0:
   version "8.17.0"
   resolved "https://registry.yarnpkg.com/acorn/-/acorn-8.17.0.tgz#1785adb84faf8d8add10369b93826fc2bd08f1fe"
   integrity sha512-xRQbDb9BnwDafYNn6Vwl839DYVjqXYb1XVGtWAZ1kcDc6iwAL4hg3B1dZlRiuENFeO2H53gFG3in621AdERVAg==
