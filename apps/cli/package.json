@@ -21,6 +21,7 @@
     "acorn-jsx": "^5.3.2",
     "acorn-jsx-walk": "^2.0.0",
     "acorn-walk": "^8.3.5",
+    "chokidar": "^5.0.0",
     "commander": "^15.0.0",
     "fs-extra": "^11.3.6",
     "prettier": "^3.9.4"

@@ -15,6 +15,8 @@ import * as walk from "acorn-walk";
 import * as walkJsx from "acorn-jsx-walk";
 import { tsPlugin } from "@sveltejs/acorn-typescript";
 import jsx from "acorn-jsx";
+import chokidar from "chokidar";
+import { spawn } from "node:child_process";
 
 walkJsx.extend(walk.base);
 
@@ -54,16 +56,16 @@ export async function createModule(args: {
   if (!pathIsFiredeckRoot(args.rootDir))
     throw `${args.rootDir}: directory is not a valid Firedeck project`;
 
-  const modulesRoot = resolve(args.rootDir, `modules/${args.name}`);
+  const moduleRoot = resolve(args.rootDir, `modules/${args.name}`);
 
-  if (fs.existsSync(modulesRoot) && fs.readdirSync(modulesRoot).length !== 0)
-    throw `${modulesRoot}: directory is not empty`;
+  if (fs.existsSync(moduleRoot) && fs.readdirSync(moduleRoot).length !== 0)
+    throw `${moduleRoot}: directory is not empty`;
 
   const components: ModuleComponents = args.components || "all";
   const moduleFileTree = generateModuleFileTree({ name: args.name, components: components });
   await writeFileTree(args.rootDir, moduleFileTree);
 
-  console.log(`Created new module '${args.name}': ${modulesRoot}`);
+  console.log(`Created new module '${args.name}': ${moduleRoot}`);
 }
 
 export async function analyzeProject(args: { rootDir: string }) {
@@ -394,8 +396,6 @@ export async function applyWorkspaceChanges(args: { rootDir: string; changes: Wo
   const runtimeModulesRoot = resolve(args.rootDir, ".firedeck/runtime/modules");
 
   for (const change of args.changes) {
-    console.log("CHANGE:", change);
-
     switch (change.type) {
       case "create-runtime": {
         fs.removeSync(runtimeRoot);
@@ -454,4 +454,73 @@ export async function compile(args: { rootDir: string }) {
   const newWorkspace = await analyzeProject({ rootDir: args.rootDir });
   const nullWorkspaceChanges = compareWorkspaces(null, newWorkspace);
   await applyWorkspaceChanges({ rootDir: args.rootDir, changes: nullWorkspaceChanges });
+
+  console.log(`firedeck: compilation success ✅: ${relative(args.rootDir, runtimeRoot)}`);
+}
+
+export async function run(args: { rootDir: string }) {
+  if (!pathIsFiredeckRoot(args.rootDir))
+    throw `${args.rootDir}: directory is not a valid Firedeck project`;
+
+  const runtimeRoot = resolve(args.rootDir, ".firedeck/runtime");
+  const modulesRoot = resolve(args.rootDir, "modules");
+  const extensions = ["html", "css", "ts", "tsx", "js", "jsx"];
+  let stopping = false;
+
+  console.log("firedeck: starting compilation");
+  await compile({ rootDir: args.rootDir });
+
+  console.log("firedeck: starting runtime");
+
+  const lockFileNames = [
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "bun.lock",
+    "bun.lockb",
+    "deno.lock",
+  ];
+
+  for (const lockFileName of lockFileNames) {
+    const lockFilePath = resolve(args.rootDir, lockFileName);
+
+    if (fs.existsSync(lockFilePath)) {
+      const destPath = resolve(runtimeRoot, lockFileName);
+      fs.copyFileSync(lockFilePath, destPath);
+      break;
+    }
+  }
+
+  const devProc = spawn("yarn", ["dev"], {
+    cwd: runtimeRoot,
+    stdio: "inherit",
+  });
+
+  const watcher = chokidar
+    .watch(modulesRoot, {
+      persistent: true,
+      awaitWriteFinish: {
+        stabilityThreshold: 500,
+      },
+    })
+    .on("ready", () =>
+      console.log(`firedeck: watching files at ${relative(args.rootDir, modulesRoot)}`),
+    )
+    .on("error", (err) => console.error(err))
+    .on("change", (path) => {
+      const modulesRelativePath = relative(modulesRoot, path);
+      console.log(`${modulesRelativePath} changed`);
+    });
+
+  process.on("SIGINT", async () => {
+    if (!stopping) {
+      stopping = true;
+      console.log("firedeck: SIGINT received; terminating runtime");
+      devProc.kill("SIGINT");
+      await watcher.close();
+      await new Promise((resolve) => setTimeout(resolve, 750));
+    } else console.log("firedeck: already terminating runtime");
+  });
+
+  console.log("firedeck: runtime started");
 }

@@ -253,11 +253,8 @@ export function generateRuntimeFileTree(): FileTree {
           "modules/*"
         ],
         "scripts": {
-          "dev": "turbo dev",
-          "build": "turbo build"
-        },
-        "dependencies": {
-          "turbo": "^2.10.4",
+          "dev": "../../node_modules/.bin/turbo dev",
+          "build": "../../node_modules/.bin/turbo build"
         }
       }`,
     },
@@ -309,23 +306,9 @@ export function generateRuntimeClientFileTree(args: { clientName: string }): Fil
         "version": "0.0.0",
         "type": "module",
         "scripts": {
-          "dev": "vite",
-          "build": "tsc -b && vite build",
-          "preview": "vite preview"
-        },
-        "dependencies": {
-          "react": "^19.2.7",
-          "react-dom": "^19.2.7",
-          "react-router": "^8.2.0"
-        },
-        "devDependencies": {
-          "@types/node": "^24.13.2",
-          "@types/react": "^19.2.17",
-          "@types/react-dom": "^19.2.3",
-          "@vitejs/plugin-react": "^6.0.3",
-          "typescript": "~6.0.2",
-          "typescript-eslint": "^8.62.0",
-          "vite": "^8.1.1"
+          "dev": "../../../../node_modules/.bin/vite",
+          "build": "../../../../node_modules/.bin/tsc -b && ../../../../node_modules/.bin/vite build",
+          "preview": "../../../../node_modules/.bin/vite preview"
         }
       }`,
     },

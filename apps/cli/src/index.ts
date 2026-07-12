@@ -4,7 +4,7 @@ import fs from "fs-extra";
 import { isAbsolute, resolve } from "node:path";
 import { Command } from "commander";
 import { cwdIsFiredeckRoot, parseErrorMessage } from "@/utils";
-import { compile, createModule, init } from "@/functions";
+import { compile, createModule, init, run } from "@/functions";
 import { input } from "@inquirer/prompts";
 
 const packageInfo = JSON.parse(
@@ -57,6 +57,16 @@ cli
       throw "cannot find 'firedeck.json'. make sure this command is run at the project root";
 
     await compile({ rootDir: process.cwd() });
+  });
+
+cli
+  .command("run")
+  .description("Starts the development runtime")
+  .action(async () => {
+    if (!cwdIsFiredeckRoot())
+      throw "cannot find 'firedeck.json'. make sure this command is run at the project root";
+
+    await run({ rootDir: process.cwd() });
   });
 
 const moduleCli = new Command("module");
