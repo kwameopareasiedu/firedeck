@@ -1,11 +1,11 @@
-import { OutputHierarchy } from "@/types";
+import { FileTree } from "@/types";
 
-export function generateProjectHierarchy(opts: {
+export function generateProjectFileTree(opts: {
   projectName: string;
   projectDescription: string;
   projectVersion: string;
   projectAuthor: string;
-}): OutputHierarchy {
+}): FileTree {
   return {
     "package.json": {
       content: `
@@ -21,10 +21,17 @@ export function generateProjectHierarchy(opts: {
           "build": "firedeck build"
         },
         "devDependencies": {
-          "firedeck": "^0.1.0",
+          "@types/node": "^24.13.2",
+          "@types/react": "^19.2.17",
+          "@types/react-dom": "^19.2.3",
+          "@vitejs/plugin-react": "^6.0.3",
           "prettier": "3.9.4",
           "react": "^19.2.7",
-          "react-dom": "^19.2.7"
+          "react-dom": "^19.2.7",
+          "turbo": "^2.10.4",
+          "typescript": "~6.0.2",
+          "typescript-eslint": "^8.62.0",
+          "vite": "^8.1.1"
         }
       }`,
     },
@@ -88,31 +95,44 @@ export function generateProjectHierarchy(opts: {
       {}`,
     },
 
-    // "modules/main/client/pages/index.route.tsx": {
+    "modules/main/client/index.html": {
+      content: `
+      <!doctype html>
+      <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>main</title>
+        </head>
+        <body>
+          <div id="root"></div>
+          <script type="module" src="/src/index.tsx"></script>
+        </body>
+      </html>`,
+    },
+
+    "modules/main/client/pages/index-page.tsx": {
+      content: `
+      export default function IndexPage() {
+        return (
+          <div className="grid place-items-center">
+            <p>Welcome to Firedeck</p>
+          </div>
+        );
+      }`,
+    },
+
+    // "modules/main/server/hello.ts": {
     //   content: `
-    //   import { definePage } from "firedeck";
+    //   import { defineFunction } from "firedeck";
     //
-    //   export default definePage({
-    //     page() {
-    //       return (
-    //         <div className="grid place-items-center">
-    //           <p>Welcome to Firedeck</p>
-    //         </div>
-    //       );
+    //   export default defineFunction({
+    //     async handler() {
+    //       console.log("Hello Firedeck");
     //     },
     //   });`,
     // },
-
-    "modules/main/server/hello.ts": {
-      content: `
-      import { defineFunction } from "firedeck";
-
-      export default defineFunction({
-        async handler() {
-          console.log("Hello Firedeck");
-        },
-      });`,
-    },
 
     "modules/shared/client/components/index.tsx": {
       content: ``,
@@ -120,46 +140,59 @@ export function generateProjectHierarchy(opts: {
   };
 }
 
-export function generateModuleHierarchy(args: {
+export function generateModuleFileTree(args: {
   name: string;
   components: "all" | "client" | "server";
-}): OutputHierarchy {
-  const contents: OutputHierarchy = {};
+}): FileTree {
+  const contents: FileTree = {};
 
   if (["all", "client"].includes(args.components)) {
-    contents[`modules/${args.name}/client/pages/index.route.tsx`] = {
+    contents[`modules/${args.name}/client/pages/index-page.tsx`] = {
       content: `
-      import { definePage } from "firedeck";
-      
-      export default definePage({
-        page() {
-          return (
-            <div className="grid place-items-center">
-              <p>Module: ${args.name} Home</p>
-            </div>
-          );
-        },
-      });`,
+      export default function IndexPage() {
+        return (
+          <div className="grid place-items-center">
+            <p>Module: ${args.name} Home</p>
+          </div>
+        );
+      }`,
+    };
+
+    contents[`modules/${args.name}/client/index.html`] = {
+      content: `
+      <!doctype html>
+      <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>${args.name}</title>
+        </head>
+        <body>
+          <div id="root"></div>
+          <script type="module" src="/src/index.tsx"></script>
+        </body>
+      </html>`,
     };
   }
 
-  if (["all", "server"].includes(args.components)) {
-    contents[`modules/${args.name}/server/hello.ts`] = {
-      content: `
-      import { defineFunction } from "firedeck";
-      
-      export default defineFunction({
-        async handler() {
-          console.log("Hello Firedeck");
-        },
-      });`,
-    };
-  }
+  // if (["all", "server"].includes(args.components)) {
+  //   contents[`modules/${args.name}/server/hello.ts`] = {
+  //     content: `
+  //     import { defineFunction } from "firedeck";
+  //
+  //     export default defineFunction({
+  //       async handler() {
+  //         console.log("Hello Firedeck");
+  //       },
+  //     });`,
+  //   };
+  // }
 
   return contents;
 }
 
-export function generateRuntimeRootHierarchy(): OutputHierarchy {
+export function generateRuntimeFileTree(): FileTree {
   return {
     "package.json": {
       content: `
@@ -218,7 +251,7 @@ export function generateRuntimeRootHierarchy(): OutputHierarchy {
   };
 }
 
-export function generateRuntimeClientHierarchy(args: { clientName: string }): OutputHierarchy {
+export function generateRuntimeClientFileTree(args: { clientName: string }): FileTree {
   return {
     "package.json": {
       content: `

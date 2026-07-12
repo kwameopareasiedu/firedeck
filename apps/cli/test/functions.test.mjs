@@ -8,7 +8,7 @@ import {
   createRouterSource,
   init,
 } from "../temp/functions.js";
-import { getPrettierConfig, writeOutputHierarchy } from "../temp/utils.js";
+import { getPrettierConfig, writeFileTree } from "../temp/utils.js";
 import prettier from "prettier";
 
 const __dirname = import.meta.dirname;
@@ -52,7 +52,7 @@ test("analyze-project", async (t) => {
     projectAuthor: "Kwame",
   });
 
-  const mainModuleClientHierarchy = {
+  const mainModuleFileTree = {
     "modules/main/client/pages/index-page.tsx": {
       content: "export default function IndexPage() {}",
     },
@@ -76,7 +76,7 @@ test("analyze-project", async (t) => {
     },
   };
 
-  await writeOutputHierarchy(testRoot, mainModuleClientHierarchy);
+  await writeFileTree(testRoot, mainModuleFileTree);
 
   const workspace = await analyzeProject({ rootDir: testRoot });
 
@@ -791,12 +791,8 @@ test("create-router-source", async (t) => {
 });
 
 test("apply-workspace-changes", async (t) => {
-  const skeletonProjectHierarchy = { "firedeck.json": { content: "{}" } };
-  await writeOutputHierarchy(testRoot, skeletonProjectHierarchy);
-
-  // const currentWorkspace = {
-  //   clients: [],
-  // };
+  const skeletonProjectFileTree = { "firedeck.json": { content: "{}" } };
+  await writeFileTree(testRoot, skeletonProjectFileTree);
 
   const targetWorkspace = {
     clients: [

@@ -3,8 +3,8 @@
 import fs from "fs-extra";
 import { isAbsolute, resolve } from "node:path";
 import { Command } from "commander";
-import { cwdIsRoot, parseErrorMessage } from "@/utils";
-import { createModule, init } from "@/functions";
+import { cwdIsFiredeckRoot, parseErrorMessage } from "@/utils";
+import { compile, createModule, init } from "@/functions";
 import { input } from "@inquirer/prompts";
 
 const packageInfo = JSON.parse(
@@ -25,9 +25,7 @@ cli
       console.log(
         `
 ███████╗ ██╗ ██████╗  ███████╗ ██████╗  ███████╗  ██████╗ ██╗  ██╗
-██╔════╝ ██║ ██╔══██╗ ██╔════╝ ██╔══██╗ ██╔════╝ ██╔════╝ ██║ ██╔╝
-█████╗   ██║ ██████╔╝ █████╗   ██║  ██║ █████╗   ██║      █████╔╝ 
-██╔══╝   ██║ ██╔══██╗ ██╔══╝   ██║  ██║ ██╔══╝   ██║      ██╔═██╗ 
+█████╗   ██║ ██████╝  █████╗   ██║  ██║ █████╗   ██║      █████╔╝ 
 ██║      ██║ ██║  ██║ ███████╗ ██████╔╝ ███████╗ ╚██████╗ ██║  ██╗
 ╚═╝      ╚═╝ ╚═╝  ╚═╝ ╚══════╝ ╚═════╝  ╚══════╝  ╚═════╝ ╚═╝  ╚═╝`,
       );
@@ -51,6 +49,16 @@ cli
     }
   });
 
+cli
+  .command("compile")
+  .description("Analyzes the project and compiles the Firedeck runtime")
+  .action(async () => {
+    if (!cwdIsFiredeckRoot())
+      throw "cannot find 'firedeck.json'. make sure this command is run at the project root";
+
+    await compile({ rootDir: process.cwd() });
+  });
+
 const moduleCli = new Command("module");
 moduleCli.description("Manages firedeck modules in the project");
 
@@ -63,7 +71,7 @@ moduleCli
     try {
       if (opts.clientOnly && opts.serverOnly)
         throw "--client-only and --server-only cannot be specified at the same time";
-      else if (!cwdIsRoot())
+      else if (!cwdIsFiredeckRoot())
         throw "cannot find 'firedeck.json'. make sure this command is run at the project root";
 
       await createModule({

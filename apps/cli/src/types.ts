@@ -1,6 +1,6 @@
 export type ModuleComponents = "all" | "client" | "server";
-export type OutputNode = { content: string; extension?: string };
-export type OutputHierarchy = { [path: string]: OutputNode };
+export type FileNode = { content: string; extension?: string };
+export type FileTree = { [path: string]: FileNode };
 
 export interface RouteNode {
   name: string;

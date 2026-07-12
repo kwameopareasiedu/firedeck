@@ -1,12 +1,12 @@
 import fs from "fs-extra";
 import { relative, resolve, sep } from "node:path";
 import {
-  generateModuleHierarchy,
-  generateProjectHierarchy,
-  generateRuntimeClientHierarchy,
-  generateRuntimeRootHierarchy,
+  generateModuleFileTree,
+  generateProjectFileTree,
+  generateRuntimeClientFileTree,
+  generateRuntimeFileTree,
 } from "@/templates";
-import { getPrettierConfig, pathIsFiredeckRoot, writeOutputHierarchy } from "@/utils";
+import { getPrettierConfig, pathIsFiredeckRoot, writeFileTree } from "@/utils";
 import { ModuleComponents, RouteNode, RouteNodeTarget, Workspace, WorkspaceChange } from "@/types";
 import { format } from "prettier";
 import * as acorn from "acorn";
@@ -25,14 +25,14 @@ export async function init(args: {
     throw `./${relative(process.cwd(), args.rootDir)}: directory is not empty`;
   }
 
-  const projectHierarchy = generateProjectHierarchy({
+  const projectFileTree = generateProjectFileTree({
     projectName: args.projectName,
     projectDescription: args.projectDescription,
     projectVersion: args.projectVersion,
     projectAuthor: args.projectAuthor,
   });
 
-  await writeOutputHierarchy(args.rootDir, projectHierarchy);
+  await writeFileTree(args.rootDir, projectFileTree);
 
   console.log("\nNext steps");
   console.log(`1. cd ${relative(process.cwd(), args.rootDir)}`);
@@ -54,8 +54,8 @@ export async function createModule(args: {
     throw `${modulesRoot}: directory is not empty`;
 
   const components: ModuleComponents = args.components || "all";
-  const moduleHierarchy = generateModuleHierarchy({ name: args.name, components: components });
-  await writeOutputHierarchy(args.rootDir, moduleHierarchy);
+  const moduleFileTree = generateModuleFileTree({ name: args.name, components: components });
+  await writeFileTree(args.rootDir, moduleFileTree);
 
   console.log(`Created new module '${args.name}': ${modulesRoot}`);
 }
@@ -372,16 +372,16 @@ export async function applyWorkspaceChanges(args: { rootDir: string; changes: Wo
         fs.removeSync(runtimeRoot);
         fs.ensureDirSync(runtimeRoot);
 
-        const runtimeRootHierarchy = generateRuntimeRootHierarchy();
-        await writeOutputHierarchy(runtimeRoot, runtimeRootHierarchy);
+        const runtimeFileTree = generateRuntimeFileTree();
+        await writeFileTree(runtimeRoot, runtimeFileTree);
         break;
       }
       case "add-client": {
         const runtimeClientRoot = resolve(runtimeRoot, change.clientName);
-        const runtimeClientRootHierarchy = generateRuntimeClientHierarchy({
+        const runtimeClientFileTree = generateRuntimeClientFileTree({
           clientName: change.clientName,
         });
-        await writeOutputHierarchy(runtimeClientRoot, runtimeClientRootHierarchy);
+        await writeFileTree(runtimeClientRoot, runtimeClientFileTree);
         break;
       }
       case "remove-client": {
@@ -403,4 +403,13 @@ export async function applyWorkspaceChanges(args: { rootDir: string; changes: Wo
       }
     }
   }
+}
+
+export async function compile(args: { rootDir: string }) {
+  if (!pathIsFiredeckRoot(args.rootDir))
+    throw `${args.rootDir}: directory is not a valid Firedeck project`;
+
+  const newWorkspace = await analyzeProject({ rootDir: args.rootDir });
+  const nullWorkspaceChanges = compareWorkspaces(null, newWorkspace);
+  await applyWorkspaceChanges({ rootDir: args.rootDir, changes: nullWorkspaceChanges });
 }

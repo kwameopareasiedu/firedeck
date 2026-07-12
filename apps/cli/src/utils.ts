@@ -1,7 +1,7 @@
 import { format, Options } from "prettier";
 import { extname, resolve } from "node:path";
 import fs from "fs-extra";
-import { OutputHierarchy } from "@/types";
+import { FileTree } from "@/types";
 
 export function getPrettierConfig(args: { filePath: string }): Options {
   return {
@@ -18,10 +18,10 @@ export function getPrettierConfig(args: { filePath: string }): Options {
   };
 }
 
-export async function writeOutputHierarchy(rootDir: string, hierarchy: OutputHierarchy) {
-  for (const relativePath in hierarchy) {
+export async function writeFileTree(rootDir: string, tree: FileTree) {
+  for (const relativePath in tree) {
     const absPath = resolve(rootDir, relativePath);
-    const output = hierarchy[relativePath];
+    const output = tree[relativePath];
     const outputExt = output.extension || extname(absPath);
     const formattedContent = await format(
       output.content,
@@ -33,8 +33,8 @@ export async function writeOutputHierarchy(rootDir: string, hierarchy: OutputHie
   }
 }
 
-export function cwdIsRoot() {
-  return fs.existsSync(resolve(process.cwd(), "firedeck.json"));
+export function cwdIsFiredeckRoot() {
+  return pathIsFiredeckRoot(process.cwd());
 }
 
 export function pathIsFiredeckRoot(path: string) {
