@@ -54,25 +54,56 @@ test("analyze-project", async (t) => {
 
   const mainModuleFileTree = {
     "modules/main/client/pages/index-page.tsx": {
-      content: "export default function IndexPage() {}",
+      content: `
+        export default function IndexPage() {
+          return <p>Hello World</p>;
+        }`,
     },
     "modules/main/client/pages/(public)/landing/landing-page.tsx": {
-      content: "const LandingPage = () => {};export default LandingPage",
+      content: `
+        const LandingPage = () => {
+          return <p>Hello World</p>;
+        };
+        
+        export default LandingPage
+        `,
     },
     "modules/main/client/pages/(public)/contact/contact-page.tsx": {
-      content: "function ContactPage() {}; export default ContactPage",
+      content: `
+        function ContactPage() {
+          return <p>Hello World</p>;
+        };
+        
+        export default ContactPage
+      `,
     },
     "modules/main/client/pages/(public)/features/features-page.tsx": {
-      content: "export default function FeaturesPage() {}",
+      content: `
+        export default function FeaturesPage() {
+          return <p>Hello World</p>;
+        }
+      `,
     },
     "modules/main/client/pages/(dashboard)/dashboard-layout.tsx": {
-      content: "export default function DashboardLayout() {}",
+      content: `
+        export default function DashboardLayout() {
+          return <p>Hello World</p>;
+        }
+      `,
     },
     "modules/main/client/pages/(dashboard)/users/users-page.tsx": {
-      content: "export default function UsersPage() {}",
+      content: `
+        export default function UsersPage() {
+          return <p>Hello World</p>;
+        }
+      `,
     },
     "modules/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx": {
-      content: "export default function UserDetailsPage() {}",
+      content: `
+        export default function UserDetailsPage() {
+          return <p>Hello World</p>;
+        }
+      `,
     },
   };
 
@@ -606,6 +637,7 @@ test("compare-workspaces", async (t) => {
         children: [],
       },
     },
+    { type: "update-client-html", clientName: "admin" },
   ]);
 
   t.deepEqual(nullW4Changes, [
@@ -692,6 +724,7 @@ test("compare-workspaces", async (t) => {
         ],
       },
     },
+    { type: "update-client-html", clientName: "external" },
     { type: "add-client", clientName: "admin" },
     {
       type: "update-client-routes",
@@ -705,6 +738,7 @@ test("compare-workspaces", async (t) => {
         children: [],
       },
     },
+    { type: "update-client-html", clientName: "admin" },
   ]);
 });
 

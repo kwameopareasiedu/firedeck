@@ -28,6 +28,7 @@ export function generateProjectFileTree(opts: {
           "prettier": "3.9.4",
           "react": "^19.2.7",
           "react-dom": "^19.2.7",
+          "react-router": "^8.2.0",
           "turbo": "^2.10.4",
           "typescript": "~6.0.2",
           "typescript-eslint": "^8.62.0",
@@ -267,7 +268,8 @@ export function generateRuntimeClientFileTree(args: { clientName: string }): Fil
         },
         "dependencies": {
           "react": "^19.2.7",
-          "react-dom": "^19.2.7"
+          "react-dom": "^19.2.7",
+          "react-router": "^8.2.0"
         },
         "devDependencies": {
           "@types/node": "^24.13.2",

@@ -11,6 +11,12 @@ import { ModuleComponents, RouteNode, RouteNodeTarget, Workspace, WorkspaceChang
 import { format } from "prettier";
 import * as acorn from "acorn";
 import * as walk from "acorn-walk";
+// @ts-expect-error declaration don't exist
+import * as walkJsx from "acorn-jsx-walk";
+import { tsPlugin } from "@sveltejs/acorn-typescript";
+import jsx from "acorn-jsx";
+
+walkJsx.extend(walk.base);
 
 export async function init(args: {
   rootDir: string;
@@ -161,8 +167,9 @@ export async function analyzeProject(args: { rootDir: string }) {
 
           if (!pageFilePath) return fallbackName;
 
+          const parser = acorn.Parser.extend(tsPlugin(), jsx());
           const pageFileSource = fs.readFileSync(pageFilePath, { encoding: "utf-8" });
-          const ast = acorn.parse(pageFileSource, { ecmaVersion: "latest", sourceType: "module" });
+          const ast = parser.parse(pageFileSource, { ecmaVersion: "latest", sourceType: "module" });
           let routeName = fallbackName;
 
           walk.simple(ast, {
@@ -240,6 +247,10 @@ export function compareWorkspaces(w1: Workspace | null, w2: Workspace) {
           type: "update-client-routes",
           clientName: w2c.name,
           clientRoutes: w2c.routes,
+        },
+        {
+          type: "update-client-html",
+          clientName: w2c.name,
         },
       );
     } else if (w1c && !w2c) {
@@ -380,6 +391,7 @@ export async function applyWorkspaceChanges(args: { rootDir: string; changes: Wo
     throw `${args.rootDir}: directory is not a valid Firedeck project`;
 
   const runtimeRoot = resolve(args.rootDir, ".firedeck/runtime");
+  const runtimeModulesRoot = resolve(args.rootDir, ".firedeck/runtime/modules");
 
   for (const change of args.changes) {
     console.log("CHANGE:", change);
@@ -394,7 +406,7 @@ export async function applyWorkspaceChanges(args: { rootDir: string; changes: Wo
         break;
       }
       case "add-client": {
-        const runtimeClientRoot = resolve(runtimeRoot, change.clientName);
+        const runtimeClientRoot = resolve(runtimeModulesRoot, change.clientName);
         const runtimeClientFileTree = generateRuntimeClientFileTree({
           clientName: change.clientName,
         });
@@ -402,18 +414,18 @@ export async function applyWorkspaceChanges(args: { rootDir: string; changes: Wo
         break;
       }
       case "remove-client": {
-        const runtimeClientRoot = resolve(runtimeRoot, change.clientName);
+        const runtimeClientRoot = resolve(runtimeModulesRoot, change.clientName);
         fs.removeSync(runtimeClientRoot);
         break;
       }
       case "rename-client": {
-        const oldRuntimeClientRoot = resolve(runtimeRoot, change.oldClientName);
-        const newRuntimeClientRoot = resolve(runtimeRoot, change.newClientName);
+        const oldRuntimeClientRoot = resolve(runtimeModulesRoot, change.oldClientName);
+        const newRuntimeClientRoot = resolve(runtimeModulesRoot, change.newClientName);
         fs.renameSync(oldRuntimeClientRoot, newRuntimeClientRoot);
         break;
       }
       case "update-client-routes": {
-        const runtimeClientSrcRoot = resolve(runtimeRoot, change.clientName, "src");
+        const runtimeClientSrcRoot = resolve(runtimeModulesRoot, change.clientName, "src");
         const routerFilePath = resolve(runtimeClientSrcRoot, "router.tsx");
         fs.writeFileSync(routerFilePath, await createRouterSource(change.clientRoutes));
         break;
@@ -421,7 +433,7 @@ export async function applyWorkspaceChanges(args: { rootDir: string; changes: Wo
       case "update-client-html": {
         const { clientName } = change;
         const htmlSrcPath = resolve(args.rootDir, "modules", clientName, "client", "index.html");
-        const htmlDestPath = resolve(runtimeRoot, change.clientName, "index.html");
+        const htmlDestPath = resolve(runtimeModulesRoot, change.clientName, "index.html");
 
         if (fs.existsSync(htmlSrcPath)) {
           fs.copyFileSync(htmlSrcPath, htmlDestPath);
@@ -435,6 +447,9 @@ export async function applyWorkspaceChanges(args: { rootDir: string; changes: Wo
 export async function compile(args: { rootDir: string }) {
   if (!pathIsFiredeckRoot(args.rootDir))
     throw `${args.rootDir}: directory is not a valid Firedeck project`;
+
+  const runtimeRoot = resolve(args.rootDir, ".firedeck/runtime");
+  fs.removeSync(runtimeRoot);
 
   const newWorkspace = await analyzeProject({ rootDir: args.rootDir });
   const nullWorkspaceChanges = compareWorkspaces(null, newWorkspace);
