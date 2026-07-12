@@ -243,6 +243,7 @@ test("compare-workspaces", async (t) => {
             },
           ],
         },
+        html: { hash: 0x123456 },
       },
     ],
   };
@@ -319,6 +320,7 @@ test("compare-workspaces", async (t) => {
             },
           ],
         },
+        html: { hash: 0x123456 },
       },
     ],
   };
@@ -408,6 +410,7 @@ test("compare-workspaces", async (t) => {
             },
           ],
         },
+        html: { hash: 0x654321 },
       },
       {
         name: "admin",
@@ -419,6 +422,7 @@ test("compare-workspaces", async (t) => {
           urlPath: "/",
           children: [],
         },
+        html: { hash: 0xa88980 },
       },
     ],
   };
@@ -588,6 +592,7 @@ test("compare-workspaces", async (t) => {
         ],
       },
     },
+    { type: "update-client-html", clientName: "external" },
     { type: "add-client", clientName: "admin" },
     {
       type: "update-client-routes",

@@ -46,3 +46,14 @@ export function parseErrorMessage(err: unknown) {
   else if (typeof err === "object") return (err as Record<string, string>).message;
   else return (err as object).toString();
 }
+
+export function generateStringHash(str: string) {
+  let hash = 0;
+
+  for (const char of str) {
+    hash = (hash << 5) - hash + char.charCodeAt(0);
+    hash |= 0;
+  }
+
+  return hash;
+}

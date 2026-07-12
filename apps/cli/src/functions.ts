@@ -6,7 +6,7 @@ import {
   generateRuntimeClientFileTree,
   generateRuntimeFileTree,
 } from "@/templates";
-import { getPrettierConfig, pathIsFiredeckRoot, writeFileTree } from "@/utils";
+import { generateStringHash, getPrettierConfig, pathIsFiredeckRoot, writeFileTree } from "@/utils";
 import { ModuleComponents, RouteNode, RouteNodeTarget, Workspace, WorkspaceChange } from "@/types";
 import { format } from "prettier";
 import * as acorn from "acorn";
@@ -197,7 +197,17 @@ export async function analyzeProject(args: { rootDir: string }) {
 
       const routeNode = discoverRoutes(pagesRoot);
 
-      const workspaceClient: Workspace["clients"][number] = { name: moduleName, routes: routeNode };
+      const htmlPath = resolve(clientRoot, "index.html");
+      if (!fs.existsSync(htmlPath)) throw `${moduleName}/client/index.html not found`;
+
+      const htmlContent = fs.readFileSync(htmlPath, { encoding: "utf-8" });
+
+      const workspaceClient: Workspace["clients"][number] = {
+        name: moduleName,
+        routes: routeNode,
+        html: { hash: generateStringHash(htmlContent) },
+      };
+
       workspace.clients.push(workspaceClient);
     }
 
@@ -251,6 +261,13 @@ export function compareWorkspaces(w1: Workspace | null, w2: Workspace) {
           type: "update-client-routes",
           clientName: w2c.name,
           clientRoutes: w2c.routes,
+        });
+      }
+
+      if (w1c.html.hash !== w2c.html.hash) {
+        changes.push({
+          type: "update-client-html",
+          clientName: w2c.name,
         });
       }
     }
@@ -399,6 +416,16 @@ export async function applyWorkspaceChanges(args: { rootDir: string; changes: Wo
         const runtimeClientSrcRoot = resolve(runtimeRoot, change.clientName, "src");
         const routerFilePath = resolve(runtimeClientSrcRoot, "router.tsx");
         fs.writeFileSync(routerFilePath, await createRouterSource(change.clientRoutes));
+        break;
+      }
+      case "update-client-html": {
+        const { clientName } = change;
+        const htmlSrcPath = resolve(args.rootDir, "modules", clientName, "client", "index.html");
+        const htmlDestPath = resolve(runtimeRoot, change.clientName, "index.html");
+
+        if (fs.existsSync(htmlSrcPath)) {
+          fs.copyFileSync(htmlSrcPath, htmlDestPath);
+        } else console.warn(`${relative(args.rootDir, htmlSrcPath)}: index.html not found`);
         break;
       }
     }
