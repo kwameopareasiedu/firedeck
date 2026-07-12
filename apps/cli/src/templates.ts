@@ -116,6 +116,19 @@ export function generateProjectFileTree(opts: {
       </html>`,
     },
 
+    "modules/main/client/index.css": {
+      content: '@source "./pages/**/*.tsx";',
+    },
+
+    "modules/main/client/index.tsx": {
+      content: `
+      import type { ReactNode } from "react";
+      
+      export default function (appRouter: ReactNode) {
+        return appRouter;
+      }`,
+    },
+
     "modules/main/client/pages/index-page.tsx": {
       content: `
       export default function IndexPage() {
@@ -139,10 +152,6 @@ export function generateProjectFileTree(opts: {
           </div>
         );
       }`,
-    },
-
-    "modules/main/client/index.css": {
-      content: '@source "./pages/**/*.tsx";',
     },
 
     // "modules/main/server/hello.ts": {
@@ -171,16 +180,6 @@ export function generateModuleFileTree(args: {
   if (["all", "client"].includes(args.components)) {
     contents = {
       ...contents,
-      [`modules/${args.name}/client/pages/index-page.tsx`]: {
-        content: `
-          export default function IndexPage() {
-            return (
-              <div className="grid place-items-center">
-                <p>Module: ${args.name} Home</p>
-              </div>
-            );
-          }`,
-      },
       [`modules/${args.name}/client/index.html`]: {
         content: `
         <!doctype html>
@@ -197,8 +196,29 @@ export function generateModuleFileTree(args: {
           </body>
         </html>`,
       },
+
       [`modules/${args.name}/client/index.css`]: {
         content: '@source "./pages/**/*.tsx";',
+      },
+
+      [`modules/${args.name}/client/index.tsx`]: {
+        content: `
+        import type { ReactNode } from "react";
+        
+        export default function (appRouter: ReactNode) {
+          return appRouter;
+        }`,
+      },
+
+      [`modules/${args.name}/client/pages/index-page.tsx`]: {
+        content: `
+          export default function IndexPage() {
+            return (
+              <div className="grid place-items-center">
+                <p>Module: ${args.name} Home</p>
+              </div>
+            );
+          }`,
       },
     };
   }
@@ -455,11 +475,12 @@ export function generateRuntimeClientFileTree(args: { clientName: string }): Fil
       import { StrictMode } from "react";
       import { createRoot } from "react-dom/client";
       import { RouterProvider } from "react-router";
+      import customizer from "@/${args.clientName}/client/index.tsx";
       import router from "./router.tsx";
       
       createRoot(document.getElementById("root")!).render(
         <StrictMode>
-          <RouterProvider router={router} />
+          {customizer(<RouterProvider router={router} />)}
         </StrictMode>,
       );`,
     },

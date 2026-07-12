@@ -44,13 +44,6 @@ The client directory copies [Next.js app-router]() structure and has a structure
 <module-name>/
   - client/
     - pages/
-      - (public)/
-        - landing
-          - landing-page.tsx
-        - contact
-          - contact-page.tsx
-        - login/
-          - login-page.tsx
       - (dashboard)/
         - dashboard-layout.tsx
         - dashboard-page.tsx
@@ -60,7 +53,16 @@ The client directory copies [Next.js app-router]() structure and has a structure
           - users-placeholder.tsx
           - [userId]/
             - user-details-page.tsx
+      - (public)/
+        - landing
+          - landing-page.tsx
+        - contact
+          - contact-page.tsx
+        - login/
+          - login-page.tsx
+  - index.css
   - index.html
+  - index.tsx
 ```
 
 A runtime, Firedeck builds the router that links to pages using an approach called "directory router spec". With this
@@ -123,6 +125,39 @@ A guard file would resemble the snippet below:
 export default function indexGuard() {
     return true; // Allow access
     // return redirect("redirect-path"); // Redirect to another page
+}
+```
+
+#### Tailwindcss Configuration
+
+Each module client is automatically configured to use Tailwindcss 4 out of the box. Changes can be made to the
+`index.css` within the module which reflects in the app immediately.
+
+#### React App Customization
+
+Each module has an `index.tsx` at its root. This file exports a default function which is used to customize the router
+component. You can use this file to wrap the router with other providers.
+
+In the example below, we wrap our router with Tanstack Query provider:
+
+```typescript jsx
+import type {ReactNode} from "react";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            retry: 1,
+        },
+    },
+});
+
+export default function (appRouter: ReactNode) {
+    return (
+        <QueryClientProvider client={queryClient}>
+            {appRouter}
+        </QueryClientProvider>
+    );
 }
 ```
 
