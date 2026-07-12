@@ -7,7 +7,7 @@ import {
   generateRuntimeRootHierarchy,
 } from "@/templates";
 import { getPrettierConfig, pathIsFiredeckRoot, writeOutputHierarchy } from "@/utils";
-import { ModuleComponents, RouteNode, Workspace, WorkspaceChange } from "@/types";
+import { ModuleComponents, RouteNode, RouteNodeTarget, Workspace, WorkspaceChange } from "@/types";
 import { format } from "prettier";
 import * as acorn from "acorn";
 import * as walk from "acorn-walk";
@@ -95,7 +95,7 @@ export async function analyzeProject(args: { rootDir: string }) {
         );
         if (pageFilePaths.length > 1) throw `${relativeDir} contains multiple page files`;
         if (!dirIsRoutable && pageFilePaths.length > 0)
-          throw `${relativeDir} is not routable but contains page file: ${pageFilePaths[0]}`;
+          throw `${relativeDir} is not routable but contains a page file: ${pageFilePaths[0]}`;
 
         const pageImportPath =
           dirIsRoutable && pageFilePaths.length > 0
@@ -147,14 +147,23 @@ export async function analyzeProject(args: { rootDir: string }) {
               .join("/")
           : null;
 
-        const routeName = ((): string | null => {
+        const routeName = (() => {
           const pageFilePath = pageFilePaths[0];
+          const fallbackName =
+            (relative(pagesRoot, dir) || "__root")
+              .split(sep)
+              .map((seg) => {
+                const nonSymbolMatches = /(\w+)/.exec(seg);
+                const $seg = nonSymbolMatches?.[1] || seg;
+                return $seg[0].toUpperCase() + $seg.slice(1);
+              })
+              .join("") + "Group";
 
-          if (!pageFilePath) return null;
+          if (!pageFilePath) return fallbackName;
 
           const pageFileSource = fs.readFileSync(pageFilePath, { encoding: "utf-8" });
           const ast = acorn.parse(pageFileSource, { ecmaVersion: "latest", sourceType: "module" });
-          let routeName: string | null = null;
+          let routeName = fallbackName;
 
           walk.simple(ast, {
             ExportDefaultDeclaration: (node) => {
@@ -168,9 +177,6 @@ export async function analyzeProject(args: { rootDir: string }) {
 
           return routeName;
         })();
-
-        if (pageImportPath && !routeName)
-          throw `${relativeDir} must export a named default function. (e.g. export default function Name() {})`;
 
         const subDirectories = dirContentPaths.filter((itemPath) =>
           fs.lstatSync(itemPath).isDirectory(),
@@ -318,40 +324,89 @@ export async function createRouterSource(routes: RouteNode) {
 
   const flattenedRoutes = flattenRoutes(routes);
 
+  function createReplaceTarget(str: string) {
+    return `$$${str}$$`;
+  }
+
+  function transformRoute(route: RouteNode): RouteNodeTarget {
+    const pageName = route.name;
+    const layoutName = route.name + "Layout";
+    const placeholderName = route.name + "Placeholder";
+    const guardName = route.name.toLowerCase() + "Guard";
+
+    const pageTarget = {
+      id: route.name,
+      path: route.pageImportPath ? route.urlPath : undefined,
+      element: route.pageImportPath
+        ? createReplaceTarget(
+            route.placeholderImportPath
+              ? `withSuspense(<${pageName} />, <${placeholderName} />)`
+              : `withSuspense(<${pageName} />)`,
+          )
+        : undefined,
+      loader: route.guardImportPath ? createReplaceTarget(guardName) : undefined,
+      children: route.children.length > 0 ? route.children.map(transformRoute) : undefined,
+    };
+
+    if (route.layoutImportPath) {
+      return {
+        id: route.name,
+        element: createReplaceTarget(`<${layoutName} />`),
+        children: [pageTarget],
+      };
+    }
+
+    return pageTarget;
+  }
+
+  const routeTargetSource = JSON.stringify(transformRoute(routes), null, 2).replace(
+    /"?\$\$"?/gm,
+    "",
+  );
+
   const routerSource = `
     import { type ReactNode, lazy, Suspense } from "react";
-    import { createBrowserRouter, redirect } from "react-router";
+    import { createBrowserRouter } from "react-router";
     
-    ${flattenedRoutes.reduce((importSrc, route, idx) => {
+    ${flattenedRoutes.reduce((importSrc, route) => {
       const routeImports = [];
+      const pageName = route.name;
+      const layoutName = route.name + "Layout";
+      const placeholderName = route.name + "Placeholder";
+      const guardName = route.name.toLowerCase() + "Guard";
 
       if (route.pageImportPath)
-        routeImports.push(`const R${idx}Page = lazy(() => import("${route.pageImportPath}"));`);
+        routeImports.push(`const ${pageName} = lazy(() => import("${route.pageImportPath}"));`);
 
       if (route.layoutImportPath)
-        routeImports.push(`import R${idx}Layout from "${route.layoutImportPath}";`);
+        routeImports.push(`import ${layoutName} from "${route.layoutImportPath}";`);
 
       if (route.placeholderImportPath)
-        routeImports.push(`import R${idx}Placeholder from "${route.placeholderImportPath}";`);
+        routeImports.push(`import ${placeholderName} from "${route.placeholderImportPath}";`);
 
       if (route.guardImportPath)
-        routeImports.push(`import r${idx}Guard from "${route.guardImportPath}";`);
+        routeImports.push(`import ${guardName} from "${route.guardImportPath}";`);
 
-      return importSrc + routeImports.join("\n") + "\n";
+      return routeImports.length === 0 ? importSrc : importSrc + routeImports.join("\n") + "\n";
     }, "")};
 
-    function withSuspense(child: ReactNode) {
+    function withSuspense(child: ReactNode, placeholder?: ReactNode) {
       return (
         <Suspense
           fallback={
             <div className="w-screen h-full grid place-items-center">
-              <Spinner />
+              {placeholder ?? <p>Please wait</p>}
             </div>
           }>
           {child}
         </Suspense>
       );
-    }`;
+    }
+    
+    export default createBrowserRouter([
+      ${routeTargetSource}
+    ]);
+  `;
 
   return format(routerSource, getPrettierConfig({ filePath: "a.tsx" }));
 }

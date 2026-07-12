@@ -3,13 +3,21 @@ export type OutputNode = { content: string; extension?: string };
 export type OutputHierarchy = { [path: string]: OutputNode };
 
 export interface RouteNode {
-  name: string | null;
+  name: string;
   pageImportPath: string | null;
   layoutImportPath: string | null;
   placeholderImportPath: string | null;
   guardImportPath: string | null;
   urlPath: string | null;
   children: RouteNode[];
+}
+
+export interface RouteNodeTarget {
+  id: string;
+  path?: string | null;
+  element?: string | null;
+  loader?: string | null;
+  children?: RouteNodeTarget[];
 }
 
 export interface Workspace {

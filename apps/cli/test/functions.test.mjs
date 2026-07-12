@@ -8,7 +8,8 @@ import {
   createRouterSource,
   init,
 } from "../temp/functions.js";
-import { writeOutputHierarchy } from "../temp/utils.js";
+import { writeOutputHierarchy, getPrettierConfig } from "../temp/utils.js";
+import prettier from "prettier";
 
 const __dirname = import.meta.dirname;
 const testRoot = resolve(__dirname, "../temp/testing");
@@ -89,7 +90,7 @@ test("analyze-project", async (t) => {
     urlPath: "/",
     children: [
       {
-        name: null,
+        name: "DashboardGroup",
         pageImportPath: null,
         layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
         placeholderImportPath: null,
@@ -119,7 +120,7 @@ test("analyze-project", async (t) => {
         ],
       },
       {
-        name: null,
+        name: "PublicGroup",
         pageImportPath: null,
         layoutImportPath: null,
         placeholderImportPath: null,
@@ -173,7 +174,7 @@ test("compare-workspaces", async (t) => {
           urlPath: "/",
           children: [
             {
-              name: null,
+              name: "DashboardGroup",
               pageImportPath: null,
               layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
               urlPath: null,
@@ -258,7 +259,7 @@ test("compare-workspaces", async (t) => {
           urlPath: "/",
           children: [
             {
-              name: null,
+              name: "DashboardGroup",
               pageImportPath: null,
               layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
               placeholderImportPath: null,
@@ -338,7 +339,7 @@ test("compare-workspaces", async (t) => {
           urlPath: "/",
           children: [
             {
-              name: null,
+              name: "DashboardGroup",
               pageImportPath: null,
               layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
               placeholderImportPath: null,
@@ -481,6 +482,7 @@ test("apply-workspace-changes", async (t) => {
 
 test("create-router-source", async (t) => {
   const routerSource = await createRouterSource({
+    name: "IndexPage",
     pageImportPath: "@/main/client/pages/index-page.tsx",
     layoutImportPath: null,
     placeholderImportPath: null,
@@ -488,7 +490,7 @@ test("create-router-source", async (t) => {
     urlPath: "/",
     children: [
       {
-        name: null,
+        name: "DashboardGroup",
         pageImportPath: null,
         layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
         placeholderImportPath: null,
@@ -518,7 +520,7 @@ test("create-router-source", async (t) => {
         ],
       },
       {
-        name: null,
+        name: "PublicGroup",
         pageImportPath: null,
         layoutImportPath: null,
         placeholderImportPath: null,
@@ -557,7 +559,10 @@ test("create-router-source", async (t) => {
     ],
   });
 
-  console.log(routerSource);
+  const formattedExpectedSource = await prettier.format(
+    fs.readFileSync(resolve(__dirname, "router-source-expected.txt"), { encoding: "utf-8" }),
+    getPrettierConfig({ filePath: "a.tsx" }),
+  );
 
-  t.pass();
+  t.is(routerSource, formattedExpectedSource);
 });
