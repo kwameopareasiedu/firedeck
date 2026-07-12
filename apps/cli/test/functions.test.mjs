@@ -8,7 +8,7 @@ import {
   createRouterSource,
   init,
 } from "../temp/functions.js";
-import { writeOutputHierarchy, getPrettierConfig } from "../temp/utils.js";
+import { getPrettierConfig, writeOutputHierarchy } from "../temp/utils.js";
 import prettier from "prettier";
 
 const __dirname = import.meta.dirname;
@@ -81,6 +81,7 @@ test("analyze-project", async (t) => {
   const workspace = await analyzeProject({ rootDir: testRoot });
 
   t.is(workspace.clients.length, 1);
+
   t.deepEqual(workspace.clients[0].routes, {
     name: "IndexPage",
     pageImportPath: "@/main/client/pages/index-page.tsx",
@@ -427,57 +428,279 @@ test("compare-workspaces", async (t) => {
   const w1w4Changes = compareWorkspaces(w1, w4);
   const nullW4Changes = compareWorkspaces(null, w4);
 
-  t.deepEqual(w1w2Changes, [{ type: "update-client-routes", clientName: "main" }]);
-  t.deepEqual(w1w3Changes, [{ type: "remove-client", clientName: "main" }]);
-  t.deepEqual(w1w4Changes, [
-    { type: "rename-client", oldClientName: "main", newClientName: "external" },
-    { type: "update-client-routes", clientName: "external" },
-    { type: "add-client", clientName: "admin" },
-  ]);
-  t.deepEqual(nullW4Changes, [
-    { type: "create-runtime" },
-    { type: "add-client", clientName: "external" },
-    { type: "add-client", clientName: "admin" },
-  ]);
-});
-
-test("apply-workspace-changes", async (t) => {
-  const skeletonProjectHierarchy = { "firedeck.json": { content: "{}" } };
-  await writeOutputHierarchy(testRoot, skeletonProjectHierarchy);
-
-  // const currentWorkspace = {
-  //   clients: [],
-  // };
-
-  const targetWorkspace = {
-    clients: [
-      {
-        name: "external",
-        routes: [
-          { urlPath: "/about", importPath: "@/main/client/pages/about.route.tsx" },
-          { urlPath: "/", importPath: "@/main/client/pages/index.route.tsx" },
-          { urlPath: "/pricing", importPath: "@/main/client/pages/pricing.route.tsx" },
-          { urlPath: "/dashboard", importPath: "@/main/client/pages/dashboard/index.route.tsx" },
+  t.deepEqual(w1w2Changes, [
+    {
+      type: "update-client-routes",
+      clientName: "main",
+      clientRoutes: {
+        name: "IndexPage",
+        pageImportPath: "@/main/client/pages/index-page.tsx",
+        layoutImportPath: null,
+        placeholderImportPath: null,
+        guardImportPath: null,
+        urlPath: "/",
+        children: [
           {
-            urlPath: "/dashboard/setup",
-            importPath: "@/main/client/pages/dashboard/setup.route.tsx",
+            name: "DashboardGroup",
+            pageImportPath: null,
+            layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
+            placeholderImportPath: null,
+            guardImportPath: null,
+            urlPath: null,
+            children: [
+              {
+                name: "UsersPage",
+                pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx",
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: "/users",
+                children: [
+                  {
+                    name: "UserDetailsPage",
+                    pageImportPath:
+                      "@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx",
+                    layoutImportPath: null,
+                    placeholderImportPath: null,
+                    guardImportPath: null,
+                    urlPath: "/users/:userId",
+                    children: [],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            name: null,
+            pageImportPath: null,
+            layoutImportPath: null,
+            placeholderImportPath: null,
+            guardImportPath: null,
+            urlPath: null,
+            children: [
+              {
+                name: "FeaturesPage",
+                pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx",
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: "/features",
+                children: [],
+              },
+              {
+                name: "LandingPage",
+                pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx",
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: "/landing",
+                children: [],
+              },
+            ],
           },
         ],
       },
-      {
-        name: "admin",
-        routes: [
-          { urlPath: "/", importPath: "@/main/client/pages/index.route.tsx" },
-          { urlPath: "/users", importPath: "@/main/client/pages/users/index.route.tsx" },
+    },
+  ]);
+
+  t.deepEqual(w1w3Changes, [{ type: "remove-client", clientName: "main" }]);
+
+  t.deepEqual(w1w4Changes, [
+    { type: "rename-client", oldClientName: "main", newClientName: "external" },
+    {
+      type: "update-client-routes",
+      clientName: "external",
+      clientRoutes: {
+        name: "IndexPage",
+        pageImportPath: "@/main/client/pages/index-page.tsx",
+        layoutImportPath: null,
+        placeholderImportPath: null,
+        guardImportPath: null,
+        urlPath: "/",
+        children: [
+          {
+            name: "DashboardGroup",
+            pageImportPath: null,
+            layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
+            placeholderImportPath: null,
+            guardImportPath: null,
+            urlPath: null,
+            children: [
+              {
+                name: "UsersPage",
+                pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx",
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: "/users",
+                children: [
+                  {
+                    name: "UserDetailsPage",
+                    pageImportPath:
+                      "@/main/client/pages/(dashboard)/users/[userId]/user-detail-page.tsx",
+                    layoutImportPath: null,
+                    placeholderImportPath: null,
+                    guardImportPath: null,
+                    urlPath: "/users/:userId",
+                    children: [],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            name: null,
+            pageImportPath: null,
+            layoutImportPath: null,
+            placeholderImportPath: null,
+            guardImportPath: null,
+            urlPath: null,
+            children: [
+              {
+                name: "ContactPage",
+                pageImportPath: "@/main/client/pages/(public)/contact/contact-page.tsx",
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: "/contact",
+                children: [],
+              },
+              {
+                name: "FeaturesPage",
+                pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx",
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: "/features",
+                children: [],
+              },
+              {
+                name: "LandingPage",
+                pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx",
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: "/landing",
+                children: [],
+              },
+            ],
+          },
         ],
       },
-    ],
-  };
+    },
+    { type: "add-client", clientName: "admin" },
+    {
+      type: "update-client-routes",
+      clientName: "admin",
+      clientRoutes: {
+        pageImportPath: "@/main/client/pages/index-page.tsx",
+        layoutImportPath: null,
+        placeholderImportPath: null,
+        guardImportPath: null,
+        urlPath: "/",
+        children: [],
+      },
+    },
+  ]);
 
-  const changes = compareWorkspaces(null, targetWorkspace);
-  await applyWorkspaceChanges({ rootDir: testRoot, changes });
-
-  t.pass();
+  t.deepEqual(nullW4Changes, [
+    { type: "create-runtime" },
+    { type: "add-client", clientName: "external" },
+    {
+      type: "update-client-routes",
+      clientName: "external",
+      clientRoutes: {
+        name: "IndexPage",
+        pageImportPath: "@/main/client/pages/index-page.tsx",
+        layoutImportPath: null,
+        placeholderImportPath: null,
+        guardImportPath: null,
+        urlPath: "/",
+        children: [
+          {
+            name: "DashboardGroup",
+            pageImportPath: null,
+            layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
+            placeholderImportPath: null,
+            guardImportPath: null,
+            urlPath: null,
+            children: [
+              {
+                name: "UsersPage",
+                pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx",
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: "/users",
+                children: [
+                  {
+                    name: "UserDetailsPage",
+                    pageImportPath:
+                      "@/main/client/pages/(dashboard)/users/[userId]/user-detail-page.tsx",
+                    layoutImportPath: null,
+                    placeholderImportPath: null,
+                    guardImportPath: null,
+                    urlPath: "/users/:userId",
+                    children: [],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            name: null,
+            pageImportPath: null,
+            layoutImportPath: null,
+            placeholderImportPath: null,
+            guardImportPath: null,
+            urlPath: null,
+            children: [
+              {
+                name: "ContactPage",
+                pageImportPath: "@/main/client/pages/(public)/contact/contact-page.tsx",
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: "/contact",
+                children: [],
+              },
+              {
+                name: "FeaturesPage",
+                pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx",
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: "/features",
+                children: [],
+              },
+              {
+                name: "LandingPage",
+                pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx",
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: "/landing",
+                children: [],
+              },
+            ],
+          },
+        ],
+      },
+    },
+    { type: "add-client", clientName: "admin" },
+    {
+      type: "update-client-routes",
+      clientName: "admin",
+      clientRoutes: {
+        pageImportPath: "@/main/client/pages/index-page.tsx",
+        layoutImportPath: null,
+        placeholderImportPath: null,
+        guardImportPath: null,
+        urlPath: "/",
+        children: [],
+      },
+    },
+  ]);
 });
 
 test("create-router-source", async (t) => {
@@ -565,4 +788,135 @@ test("create-router-source", async (t) => {
   );
 
   t.is(routerSource, formattedExpectedSource);
+});
+
+test("apply-workspace-changes", async (t) => {
+  const skeletonProjectHierarchy = { "firedeck.json": { content: "{}" } };
+  await writeOutputHierarchy(testRoot, skeletonProjectHierarchy);
+
+  // const currentWorkspace = {
+  //   clients: [],
+  // };
+
+  const targetWorkspace = {
+    clients: [
+      {
+        name: "external",
+        routes: {
+          name: "IndexPage",
+          pageImportPath: "@/main/client/pages/index-page.tsx",
+          layoutImportPath: null,
+          placeholderImportPath: null,
+          guardImportPath: null,
+          urlPath: "/",
+          children: [
+            {
+              name: "DashboardGroup",
+              pageImportPath: null,
+              layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
+              placeholderImportPath: null,
+              guardImportPath: null,
+              urlPath: null,
+              children: [
+                {
+                  name: "UsersPage",
+                  pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx",
+                  layoutImportPath: null,
+                  placeholderImportPath: null,
+                  guardImportPath: null,
+                  urlPath: "/users",
+                  children: [
+                    {
+                      name: "UserDetailsPage",
+                      pageImportPath:
+                        "@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx",
+                      layoutImportPath: null,
+                      placeholderImportPath: null,
+                      guardImportPath: null,
+                      urlPath: "/users/:userId",
+                      children: [],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              name: "PublicGroup",
+              pageImportPath: null,
+              layoutImportPath: null,
+              placeholderImportPath: null,
+              guardImportPath: null,
+              urlPath: null,
+              children: [
+                {
+                  name: "ContactPage",
+                  pageImportPath: "@/main/client/pages/(public)/contact/contact-page.tsx",
+                  layoutImportPath: null,
+                  placeholderImportPath: null,
+                  guardImportPath: null,
+                  urlPath: "/contact",
+                  children: [],
+                },
+                {
+                  name: "FeaturesPage",
+                  pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx",
+                  layoutImportPath: null,
+                  placeholderImportPath: null,
+                  guardImportPath: null,
+                  urlPath: "/features",
+                  children: [],
+                },
+                {
+                  name: "LandingPage",
+                  pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx",
+                  layoutImportPath: null,
+                  placeholderImportPath: null,
+                  guardImportPath: null,
+                  urlPath: "/landing",
+                  children: [],
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        name: "admin",
+        routes: {
+          name: "IndexPage",
+          pageImportPath: "@/main/client/pages/index-page.tsx",
+          layoutImportPath: null,
+          placeholderImportPath: null,
+          guardImportPath: null,
+          urlPath: "/",
+          children: [
+            {
+              name: "DashboardGroup",
+              pageImportPath: null,
+              layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
+              placeholderImportPath: null,
+              guardImportPath: null,
+              urlPath: null,
+              children: [
+                {
+                  name: "UsersPage",
+                  pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx",
+                  layoutImportPath: null,
+                  placeholderImportPath: null,
+                  guardImportPath: null,
+                  urlPath: "/users",
+                  children: [],
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  };
+
+  const changes = compareWorkspaces(null, targetWorkspace);
+  await applyWorkspaceChanges({ rootDir: testRoot, changes });
+
+  t.pass();
 });

@@ -32,4 +32,4 @@ export type WorkspaceChange =
   | { type: "add-client"; clientName: string }
   | { type: "remove-client"; clientName: string }
   | { type: "rename-client"; oldClientName: string; newClientName: string }
-  | { type: "update-client-routes"; clientName: string };
+  | { type: "update-client-routes"; clientName: string; clientRoutes: RouteNode };

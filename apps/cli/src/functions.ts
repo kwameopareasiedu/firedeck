@@ -221,10 +221,17 @@ export function compareWorkspaces(w1: Workspace | null, w2: Workspace) {
     const w2c = w2.clients[cIdx];
 
     if (!w1c && w2c) {
-      changes.push({
-        type: "add-client",
-        clientName: w2c.name,
-      });
+      changes.push(
+        {
+          type: "add-client",
+          clientName: w2c.name,
+        },
+        {
+          type: "update-client-routes",
+          clientName: w2c.name,
+          clientRoutes: w2c.routes,
+        },
+      );
     } else if (w1c && !w2c) {
       changes.push({
         type: "remove-client",
@@ -240,76 +247,16 @@ export function compareWorkspaces(w1: Workspace | null, w2: Workspace) {
       }
 
       if (JSON.stringify(w1c.routes) !== JSON.stringify(w2c.routes)) {
-        changes.push({ type: "update-client-routes", clientName: w2c.name });
+        changes.push({
+          type: "update-client-routes",
+          clientName: w2c.name,
+          clientRoutes: w2c.routes,
+        });
       }
     }
   }
 
   return changes;
-}
-
-export async function applyWorkspaceChanges(args: { rootDir: string; changes: WorkspaceChange[] }) {
-  if (!pathIsFiredeckRoot(args.rootDir))
-    throw `${args.rootDir}: directory is not a valid Firedeck project`;
-
-  for (const change of args.changes) {
-    console.log("CHANGE:", change);
-
-    switch (change.type) {
-      case "create-runtime": {
-        const runtimeRoot = resolve(args.rootDir, ".firedeck/runtime");
-        fs.removeSync(runtimeRoot);
-        fs.ensureDirSync(runtimeRoot);
-
-        const runtimeRootHierarchy = generateRuntimeRootHierarchy();
-        await writeOutputHierarchy(runtimeRoot, runtimeRootHierarchy);
-
-        break;
-      }
-      case "add-client": {
-        const runtimeClientRoot = resolve(
-          args.rootDir,
-          ".firedeck/runtime/modules",
-          change.clientName,
-        );
-
-        const runtimeClientRootHierarchy = generateRuntimeClientHierarchy({
-          clientName: change.clientName,
-        });
-        await writeOutputHierarchy(runtimeClientRoot, runtimeClientRootHierarchy);
-
-        break;
-      }
-      case "remove-client": {
-        const runtimeClientRoot = resolve(
-          args.rootDir,
-          ".firedeck/runtime/modules",
-          change.clientName,
-        );
-
-        fs.removeSync(runtimeClientRoot);
-        break;
-      }
-      case "rename-client": {
-        const oldRuntimeClientRoot = resolve(
-          args.rootDir,
-          ".firedeck/runtime/modules",
-          change.oldClientName,
-        );
-
-        const newRuntimeClientRoot = resolve(
-          args.rootDir,
-          ".firedeck/runtime/modules",
-          change.newClientName,
-        );
-
-        fs.renameSync(oldRuntimeClientRoot, newRuntimeClientRoot);
-        break;
-      }
-      case "update-client-routes":
-        break;
-    }
-  }
 }
 
 export async function createRouterSource(routes: RouteNode) {
@@ -409,4 +356,51 @@ export async function createRouterSource(routes: RouteNode) {
   `;
 
   return format(routerSource, getPrettierConfig({ filePath: "a.tsx" }));
+}
+
+export async function applyWorkspaceChanges(args: { rootDir: string; changes: WorkspaceChange[] }) {
+  if (!pathIsFiredeckRoot(args.rootDir))
+    throw `${args.rootDir}: directory is not a valid Firedeck project`;
+
+  const runtimeRoot = resolve(args.rootDir, ".firedeck/runtime");
+
+  for (const change of args.changes) {
+    console.log("CHANGE:", change);
+
+    switch (change.type) {
+      case "create-runtime": {
+        fs.removeSync(runtimeRoot);
+        fs.ensureDirSync(runtimeRoot);
+
+        const runtimeRootHierarchy = generateRuntimeRootHierarchy();
+        await writeOutputHierarchy(runtimeRoot, runtimeRootHierarchy);
+        break;
+      }
+      case "add-client": {
+        const runtimeClientRoot = resolve(runtimeRoot, change.clientName);
+        const runtimeClientRootHierarchy = generateRuntimeClientHierarchy({
+          clientName: change.clientName,
+        });
+        await writeOutputHierarchy(runtimeClientRoot, runtimeClientRootHierarchy);
+        break;
+      }
+      case "remove-client": {
+        const runtimeClientRoot = resolve(runtimeRoot, change.clientName);
+        fs.removeSync(runtimeClientRoot);
+        break;
+      }
+      case "rename-client": {
+        const oldRuntimeClientRoot = resolve(runtimeRoot, change.oldClientName);
+        const newRuntimeClientRoot = resolve(runtimeRoot, change.newClientName);
+        fs.renameSync(oldRuntimeClientRoot, newRuntimeClientRoot);
+        break;
+      }
+      case "update-client-routes": {
+        const runtimeClientSrcRoot = resolve(runtimeRoot, change.clientName, "src");
+        const routerFilePath = resolve(runtimeClientSrcRoot, "router.tsx");
+        fs.writeFileSync(routerFilePath, await createRouterSource(change.clientRoutes));
+        break;
+      }
+    }
+  }
 }
