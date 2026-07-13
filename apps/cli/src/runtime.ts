@@ -8,6 +8,14 @@ export interface ClientRoute {
   children: ClientRoute[];
 }
 
+export interface ReactRouterRoute {
+  id: string;
+  path?: string | null;
+  element?: string | null;
+  loader?: string | null;
+  children?: ReactRouterRoute[];
+}
+
 export interface RuntimeClient {
   name: string;
   routes: ClientRoute;

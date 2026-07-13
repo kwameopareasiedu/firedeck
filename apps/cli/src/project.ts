@@ -1,15 +1,21 @@
-import { generateStringHash, pathIsFiredeckRoot, writeFileTree } from "@/utils";
+import { generateStringHash, getPrettierConfig, pathIsFiredeckRoot, writeFileTree } from "@/utils";
 import { relative, resolve, sep } from "node:path";
 import fs from "fs-extra";
-import { generateModuleFileTree, generateProjectFileTree } from "@/templates";
-import { ModuleComponents, RouteNode } from "@/types";
+import {
+  generateModuleFileTree,
+  generateProjectFileTree,
+  generateRuntimeClientFileTree,
+  generateRuntimeFileTree,
+} from "@/templates";
+import { ModuleComponents } from "@/types";
 import * as acorn from "acorn";
 import { tsPlugin } from "@sveltejs/acorn-typescript";
 import jsx from "acorn-jsx";
 import * as walk from "acorn-walk";
 // @ts-expect-error declaration don't exist
 import * as walkJsx from "acorn-jsx-walk";
-import { Runtime, RuntimeClient } from "@/runtime";
+import { ClientRoute, ReactRouterRoute, Runtime, RuntimeChange, RuntimeClient } from "@/runtime";
+import { format } from "prettier";
 
 walkJsx.extend(walk.base);
 
@@ -17,12 +23,14 @@ export class Project {
   private readonly rootDir: string;
   private readonly modulesDir: string;
   private readonly runtimeDir: string;
+  private readonly runtimeModulesDir: string;
   private readonly clientSdkDir: string;
 
   constructor(args: { rootDir: string }) {
     this.rootDir = args.rootDir;
     this.modulesDir = resolve(args.rootDir, "modules");
     this.runtimeDir = resolve(args.rootDir, ".firedeck/runtime");
+    this.runtimeModulesDir = resolve(args.rootDir, ".firedeck/runtime/modules");
     this.clientSdkDir = resolve(args.rootDir, ".firedeck/client-sdk");
   }
 
@@ -49,7 +57,7 @@ export class Project {
   }
 
   async createModule(args: { moduleName: string; components?: ModuleComponents }) {
-    this.assertRootIsFiredeckProject();
+    this.assertFiredeckRootDir();
 
     const moduleDir = resolve(this.modulesDir, args.moduleName);
 
@@ -67,7 +75,7 @@ export class Project {
   }
 
   async analyze() {
-    this.assertRootIsFiredeckProject();
+    this.assertFiredeckRootDir();
 
     const moduleNames = fs
       .readdirSync(this.modulesDir, { encoding: "utf-8" })
@@ -108,12 +116,61 @@ export class Project {
     return new Runtime({ clients: runtimeClients });
   }
 
-  private assertRootIsFiredeckProject() {
+  async updateRuntime(changes: RuntimeChange[]) {
+    this.assertFiredeckRootDir();
+
+    for (const change of changes) {
+      switch (change.type) {
+        case "create-runtime": {
+          fs.removeSync(this.runtimeDir);
+          fs.ensureDirSync(this.runtimeDir);
+
+          const runtimeFileTree = generateRuntimeFileTree();
+          await writeFileTree(this.runtimeDir, runtimeFileTree);
+          break;
+        }
+        case "add-client": {
+          const clientRoot = resolve(this.runtimeModulesDir, change.clientName);
+          const clientFileTree = generateRuntimeClientFileTree({ clientName: change.clientName });
+          await writeFileTree(clientRoot, clientFileTree);
+          break;
+        }
+        case "remove-client": {
+          const clientRoot = resolve(this.runtimeModulesDir, change.clientName);
+          fs.removeSync(clientRoot);
+          break;
+        }
+        case "rename-client": {
+          const oldClientRoot = resolve(this.runtimeModulesDir, change.oldClientName);
+          const newClientRoot = resolve(this.runtimeModulesDir, change.newClientName);
+          fs.renameSync(oldClientRoot, newClientRoot);
+          break;
+        }
+        case "update-client-routes": {
+          const clientSrcRoot = resolve(this.runtimeModulesDir, change.clientName, "src");
+          const clientRouterFile = resolve(clientSrcRoot, "router.tsx");
+          fs.writeFileSync(clientRouterFile, await this.createRouterSource(change.clientRoutes));
+          break;
+        }
+        case "update-client-html": {
+          const htmlSrc = resolve(this.modulesDir, change.clientName, "client/index.html");
+          const htmlDest = resolve(this.runtimeModulesDir, change.clientName, "index.html");
+
+          if (fs.existsSync(htmlSrc)) {
+            fs.copyFileSync(htmlSrc, htmlDest);
+          } else console.warn(`${relative(this.rootDir, htmlSrc)}: index.html not found`);
+          break;
+        }
+      }
+    }
+  }
+
+  private assertFiredeckRootDir() {
     if (!pathIsFiredeckRoot(this.rootDir))
       throw `${this.rootDir}: directory is not a valid firedeck project`;
   }
 
-  private discoverRoutes(dir: string, pagesDir: string): RouteNode {
+  private discoverRoutes(dir: string, pagesDir: string): ClientRoute {
     const relativeDir = relative(this.rootDir, dir);
     const dirContents = fs
       .readdirSync(dir, { encoding: "utf-8" })
@@ -129,9 +186,6 @@ export class Project {
     } else if (pageFiles.length > 0) {
       throw `${relativeDir} is not routable but contains a page file: ${pageFiles[0]}`;
     }
-    // if (pageFiles.length > 1) throw `${relativeDir} contains multiple page files`;
-    // if (!dirIsRoutable && pageFiles.length > 0)
-    //   throw `${relativeDir} is not routable but contains a page file: ${pageFiles[0]}`;
 
     const pageImportPath =
       dirIsRoutable && pageFiles.length > 0 ? `@/${relative(this.modulesDir, pageFiles[0])}` : null;
@@ -154,7 +208,7 @@ export class Project {
     const guardImportPath =
       guardFiles.length > 0 ? `@/${relative(this.modulesDir, guardFiles[0])}` : null;
 
-    const urlPath = pageImportPath
+    const urlPath = dirIsRoutable
       ? "/" +
         relative(pagesDir, dir)
           .split(sep)
@@ -215,5 +269,104 @@ export class Project {
         return this.discoverRoutes(childDir, pagesDir);
       }),
     };
+  }
+
+  private async createRouterSource(routes: ClientRoute) {
+    function flattenRoutes(route: ClientRoute): ClientRoute[] {
+      return [
+        { ...route, children: [] },
+        ...route.children.reduce((flats, childRoute) => {
+          return [...flats, ...flattenRoutes(childRoute)];
+        }, [] as ClientRoute[]),
+      ];
+    }
+
+    function createReplaceTarget(str: string) {
+      return `$$${str}$$`;
+    }
+
+    function transformClientRouteToReactRouterRoute(route: ClientRoute): ReactRouterRoute {
+      const pageName = route.name;
+      const layoutName = route.name + "Layout";
+      const placeholderName = route.name + "Placeholder";
+      const guardName = route.name.toLowerCase() + "Guard";
+
+      const pageTarget = {
+        id: route.name,
+        path: route.pageImportPath ? route.urlPath : undefined,
+        element: route.pageImportPath
+          ? createReplaceTarget(
+              route.placeholderImportPath
+                ? `withSuspense(<${pageName} />, <${placeholderName} />)`
+                : `withSuspense(<${pageName} />)`,
+            )
+          : undefined,
+        loader: route.guardImportPath ? createReplaceTarget(guardName) : undefined,
+        children:
+          route.children.length > 0
+            ? route.children.map(transformClientRouteToReactRouterRoute)
+            : undefined,
+      };
+
+      if (route.layoutImportPath) {
+        return {
+          id: route.name,
+          element: createReplaceTarget(`<${layoutName} />`),
+          children: [pageTarget],
+        };
+      }
+
+      return pageTarget;
+    }
+
+    const routeImportSource = flattenRoutes(routes).reduce((importSrc, route) => {
+      const routeImports = [];
+      const pageName = route.name;
+      const layoutName = route.name + "Layout";
+      const placeholderName = route.name + "Placeholder";
+      const guardName = route.name.toLowerCase() + "Guard";
+
+      if (route.pageImportPath)
+        routeImports.push(`const ${pageName} = lazy(() => import("${route.pageImportPath}"));`);
+
+      if (route.layoutImportPath)
+        routeImports.push(`import ${layoutName} from "${route.layoutImportPath}";`);
+
+      if (route.placeholderImportPath)
+        routeImports.push(`import ${placeholderName} from "${route.placeholderImportPath}";`);
+
+      if (route.guardImportPath)
+        routeImports.push(`import ${guardName} from "${route.guardImportPath}";`);
+
+      return routeImports.length === 0 ? importSrc : importSrc + routeImports.join("\n") + "\n";
+    }, "");
+
+    const reactRouterSource = JSON.stringify(
+      transformClientRouteToReactRouterRoute(routes),
+    ).replace(/"?\$\$"?/gm, "");
+
+    const routerSource = `
+      import { type ReactNode, lazy, Suspense } from "react";
+      import { createBrowserRouter } from "react-router";
+      
+      ${routeImportSource};
+  
+      function withSuspense(child: ReactNode, placeholder?: ReactNode) {
+        return (
+          <Suspense
+            fallback={
+              <div className="w-screen h-full grid place-items-center">
+                {placeholder ?? <p>Please wait</p>}
+              </div>
+            }>
+            {child}
+          </Suspense>
+        );
+      }
+      
+      export default createBrowserRouter([${reactRouterSource}]);
+    `;
+
+    return format(routerSource, getPrettierConfig({ filePath: "a.tsx" }));
   }
 }

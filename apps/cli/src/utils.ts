@@ -8,7 +8,7 @@ export function getPrettierConfig(args: { filePath: string }): Options {
     filepath: args.filePath,
     tabWidth: 2,
     useTabs: false,
-    printWidth: 240,
+    printWidth: 80,
     singleQuote: false,
     jsxSingleQuote: false,
     trailingComma: "all",
