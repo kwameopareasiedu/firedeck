@@ -176,10 +176,14 @@ This monorepo application is completely handled by Firedeck so you don't need to
 
 ## Client SDK
 
-Firedeck also generates a client SDK package based on the modules. This package provides utilities
-which connect the frontend and backend module component.
+Firedeck also generates a client SDK source files based on the modules. This package provides
+utilities which connect the frontend and backend module component.
 
-The package lives at `node_modules/@firedeck/client-sdk` and is imported as `@firedeck/client-sdk`.
+The package lives at `modules/sdk/client`. Because it is part of the user code, IDE auto-complete
+and intellisense work out of the box and can also be commited to version control.
+
+> ⚠ Code in `modules/sdk/client` is maintained by the Firedeck compiler. Any user changes would be
+> overwritten.
 
 The client SDK contains the following files:
 
@@ -213,7 +217,7 @@ You can access the routes for these modules in a component like so:
 /* modules/main/client/pages/index-page.tsx */
 
 import {Link, useNavigate} from "react-router";
-import {AdminRoute, MainRoute} from "@firedeck/client-sdk/routes";
+import {AdminRoute, MainRoute} from "@/sdk/client/routes";
 
 export function IndexPage() {
     const navigate = useNavigate();
@@ -237,11 +241,11 @@ export function IndexPage() {
 Take note of the following:
 
 > ⚡ Route enums are derived from the module name.
-> 
+>
 > (E.g. `main` module yields `MainRoute`, `admin` module yields `AdminRoute`)
 
 > ⚡ Route enum members are derived from page file component names.
-> 
+>
 > (E.g. `export default function IndexPage() {}` yields a route enum member `INDEX_PAGE`)
 
 > ⚡ Navigating to a route in a different module will yield a 404 (Not found) response.
