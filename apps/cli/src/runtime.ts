@@ -24,12 +24,13 @@ export interface RuntimeClient {
 
 export type RuntimeChange =
   | { type: "create-runtime" }
-  | { type: "update-client-sdk" }
-  | { type: "add-client"; clientName: string }
-  | { type: "remove-client"; clientName: string }
-  | { type: "rename-client"; oldClientName: string; newClientName: string }
-  | { type: "update-client-routes"; clientName: string; clientRoutes: ClientRoute }
-  | { type: "update-client-html"; clientName: string };
+  | { type: "add-runtime-client"; clientName: string }
+  | { type: "remove-runtime-client"; clientName: string }
+  | { type: "rename-runtime-client"; oldClientName: string; newClientName: string }
+  | { type: "update-runtime-client-routes"; clientName: string; clientRoutes: ClientRoute }
+  | { type: "update-runtime-client-html"; clientName: string }
+  | { type: "create-client-sdk" }
+  | { type: "update-client-sdk-routes"; clients: RuntimeClient[] };
 
 export class Runtime {
   readonly clients: RuntimeClient[];
@@ -43,7 +44,7 @@ export class Runtime {
 
     if (!source) {
       changes.push({ type: "create-runtime" });
-      changes.push({ type: "update-client-sdk" });
+      changes.push({ type: "create-client-sdk" });
       source = new Runtime({ clients: [] });
     }
 
@@ -53,20 +54,20 @@ export class Runtime {
 
       if (!sourceClient && destClient) {
         changes.push(
-          { type: "add-client", clientName: destClient.name },
+          { type: "add-runtime-client", clientName: destClient.name },
           {
-            type: "update-client-routes",
+            type: "update-runtime-client-routes",
             clientName: destClient.name,
             clientRoutes: destClient.routes,
           },
-          { type: "update-client-html", clientName: destClient.name },
+          { type: "update-runtime-client-html", clientName: destClient.name },
         );
       } else if (sourceClient && !destClient) {
-        changes.push({ type: "remove-client", clientName: sourceClient.name });
+        changes.push({ type: "remove-runtime-client", clientName: sourceClient.name });
       } else if (sourceClient && destClient) {
         if (sourceClient.name !== destClient.name) {
           changes.push({
-            type: "rename-client",
+            type: "rename-runtime-client",
             oldClientName: sourceClient.name,
             newClientName: destClient.name,
           });
@@ -74,16 +75,20 @@ export class Runtime {
 
         if (JSON.stringify(sourceClient.routes) !== JSON.stringify(destClient.routes)) {
           changes.push({
-            type: "update-client-routes",
+            type: "update-runtime-client-routes",
             clientName: destClient.name,
             clientRoutes: destClient.routes,
           });
         }
 
         if (sourceClient.htmlHash !== destClient.htmlHash) {
-          changes.push({ type: "update-client-html", clientName: destClient.name });
+          changes.push({ type: "update-runtime-client-html", clientName: destClient.name });
         }
       }
+    }
+
+    if (changes.some((change) => change.type.includes("client"))) {
+      changes.push({ type: "update-client-sdk-routes", clients: this.clients });
     }
 
     return changes;

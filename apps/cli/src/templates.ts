@@ -500,8 +500,8 @@ export function generateClientSdkFileTree(): FileTree {
           }
         },
         "scripts": {
-          "dev": "../../node_modules/.bin/rollup -c -w --no-watch.clearScreen",
-          "build": "../../node_modules/.bin/rollup -c"
+          "dev": "../../.bin/rollup -c -w --no-watch.clearScreen",
+          "build": "../../.bin/rollup -c"
         },
         "dependencies": {
           "@rollup/plugin-commonjs": "^29.0.3",
@@ -578,7 +578,7 @@ export function generateClientSdkFileTree(): FileTree {
       );`,
     },
 
-    "src/router.ts": {
+    "src/routes.ts": {
       content: `
       `,
     },

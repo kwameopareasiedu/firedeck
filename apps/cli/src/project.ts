@@ -17,6 +17,7 @@ import * as walk from "acorn-walk";
 import * as walkJsx from "acorn-jsx-walk";
 import { ClientRoute, ReactRouterRoute, Runtime, RuntimeChange, RuntimeClient } from "@/runtime";
 import { format } from "prettier";
+import { snakeCase, startCase } from "lodash";
 
 walkJsx.extend(walk.base);
 
@@ -130,41 +131,48 @@ export class Project {
           await writeFileTree(this.runtimeDir, runtimeFileTree);
           break;
         }
-        case "update-client-sdk": {
-          const clientSdkTree = generateClientSdkFileTree();
-          await writeFileTree(this.clientSdkDir, clientSdkTree);
+        case "create-client-sdk": {
+          const clientSdkFileTree = generateClientSdkFileTree();
+          await writeFileTree(this.clientSdkDir, clientSdkFileTree);
           break;
         }
-        case "add-client": {
+        case "add-runtime-client": {
           const clientRoot = resolve(this.runtimeModulesDir, change.clientName);
           const clientFileTree = generateRuntimeClientFileTree({ clientName: change.clientName });
           await writeFileTree(clientRoot, clientFileTree);
           break;
         }
-        case "remove-client": {
+        case "remove-runtime-client": {
           const clientRoot = resolve(this.runtimeModulesDir, change.clientName);
           fs.removeSync(clientRoot);
           break;
         }
-        case "rename-client": {
+        case "rename-runtime-client": {
           const oldClientRoot = resolve(this.runtimeModulesDir, change.oldClientName);
           const newClientRoot = resolve(this.runtimeModulesDir, change.newClientName);
           fs.renameSync(oldClientRoot, newClientRoot);
           break;
         }
-        case "update-client-routes": {
-          const clientSrcRoot = resolve(this.runtimeModulesDir, change.clientName, "src");
-          const clientRouterFile = resolve(clientSrcRoot, "router.tsx");
-          fs.writeFileSync(clientRouterFile, await this.createRouterSource(change.clientRoutes));
+        case "update-runtime-client-routes": {
+          const { clientName, clientRoutes } = change;
+          const clientRouterFile = resolve(this.runtimeModulesDir, clientName, "src/router.tsx");
+          const runtimeClientRouterSource = await this.generateClientRouterSource(clientRoutes);
+          fs.writeFileSync(clientRouterFile, runtimeClientRouterSource);
           break;
         }
-        case "update-client-html": {
+        case "update-runtime-client-html": {
           const htmlSrc = resolve(this.modulesDir, change.clientName, "client/index.html");
           const htmlDest = resolve(this.runtimeModulesDir, change.clientName, "index.html");
 
           if (fs.existsSync(htmlSrc)) {
             fs.copyFileSync(htmlSrc, htmlDest);
           } else console.warn(`${relative(this.rootDir, htmlSrc)}: index.html not found`);
+          break;
+        }
+        case "update-client-sdk-routes": {
+          const clientSdkRouterFile = resolve(this.clientSdkDir, "src/routes.ts");
+          const sdkRouterSource = await this.generateClientSdkRouterSource(change.clients);
+          fs.writeFileSync(clientSdkRouterFile, sdkRouterSource);
           break;
         }
       }
@@ -277,16 +285,7 @@ export class Project {
     };
   }
 
-  private async createRouterSource(routes: ClientRoute) {
-    function flattenRoutes(route: ClientRoute): ClientRoute[] {
-      return [
-        { ...route, children: [] },
-        ...route.children.reduce((flats, childRoute) => {
-          return [...flats, ...flattenRoutes(childRoute)];
-        }, [] as ClientRoute[]),
-      ];
-    }
-
+  private async generateClientRouterSource(routes: ClientRoute) {
     function createReplaceTarget(str: string) {
       return `$$${str}$$`;
     }
@@ -325,7 +324,7 @@ export class Project {
       return pageTarget;
     }
 
-    const routeImportSource = flattenRoutes(routes).reduce((importSrc, route) => {
+    const routeImportSource = this.flattenRoutes(routes).reduce((importSrc, route) => {
       const routeImports = [];
       const pageName = route.name;
       const layoutName = route.name + "Layout";
@@ -374,5 +373,29 @@ export class Project {
     `;
 
     return format(routerSource, getPrettierConfig({ filePath: "a.tsx" }));
+  }
+
+  private async generateClientSdkRouterSource(clients: RuntimeClient[]) {
+    const routerSource = clients.reduce((source, client) => {
+      const routeEnumSource = this.flattenRoutes(client.routes).reduce((source, route) => {
+        if (!route.urlPath) return source;
+        return source + `${snakeCase(route.name).toUpperCase()} = "${route.urlPath}",\n`;
+      }, "");
+
+      const clientSource = `export enum ${startCase(client.name).replaceAll(" ", "")}Route { ${routeEnumSource} };\n`;
+
+      return source + clientSource + "\n";
+    }, "");
+
+    return format(routerSource, getPrettierConfig({ filePath: "a.ts" }));
+  }
+
+  private flattenRoutes(route: ClientRoute): ClientRoute[] {
+    return [
+      { ...route, children: [] },
+      ...route.children.reduce((flats, childRoute) => {
+        return [...flats, ...this.flattenRoutes(childRoute)];
+      }, [] as ClientRoute[]),
+    ];
   }
 }

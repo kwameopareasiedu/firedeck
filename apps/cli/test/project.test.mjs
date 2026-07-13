@@ -374,4 +374,29 @@ test("update-runtime", async (t) => {
       getPrettierConfig({ filePath: "a.tsx" }),
     ),
   );
+
+  const clientSdkDir = resolve(testDir, "node_modules/@firedeck/client-sdk");
+  t.true(fs.existsSync(resolve(clientSdkDir, "package.json")));
+  t.true(fs.existsSync(resolve(clientSdkDir, "rollup.config.mjs")));
+  t.true(fs.existsSync(resolve(clientSdkDir, "tsconfig.json")));
+  t.true(fs.existsSync(resolve(clientSdkDir, "src/routes.ts")));
+
+  const generatedRoutesSource = fs.readFileSync(resolve(clientSdkDir, "src/routes.ts"), {
+    encoding: "utf-8",
+  });
+
+  t.is(
+    generatedRoutesSource,
+    await format(
+      `export enum MainRoute {
+        INDEX_PAGE = "/",
+        USERS_PAGE = "/users",
+        USER_DETAILS_PAGE = "/users/:userId",
+        CONTACT_PAGE = "/contact",
+        FEATURES_PAGE = "/features",
+        LANDING_PAGE = "/landing",
+      }`,
+      getPrettierConfig({ filePath: "a.ts" }),
+    ),
+  );
 });

@@ -32,8 +32,8 @@ export interface Workspace {
 
 export type WorkspaceChange =
   | { type: "create-runtime" }
-  | { type: "add-client"; clientName: string }
-  | { type: "remove-client"; clientName: string }
-  | { type: "rename-client"; oldClientName: string; newClientName: string }
-  | { type: "update-client-routes"; clientName: string; clientRoutes: RouteNode }
-  | { type: "update-client-html"; clientName: string };
+  | { type: "add-runtime-client"; clientName: string }
+  | { type: "remove-runtime-client"; clientName: string }
+  | { type: "rename-runtime-client"; oldClientName: string; newClientName: string }
+  | { type: "update-runtime-client-routes"; clientName: string; clientRoutes: RouteNode }
+  | { type: "update-runtime-client-html"; clientName: string };
