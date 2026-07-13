@@ -128,7 +128,9 @@ export class Project {
 
           const runtimeFileTree = generateRuntimeFileTree();
           await writeFileTree(this.runtimeDir, runtimeFileTree);
-
+          break;
+        }
+        case "update-client-sdk": {
           const clientSdkTree = generateClientSdkFileTree();
           await writeFileTree(this.clientSdkDir, clientSdkTree);
           break;

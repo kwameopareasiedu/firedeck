@@ -4,7 +4,7 @@ import fs from "fs-extra";
 import { isAbsolute, relative, resolve } from "node:path";
 import { Command } from "commander";
 import { cwdIsFiredeckRoot, parseErrorMessage } from "@/utils";
-import { compile, run } from "@/functions";
+import { run } from "@/functions";
 import { input } from "@inquirer/prompts";
 import { Project } from "@/project";
 

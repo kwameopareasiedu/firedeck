@@ -24,6 +24,7 @@ export interface RuntimeClient {
 
 export type RuntimeChange =
   | { type: "create-runtime" }
+  | { type: "update-client-sdk" }
   | { type: "add-client"; clientName: string }
   | { type: "remove-client"; clientName: string }
   | { type: "rename-client"; oldClientName: string; newClientName: string }
@@ -42,6 +43,7 @@ export class Runtime {
 
     if (!source) {
       changes.push({ type: "create-runtime" });
+      changes.push({ type: "update-client-sdk" });
       source = new Runtime({ clients: [] });
     }
 

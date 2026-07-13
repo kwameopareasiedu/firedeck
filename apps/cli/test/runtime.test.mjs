@@ -461,6 +461,7 @@ test("runtime-diff", async (t) => {
 
   t.deepEqual(nullW4Changes, [
     { type: "create-runtime" },
+    { type: "update-client-sdk" },
     { type: "add-client", clientName: "external" },
     {
       type: "update-client-routes",

@@ -18,7 +18,7 @@ export async function run(args: { rootDir: string }) {
   const extensions = ["html", "css", "ts", "tsx", "js", "jsx"];
   let stopping = false;
 
-  await compile({ rootDir: args.rootDir });
+  // await compile({ rootDir: args.rootDir });
 
   const lockFileNames = [
     "package-lock.json",
