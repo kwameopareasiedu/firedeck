@@ -164,9 +164,7 @@ export class Project {
           const htmlSrc = resolve(this.modulesDir, change.clientName, "client/index.html");
           const htmlDest = resolve(this.runtimeModulesDir, change.clientName, "index.html");
 
-          if (fs.existsSync(htmlSrc)) {
-            fs.copyFileSync(htmlSrc, htmlDest);
-          } else console.warn(`${relative(this.rootDir, htmlSrc)}: index.html not found`);
+          if (fs.existsSync(htmlSrc)) fs.copyFileSync(htmlSrc, htmlDest);
           break;
         }
         case "update-client-sdk-routes": {

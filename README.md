@@ -1,6 +1,7 @@
 # Firedeck
 
-Firedeck is an opinionated CLI application for building full stack applications with Firebase, React and Vite:
+Firedeck is an opinionated CLI application for building full stack applications with Firebase, React
+and Vite:
 
 ## Objectives
 
@@ -11,8 +12,9 @@ Firedeck is an opinionated CLI application for building full stack applications 
 
 ## Modules
 
-Firedeck is based on the concept of **modules**, which are directories of your application component consisting of
-client code, server code or both. A Firedeck application should have at least one module.
+Firedeck is based on the concept of **modules**, which are directories of your application component
+consisting of client code, server code or both. A Firedeck application should have at least one
+module.
 
 Each module ultimately maps to:
 
@@ -20,8 +22,8 @@ Each module ultimately maps to:
 - A Firebase functions group in the generated Firebase backend
 - A Firebase hosting site which is the deployment target of the frontend app.
 
-As such, a module should contain either `client` or `server` directories or both. A module without any of these is
-ignored by the compiler.
+As such, a module should contain either `client` or `server` directories or both. A module without
+any of these is ignored by the compiler.
 
 A module directory will have the following structure:
 
@@ -35,10 +37,11 @@ A module directory will have the following structure:
 
 ### Module Client
 
-The `client` directory contains the source that would be included in the frontend application of the Firedeck runtime
-via Typescript path aliasing.
+The `client` directory contains the source that would be included in the frontend application of the
+Firedeck runtime via Typescript path aliasing.
 
-The client directory copies [Next.js app-router]() structure and has a structure like so:
+The client directory copies [Next.js' app-router](https://nextjs.org/docs/app) structure (_minus
+server components and functions_) and has a structure like so:
 
 ```
 <module-name>/
@@ -65,9 +68,9 @@ The client directory copies [Next.js app-router]() structure and has a structure
   - index.tsx
 ```
 
-A runtime, Firedeck builds the router that links to pages using an approach called "directory router spec". With this
-approach, firedeck examines the `client/pages` directory in a depth-first manner searching for the following files
-within each directory:
+At runtime, Firedeck builds the router that links to pages using an approach called "directory
+router spec". With this approach, firedeck examines the `client/pages` directory in a depth-first
+manner searching for the following files within each directory:
 
 | File               | Description                                                                           |
 |--------------------|---------------------------------------------------------------------------------------|
@@ -76,8 +79,8 @@ within each directory:
 | `*placeholder.tsx` | Defines the component to display while the page component is being fetched            |
 | `*guard.ts`        | Defines the function to control access to the page component                          |
 
-Using a suffix-based convention avoids naming every page, `page.tsx` or `layout.tsx`, which would lead to editor fatigue
-and affect the developer experience.
+Using a suffix-based convention avoids naming every page, `page.tsx` or `layout.tsx`, which would
+lead to editor fatigue and affect the developer experience.
 
 The page file would resemble the snippet below:
 
@@ -130,13 +133,13 @@ export default function indexGuard() {
 
 #### Tailwindcss Configuration
 
-Each module client is automatically configured to use Tailwindcss 4 out of the box. Changes can be made to the
-`index.css` within the module which reflects in the app immediately.
+Each module client is automatically configured to use Tailwindcss 4 out of the box. Changes can be
+made to the `index.css` within the module which reflects in the app immediately.
 
-#### React App Customization
+#### App Customization
 
-Each module has an `index.tsx` at its root. This file exports a default function which is used to customize the router
-component. You can use this file to wrap the router with other providers.
+Each module has an `index.tsx` at its root. This file exports a default function which is used to
+customize the router component. You can use this file to wrap the router with other providers.
 
 In the example below, we wrap our router with Tanstack Query provider:
 
@@ -161,58 +164,202 @@ export default function (appRouter: ReactNode) {
 }
 ```
 
-The runtime workspace will be aliased to the modules directory, allowing the generated frontend applications locate
-their corresponding source files.
+## Firedeck Runtime
 
-The server functions defined by the module will be available to the client via the `useApi` hook. This hook is
-regenerated in the generated bridge whenever the server files are modified. _For reference, this is similar to how
-[tRPC](https://trpc.io/) works_.
+Firedeck compiles the "modules" directory into a final application at runtime.
 
-When deployed, the client would be hosted on firebase hosting while the server is deployed to firebase functions.
+At runtime, a [Turbo](https://turborepo.dev/) monorepo is created at `.firedeck/runtime` which
+contains [Vite](https://vite.dev/) applications
+and[Firebase cloud function apps](https://firebase.google.com/docs/functions) for all modules.
 
-The `config.json` allows module customization. It's properties are defined below:
+This monorepo application is completely handled by Firedeck so you don't need to worry about it.
 
-| Property | Description | Default Value | Required |
-|----------|-------------|---------------|----------|
-|          |             |               |          |
+## Client SDK
 
-## Runtime
+Firedeck also generates a client SDK package based on the modules. This package provides utilities
+which connect the frontend and backend module component.
 
-During development, Firedeck emits a Turbo monorepo project to `.firedeck/runtime`. This monorepo is built from the
-analysis of the `modules` directory which contains the user code.
+The package lives at `node_modules/@firedeck/client-sdk` and is imported as `@firedeck/client-sdk`.
 
-Each module in the `modules` directory maps to the following:
+The client SDK contains the following files:
 
-- A standalone Vite application which serves the `client` component
-- A standalone functions directory which hosts the `server` component, configured in the `.firebaserc` and
-  `firebase.json` config files.
+### Routes.ts
 
-When the `dev` command is run, the user code is statically analyzed to create necessary data structures (JSON
-serializable) to create the above-mentioned applications.
+For each module client, a route enum is generated in the `routes.ts` files.
 
-After this two process run concurrently to watch the user code for any changes and regenerate the application files
-where necessary and also to run the generated applications.
-
-The flow is summed up in the diagram below:
+Let's assume your project has two modules; `main` and `admin`:
 
 ```
-                     Run dev
-                        ↓
-                  Static analyis
-                        ↓
-              Generate monorepo files
-                        ↓
-               ―――――――――――――――――――
-              ↓                   ↓
-       Watch user modules    Run monorepo
-        for changes and      application
-        update monorepo  
-             files
+<root-dir>
+  - modules/
+    - main/
+      - client/
+        - pages/
+          - index-page.tsx
+          - contact/
+            - contact-page.tsx
+          - features/
+            - features-page.tsx
+    - admin/
+      - client/
+        - pages/
+          - settings/
+            - settings-page.tsx
 ```
 
-## CLI
+You can access the routes for these modules in a component like so:
 
-| Command              | Description                                                         |
-|----------------------|---------------------------------------------------------------------|
-| `init`               | Initializes the project folder structure and copies templates files |
-| `module create NAME` | Creates a new module                                                |
+```typescript jsx
+/* modules/main/client/pages/index-page.tsx */
+
+import {Link, useNavigate} from "react-router";
+import {AdminRoute, MainRoute} from "@firedeck/client-sdk/routes";
+
+export function IndexPage() {
+    const navigate = useNavigate();
+
+    const handleNavigate = () => {
+        navigate(MainRoute.ABOUT_PAGE);
+    }
+
+    return (
+        <div>
+            <Link to={MainRoute.CONTACT_PAGE}>Go to contacts</Link>
+            <button onClick={handleNavigate}>Go to features page</button>
+
+            {/* Will navigate to a 404 */}
+            <Link to={AdminRoute.SETTINGS_PAGE}>Go to admin settings</Link>
+        </div>
+    );
+}
+```
+
+Take note of the following:
+
+> ⚡ Route enums are derived from the module name.
+> 
+> (E.g. `main` module yields `MainRoute`, `admin` module yields `AdminRoute`)
+
+> ⚡ Route enum members are derived from page file component names.
+> 
+> (E.g. `export default function IndexPage() {}` yields a route enum member `INDEX_PAGE`)
+
+> ⚡ Navigating to a route in a different module will yield a 404 (Not found) response.
+
+[//]: # (The server functions defined by the module will be available to the client via the `useApi` hook.)
+
+[//]: # (This hook is)
+
+[//]: # (regenerated in the generated bridge whenever the server files are modified. _For reference, this is)
+
+[//]: # (similar to how)
+
+[//]: # ([tRPC]&#40;https://trpc.io/&#41; works_.)
+
+[//]: # ()
+
+[//]: # (When deployed, the client would be hosted on firebase hosting while the server is deployed to)
+
+[//]: # (firebase functions.)
+
+[//]: # ()
+
+[//]: # (The `config.json` allows module customization. It's properties are defined below:)
+
+[//]: # ()
+
+[//]: # (| Property | Description | Default Value | Required |)
+
+[//]: # (|----------|-------------|---------------|----------|)
+
+[//]: # (|          |             |               |          |)
+
+[//]: # ()
+
+[//]: # (## Runtime)
+
+[//]: # ()
+
+[//]: # (During development, Firedeck emits a Turbo monorepo project to `.firedeck/runtime`. This monorepo is)
+
+[//]: # (built from the)
+
+[//]: # (analysis of the `modules` directory which contains the user code.)
+
+[//]: # ()
+
+[//]: # (Each module in the `modules` directory maps to the following:)
+
+[//]: # ()
+
+[//]: # (- A standalone Vite application which serves the `client` component)
+
+[//]: # (- A standalone functions directory which hosts the `server` component, configured in the)
+
+[//]: # (  `.firebaserc` and)
+
+[//]: # (  `firebase.json` config files.)
+
+[//]: # ()
+
+[//]: # (When the `dev` command is run, the user code is statically analyzed to create necessary data)
+
+[//]: # (structures &#40;JSON)
+
+[//]: # (serializable&#41; to create the above-mentioned applications.)
+
+[//]: # ()
+
+[//]: # (After this two process run concurrently to watch the user code for any changes and regenerate the)
+
+[//]: # (application files)
+
+[//]: # (where necessary and also to run the generated applications.)
+
+[//]: # ()
+
+[//]: # (The flow is summed up in the diagram below:)
+
+[//]: # ()
+
+[//]: # (```)
+
+[//]: # (                     Run dev)
+
+[//]: # (                        ↓)
+
+[//]: # (                  Static analyis)
+
+[//]: # (                        ↓)
+
+[//]: # (              Generate monorepo files)
+
+[//]: # (                        ↓)
+
+[//]: # (               ―――――――――――――――――――)
+
+[//]: # (              ↓                   ↓)
+
+[//]: # (       Watch user modules    Run monorepo)
+
+[//]: # (        for changes and      application)
+
+[//]: # (        update monorepo  )
+
+[//]: # (             files)
+
+[//]: # (```)
+
+[//]: # ()
+
+[//]: # (## CLI)
+
+[//]: # ()
+
+[//]: # (| Command              | Description                                                         |)
+
+[//]: # (|----------------------|---------------------------------------------------------------------|)
+
+[//]: # (| `init`               | Initializes the project folder structure and copies templates files |)
+
+[//]: # (| `module create NAME` | Creates a new module                                                |)
