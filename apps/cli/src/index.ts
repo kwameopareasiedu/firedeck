@@ -3,8 +3,7 @@
 import fs from "fs-extra";
 import { isAbsolute, relative, resolve } from "node:path";
 import { Command } from "commander";
-import { cwdIsFiredeckRoot, parseErrorMessage } from "@/utils";
-import { run } from "@/functions";
+import { parseErrorMessage } from "@/utils";
 import { input } from "@inquirer/prompts";
 import { Project } from "@/project";
 
@@ -60,8 +59,6 @@ cli
   .command("compile")
   .description("Analyzes the project and compiles the Firedeck runtime")
   .action(async () => {
-    if (!cwdIsFiredeckRoot())
-      throw "cannot find 'firedeck.json'. make sure this command is run at the project root";
     const project = new Project({ rootDir: process.cwd() });
     const runtime = await project.analyze();
     const changes = runtime.diffFrom(null);
@@ -76,10 +73,8 @@ cli
   .command("run")
   .description("Starts the development runtime")
   .action(async () => {
-    if (!cwdIsFiredeckRoot())
-      throw "cannot find 'firedeck.json'. make sure this command is run at the project root";
-
-    await run({ rootDir: process.cwd() });
+    const project = new Project({ rootDir: process.cwd() });
+    await project.run({ log: console.log, error: console.error });
   });
 
 const moduleCli = new Command("module");

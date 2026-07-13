@@ -33,10 +33,6 @@ export async function writeFileTree(rootDir: string, tree: FileTree) {
   }
 }
 
-export function cwdIsFiredeckRoot() {
-  return pathIsFiredeckRoot(process.cwd());
-}
-
 export function pathIsFiredeckRoot(path: string) {
   return fs.existsSync(resolve(path, "firedeck.json"));
 }

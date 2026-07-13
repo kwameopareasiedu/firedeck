@@ -43,28 +43,33 @@ export class Runtime {
     const changes: RuntimeChange[] = [];
 
     if (!source) {
-      changes.push({ type: "create-runtime" });
-      changes.push({ type: "create-client-sdk" });
+      changes.push({ type: "create-runtime" }, { type: "create-client-sdk" });
       source = new Runtime({ clients: [] });
     }
 
-    for (let cIdx = 0; cIdx < Math.max(source.clients.length, this.clients.length); cIdx++) {
-      const sourceClient = source.clients[cIdx];
-      const destClient = this.clients[cIdx];
+    const sourceClients = new Map(source.clients.map((client) => [client.name, client]));
+    const destClients = new Map(this.clients.map((client) => [client.name, client]));
 
-      if (!sourceClient && destClient) {
+    for (const destClient of this.clients) {
+      const sourceClient = sourceClients.get(destClient.name);
+
+      if (!sourceClient) {
         changes.push(
-          { type: "add-runtime-client", clientName: destClient.name },
+          {
+            type: "add-runtime-client",
+            clientName: destClient.name,
+          },
           {
             type: "update-runtime-client-routes",
             clientName: destClient.name,
             clientRoutes: destClient.routes,
           },
-          { type: "update-runtime-client-html", clientName: destClient.name },
+          {
+            type: "update-runtime-client-html",
+            clientName: destClient.name,
+          },
         );
-      } else if (sourceClient && !destClient) {
-        changes.push({ type: "remove-runtime-client", clientName: sourceClient.name });
-      } else if (sourceClient && destClient) {
+      } else {
         if (sourceClient.name !== destClient.name) {
           changes.push({
             type: "rename-runtime-client",
@@ -82,13 +87,30 @@ export class Runtime {
         }
 
         if (sourceClient.htmlHash !== destClient.htmlHash) {
-          changes.push({ type: "update-runtime-client-html", clientName: destClient.name });
+          changes.push({
+            type: "update-runtime-client-html",
+            clientName: destClient.name,
+          });
         }
       }
     }
 
+    for (const sourceClient of source.clients) {
+      const destClient = destClients.get(sourceClient.name);
+
+      if (!destClient) {
+        changes.push({
+          type: "remove-runtime-client",
+          clientName: sourceClient.name,
+        });
+      }
+    }
+
     if (changes.some((change) => change.type.includes("client"))) {
-      changes.push({ type: "update-client-sdk-routes", clients: this.clients });
+      changes.push({
+        type: "update-client-sdk-routes",
+        clients: Object.values(this.clients),
+      });
     }
 
     return changes;

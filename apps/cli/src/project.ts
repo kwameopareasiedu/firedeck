@@ -17,7 +17,10 @@ import * as walk from "acorn-walk";
 import * as walkJsx from "acorn-jsx-walk";
 import { ClientRoute, ReactRouterRoute, Runtime, RuntimeChange, RuntimeClient } from "@/runtime";
 import { format } from "prettier";
-import { snakeCase, startCase } from "lodash";
+import { kebabCase, snakeCase, startCase } from "lodash";
+import { spawn } from "node:child_process";
+import chokidar from "chokidar";
+import kill from "tree-kill";
 
 walkJsx.extend(walk.base);
 
@@ -175,6 +178,105 @@ export class Project {
         }
       }
     }
+  }
+
+  async run(args: { log: (message: unknown) => void; error: (message: unknown) => void }) {
+    this.assertFiredeckRootDir();
+
+    const compile = async (currentRuntime: Runtime | null) => {
+      const updatedRuntime = await this.analyze();
+      const runtimeChanges = updatedRuntime.diffFrom(currentRuntime);
+      await this.updateRuntime(runtimeChanges);
+
+      return [updatedRuntime, runtimeChanges] as const;
+    };
+
+    let [currentRuntime] = await compile(null);
+
+    const lockFileNames = [
+      "package-lock.json",
+      "yarn.lock",
+      "pnpm-lock.yaml",
+      "bun.lock",
+      "bun.lockb",
+      "deno.lock",
+    ];
+
+    for (const lockFileName of lockFileNames) {
+      const lockFilePath = resolve(this.rootDir, lockFileName);
+
+      if (fs.existsSync(lockFilePath)) {
+        const destPath = resolve(this.runtimeDir, lockFileName);
+        fs.copyFileSync(lockFilePath, destPath);
+        break;
+      }
+    }
+
+    let runtimeDevProc = spawn("yarn", ["dev"], { cwd: this.runtimeDir, stdio: "inherit" });
+    let changeDebounceTimer: NodeJS.Timeout | null = null;
+
+    const handleChange = async (path: string, eventName: string) => {
+      if (stopping) return;
+
+      if (changeDebounceTimer) clearTimeout(changeDebounceTimer);
+
+      changeDebounceTimer = setTimeout(async () => {
+        args.log(`firedeck: ${kebabCase(eventName)}: ${relative(this.modulesDir, path)}`);
+        const [updatedRuntime, runtimeChanges] = await compile(currentRuntime);
+        currentRuntime = updatedRuntime;
+
+        const restartRuntimeDevProc = runtimeChanges.some((change) =>
+          (
+            [
+              "add-runtime-client",
+              "remove-runtime-client",
+              "rename-runtime-client",
+            ] as RuntimeChange["type"][]
+          ).includes(change.type),
+        );
+
+        if (restartRuntimeDevProc) {
+          kill(runtimeDevProc.pid!);
+          await new Promise((resolve) => setTimeout(resolve, 500));
+
+          if (runtimeDevProc.exitCode === null) {
+            kill(runtimeDevProc.pid!, "SIGKILL");
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+
+          runtimeDevProc = spawn("yarn", ["dev"], { cwd: this.runtimeDir, stdio: "inherit" });
+        }
+      }, 500);
+    };
+
+    const fileWatcher = chokidar
+      .watch(this.modulesDir, { persistent: true, awaitWriteFinish: { stabilityThreshold: 500 } })
+      .on("ready", () => args.log("firedeck: watching modules"))
+      .on("error", (err) => args.error(`firedeck: error: ${err}`))
+      .on("add", async (path) => await handleChange(path, "add"))
+      .on("addDir", async (path) => await handleChange(path, "addDir"))
+      .on("change", async (path) => await handleChange(path, "change"))
+      .on("unlink", async (path) => await handleChange(path, "unlink"))
+      .on("unlinkDir", async (path) => await handleChange(path, "unlinkDir"));
+
+    let stopping = false;
+
+    process.on("SIGINT", async () => {
+      if (!stopping) {
+        stopping = true;
+        args.log("firedeck: SIGINT received; terminating runtime");
+        kill(runtimeDevProc.pid!);
+        await fileWatcher.close();
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        if (runtimeDevProc.exitCode === null) {
+          kill(runtimeDevProc.pid!, "SIGKILL");
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+      } else args.log("firedeck: runtime terminating");
+    });
+
+    args.log("firedeck: runtime started");
   }
 
   private assertFiredeckRootDir() {

@@ -440,7 +440,7 @@ test("runtime-diff", async (t) => {
   ]);
 
   t.deepEqual(r1r4Changes, [
-    { type: "rename-runtime-client", oldClientName: "main", newClientName: "admin" },
+    { type: "add-runtime-client", clientName: "admin" },
     {
       type: "update-runtime-client-routes",
       clientName: "admin",
@@ -537,6 +537,7 @@ test("runtime-diff", async (t) => {
       },
     },
     { type: "update-runtime-client-html", clientName: "external" },
+    { type: "remove-runtime-client", clientName: "main" },
     {
       type: "update-client-sdk-routes",
       clients: [
