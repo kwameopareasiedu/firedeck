@@ -29,7 +29,6 @@ export type RuntimeChange =
   | { type: "rename-runtime-client"; oldClientName: string; newClientName: string }
   | { type: "update-runtime-client-routes"; clientName: string; clientRoutes: ClientRoute }
   | { type: "update-runtime-client-html"; clientName: string }
-  | { type: "create-client-sdk" }
   | { type: "update-client-sdk-routes"; clients: RuntimeClient[] };
 
 export class Runtime {
@@ -43,7 +42,7 @@ export class Runtime {
     const changes: RuntimeChange[] = [];
 
     if (!source) {
-      changes.push({ type: "create-runtime" }, { type: "create-client-sdk" });
+      changes.push({ type: "create-runtime" });
       source = new Runtime({ clients: [] });
     }
 

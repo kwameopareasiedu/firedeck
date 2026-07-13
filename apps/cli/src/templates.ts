@@ -38,6 +38,7 @@ export function generateProjectFileTree(opts: {
           "rollup-plugin-dts": "^6.4.1",
           "rollup-plugin-typescript-paths": "^1.5.0",
           "tailwindcss": "^4.3.0",
+          "tslib": "^2.8.1",
           "turbo": "^2.10.4",
           "typescript": "~6.0.2",
           "typescript-eslint": "^8.62.0",
@@ -76,12 +77,11 @@ export function generateProjectFileTree(opts: {
           "noEmit": true,
           "skipLibCheck": true,
           "rootDir": ".",
-          "baseUrl": ".",
           "paths": {
-            "@/*": ["modules/*"]
+            "@/*": ["./modules/*"]
           }
         },
-        "include": ["modules"]
+        "include": ["./modules"]
       }`,
     },
 
@@ -479,107 +479,6 @@ export function generateRuntimeClientFileTree(args: { clientName: string }): Fil
       content: `
       @import "tailwindcss";
       @import "../../../../../modules/${args.clientName}/client/index.css";
-      `,
-    },
-  };
-}
-
-export function generateClientSdkFileTree(): FileTree {
-  return {
-    "package.json": {
-      content: `
-      {
-        "name": "firedeck-client-sdk",
-        "description": "Auto-generated Client SDK for firedeck projects",
-        "version": "0.1.0",
-        "exports": {
-          "./*": {
-            "types": "./dist/*.d.ts",
-            "import": "./dist/*.js",
-            "default": "./dist/*.js"
-          }
-        },
-        "scripts": {
-          "dev": "../../.bin/rollup -c -w --no-watch.clearScreen",
-          "build": "../../.bin/rollup -c"
-        },
-        "dependencies": {
-          "@rollup/plugin-commonjs": "^29.0.3",
-          "@rollup/plugin-node-resolve": "^16.0.3",
-          "@rollup/plugin-typescript": "^12.3.0",
-          "fs-extra": "^11.3.6",
-          "rollup": "^4.62.2",
-          "rollup-plugin-dts": "^6.4.1",
-          "rollup-plugin-typescript-paths": "^1.5.0"
-        },
-        "peerDependencies": {
-          "react-router": "^8.2.0"
-        }
-      }`,
-    },
-
-    "tsconfig.json": {
-      content: `
-      {
-        "compilerOptions": {
-          "target": "ESNext",
-          "module": "ESNext",
-          "moduleResolution": "Bundler",
-          "esModuleInterop": true,
-          "forceConsistentCasingInFileNames": true,
-          "strict": true,
-          "noEmit": true,
-          "skipLibCheck": true,
-          "jsx": "react-jsx",
-          "rootDir": ".",
-          "baseUrl": ".",
-          "paths": {
-            "@/*": ["src/*"]
-          }
-        },
-        "include": ["src"]
-      }`,
-    },
-
-    "rollup.config.mjs": {
-      content: `
-      import { defineConfig } from "rollup";
-      import { dts } from "rollup-plugin-dts";
-      import nodeResolve from "@rollup/plugin-node-resolve";
-      import commonjs from "@rollup/plugin-commonjs";
-      import typescript from "@rollup/plugin-typescript";
-      import { typescriptPaths } from "rollup-plugin-typescript-paths";
-      import fs from "fs-extra";
-      
-      const packageInfo = JSON.parse(fs.readFileSync("package.json", { encoding: "utf-8" }));
-      const external = Object.keys(packageInfo.dependencies).map((dep) => new RegExp(\`\${dep}.+\`));
-      
-      export default defineConfig(
-        ["router"].reduce((configs, name) => {
-          const inputPath = \`src/\${name}.ts\`;
-          const destPath = \`dist/\${name}.js\`;
-      
-          return [
-            ...configs,
-            {
-              input: inputPath,
-              output: { file: destPath, format: "esm" },
-              plugins: [nodeResolve(), commonjs(), typescript(), typescriptPaths()],
-              treeshake: { moduleSideEffects: false },
-              external: external,
-            },
-            {
-              input: inputPath,
-              output: { file: destPath },
-              plugins: [typescript(), dts()],
-            },
-          ];
-        }, []),
-      );`,
-    },
-
-    "src/routes.ts": {
-      content: `
       `,
     },
   };

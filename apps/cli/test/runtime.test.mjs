@@ -640,7 +640,6 @@ test("runtime-diff", async (t) => {
 
   t.deepEqual(nullR4Changes, [
     { type: "create-runtime" },
-    { type: "create-client-sdk" },
     { type: "add-runtime-client", clientName: "admin" },
     {
       type: "update-runtime-client-routes",

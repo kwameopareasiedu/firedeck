@@ -2,7 +2,6 @@ import { generateStringHash, getPrettierConfig, pathIsFiredeckRoot, writeFileTre
 import { relative, resolve, sep } from "node:path";
 import fs from "fs-extra";
 import {
-  generateClientSdkFileTree,
   generateModuleFileTree,
   generateProjectFileTree,
   generateRuntimeClientFileTree,
@@ -17,7 +16,7 @@ import * as walk from "acorn-walk";
 import * as walkJsx from "acorn-jsx-walk";
 import { ClientRoute, ReactRouterRoute, Runtime, RuntimeChange, RuntimeClient } from "@/runtime";
 import { format } from "prettier";
-import { kebabCase, snakeCase, startCase } from "lodash";
+import { snakeCase, startCase } from "lodash";
 import { spawn } from "node:child_process";
 import chokidar from "chokidar";
 import kill from "tree-kill";
@@ -25,6 +24,8 @@ import kill from "tree-kill";
 walkJsx.extend(walk.base);
 
 export class Project {
+  private static readonly RESERVED_MODULE_NAMES = ["shared", "sdk"];
+
   private readonly rootDir: string;
   private readonly modulesDir: string;
   private readonly runtimeDir: string;
@@ -36,7 +37,7 @@ export class Project {
     this.modulesDir = resolve(args.rootDir, "modules");
     this.runtimeDir = resolve(args.rootDir, ".firedeck/runtime");
     this.runtimeModulesDir = resolve(args.rootDir, ".firedeck/runtime/modules");
-    this.clientSdkDir = resolve(args.rootDir, "node_modules/@firedeck/client-sdk");
+    this.clientSdkDir = resolve(args.rootDir, "modules/sdk/client");
   }
 
   async init(args: {
@@ -87,7 +88,7 @@ export class Project {
       .filter((moduleName) => {
         return (
           fs.lstatSync(resolve(this.modulesDir, moduleName)).isDirectory() &&
-          moduleName !== "shared"
+          !Project.RESERVED_MODULE_NAMES.includes(moduleName)
         );
       });
 
@@ -134,11 +135,6 @@ export class Project {
           await writeFileTree(this.runtimeDir, runtimeFileTree);
           break;
         }
-        case "create-client-sdk": {
-          const clientSdkFileTree = generateClientSdkFileTree();
-          await writeFileTree(this.clientSdkDir, clientSdkFileTree);
-          break;
-        }
         case "add-runtime-client": {
           const clientRoot = resolve(this.runtimeModulesDir, change.clientName);
           const clientFileTree = generateRuntimeClientFileTree({ clientName: change.clientName });
@@ -171,9 +167,10 @@ export class Project {
           break;
         }
         case "update-client-sdk-routes": {
-          const clientSdkRouterFile = resolve(this.clientSdkDir, "src/routes.ts");
-          const sdkRouterSource = await this.generateClientSdkRouterSource(change.clients);
-          fs.writeFileSync(clientSdkRouterFile, sdkRouterSource);
+          const sdkRoutesFile = resolve(this.clientSdkDir, "routes.ts");
+          const routesSource = await this.generateClientSdkRoutesSource(change.clients);
+          fs.ensureFileSync(sdkRoutesFile);
+          fs.writeFileSync(sdkRoutesFile, routesSource);
           break;
         }
       }
@@ -221,30 +218,34 @@ export class Project {
       if (changeDebounceTimer) clearTimeout(changeDebounceTimer);
 
       changeDebounceTimer = setTimeout(async () => {
-        args.log(`firedeck: ${kebabCase(eventName)}: ${relative(this.modulesDir, path)}`);
-        const [updatedRuntime, runtimeChanges] = await compile(currentRuntime);
-        currentRuntime = updatedRuntime;
+        try {
+          args.log(`firedeck: ${eventName}: ${relative(this.modulesDir, path)}`);
+          const [updatedRuntime, runtimeChanges] = await compile(currentRuntime);
+          currentRuntime = updatedRuntime;
 
-        const restartRuntimeDevProc = runtimeChanges.some((change) =>
-          (
-            [
-              "add-runtime-client",
-              "remove-runtime-client",
-              "rename-runtime-client",
-            ] as RuntimeChange["type"][]
-          ).includes(change.type),
-        );
+          const restartRuntimeDevProc = runtimeChanges.some((change) =>
+            (
+              [
+                "add-runtime-client",
+                "remove-runtime-client",
+                "rename-runtime-client",
+              ] as RuntimeChange["type"][]
+            ).includes(change.type),
+          );
 
-        if (restartRuntimeDevProc) {
-          kill(runtimeDevProc.pid!);
-          await new Promise((resolve) => setTimeout(resolve, 500));
-
-          if (runtimeDevProc.exitCode === null) {
-            kill(runtimeDevProc.pid!, "SIGKILL");
+          if (restartRuntimeDevProc) {
+            kill(runtimeDevProc.pid!);
             await new Promise((resolve) => setTimeout(resolve, 500));
-          }
 
-          runtimeDevProc = spawn("yarn", ["dev"], { cwd: this.runtimeDir, stdio: "inherit" });
+            if (runtimeDevProc.exitCode === null) {
+              kill(runtimeDevProc.pid!, "SIGKILL");
+              await new Promise((resolve) => setTimeout(resolve, 500));
+            }
+
+            runtimeDevProc = spawn("yarn", ["dev"], { cwd: this.runtimeDir, stdio: "inherit" });
+          }
+        } catch (err) {
+          args.error(err);
         }
       }, 500);
     };
@@ -253,11 +254,11 @@ export class Project {
       .watch(this.modulesDir, { persistent: true, awaitWriteFinish: { stabilityThreshold: 500 } })
       .on("ready", () => args.log("firedeck: watching modules"))
       .on("error", (err) => args.error(`firedeck: error: ${err}`))
-      .on("add", async (path) => await handleChange(path, "add"))
-      .on("addDir", async (path) => await handleChange(path, "addDir"))
+      .on("add", async (path) => await handleChange(path, "new-file"))
+      .on("addDir", async (path) => await handleChange(path, "new-dir"))
       .on("change", async (path) => await handleChange(path, "change"))
-      .on("unlink", async (path) => await handleChange(path, "unlink"))
-      .on("unlinkDir", async (path) => await handleChange(path, "unlinkDir"));
+      .on("unlink", async (path) => await handleChange(path, "delete-file"))
+      .on("unlinkDir", async (path) => await handleChange(path, "delete-dir"));
 
     let stopping = false;
 
@@ -475,7 +476,7 @@ export class Project {
     return format(routerSource, getPrettierConfig({ filePath: "a.tsx" }));
   }
 
-  private async generateClientSdkRouterSource(clients: RuntimeClient[]) {
+  private async generateClientSdkRoutesSource(clients: RuntimeClient[]) {
     const routerSource = clients.reduce((source, client) => {
       const routeEnumSource = this.flattenRoutes(client.routes).reduce((source, route) => {
         if (!route.urlPath) return source;
@@ -487,7 +488,20 @@ export class Project {
       return source + clientSource + "\n";
     }, "");
 
-    return format(routerSource, getPrettierConfig({ filePath: "a.ts" }));
+    const finalSource = `
+    /**
+     * ------------------------------------
+     * This file was generated by Firedeck.
+     *
+     * Do not edit this file directly.
+     * Your changes will be overwritten.
+     * ------------------------------------
+     */
+     
+     ${routerSource}
+    `;
+
+    return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
   }
 
   private flattenRoutes(route: ClientRoute): ClientRoute[] {

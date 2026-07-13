@@ -66,7 +66,7 @@ cli
 
     console.log(`Project compiled ✅`);
     console.log(`Runtime:     .firedeck/runtime`);
-    console.log(`Client SDK:  node_modules/@firedeck/client-sdk`);
+    console.log(`Client SDK:  modules/sdk/client`);
   });
 
 cli
