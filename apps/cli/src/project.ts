@@ -315,7 +315,7 @@ export class Project {
 
       if (route.layoutImportPath) {
         return {
-          id: route.name,
+          id: route.name + "Layout",
           element: createReplaceTarget(`<${layoutName} />`),
           children: [pageTarget],
         };

@@ -325,7 +325,7 @@ test("update-runtime", async (t) => {
             element: withSuspense(<IndexPage />),
             children: [
               {
-                id: "DashboardGroup",
+                id: "DashboardGroupLayout",
                 element: <DashboardGroupLayout />,
                 children: [
                   {
