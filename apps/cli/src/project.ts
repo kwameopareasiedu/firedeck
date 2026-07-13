@@ -2,6 +2,7 @@ import { generateStringHash, getPrettierConfig, pathIsFiredeckRoot, writeFileTre
 import { relative, resolve, sep } from "node:path";
 import fs from "fs-extra";
 import {
+  generateClientSdkFileTree,
   generateModuleFileTree,
   generateProjectFileTree,
   generateRuntimeClientFileTree,
@@ -31,7 +32,7 @@ export class Project {
     this.modulesDir = resolve(args.rootDir, "modules");
     this.runtimeDir = resolve(args.rootDir, ".firedeck/runtime");
     this.runtimeModulesDir = resolve(args.rootDir, ".firedeck/runtime/modules");
-    this.clientSdkDir = resolve(args.rootDir, ".firedeck/client-sdk");
+    this.clientSdkDir = resolve(args.rootDir, "node_modules/@firedeck/client-sdk");
   }
 
   async init(args: {
@@ -127,6 +128,9 @@ export class Project {
 
           const runtimeFileTree = generateRuntimeFileTree();
           await writeFileTree(this.runtimeDir, runtimeFileTree);
+
+          const clientSdkTree = generateClientSdkFileTree();
+          await writeFileTree(this.clientSdkDir, clientSdkTree);
           break;
         }
         case "add-client": {

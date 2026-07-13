@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
 import fs from "fs-extra";
-import { isAbsolute, resolve } from "node:path";
+import { isAbsolute, relative, resolve } from "node:path";
 import { Command } from "commander";
 import { cwdIsFiredeckRoot, parseErrorMessage } from "@/utils";
-import { compile, createModule, init, run } from "@/functions";
+import { compile, run } from "@/functions";
 import { input } from "@inquirer/prompts";
+import { Project } from "@/project";
 
 const packageInfo = JSON.parse(
   fs.readFileSync(resolve(__dirname, "../package.json"), { encoding: "utf-8" }),
@@ -41,8 +42,14 @@ cli
       });
       const projectVersion = await input({ message: "Version:", default: "0.1.0" });
       const projectAuthor = await input({ message: "Author:", default: "Kwame" });
+      const project = new Project({ rootDir });
 
-      await init({ rootDir, projectName, projectDescription, projectVersion, projectAuthor });
+      await project.init({ projectName, projectDescription, projectVersion, projectAuthor });
+
+      console.log("\nNext steps");
+      console.log(`1. cd ${relative(process.cwd(), rootDir)}`);
+      console.log(`2. npm install`);
+      console.log(`3. npm run dev`);
     } catch (err) {
       console.error(parseErrorMessage(err));
       process.exit(-1);
@@ -55,8 +62,14 @@ cli
   .action(async () => {
     if (!cwdIsFiredeckRoot())
       throw "cannot find 'firedeck.json'. make sure this command is run at the project root";
+    const project = new Project({ rootDir: process.cwd() });
+    const runtime = await project.analyze();
+    const changes = runtime.diffFrom(null);
+    await project.updateRuntime(changes);
 
-    await compile({ rootDir: process.cwd() });
+    console.log(`Project compiled ✅`);
+    console.log(`Runtime:     .firedeck/runtime`);
+    console.log(`Client SDK:  node_modules/@firedeck/client-sdk`);
   });
 
 cli
@@ -77,18 +90,17 @@ moduleCli
   .option("--client-only", "client-only module")
   .option("--server-only", "server-only module")
   .description("Create a new Firedeck module named <name> with client and server components")
-  .action(async (name, opts) => {
+  .action(async (moduleName, opts) => {
     try {
+      const project = new Project({ rootDir: process.cwd() });
+
       if (opts.clientOnly && opts.serverOnly)
         throw "--client-only and --server-only cannot be specified at the same time";
-      else if (!cwdIsFiredeckRoot())
-        throw "cannot find 'firedeck.json'. make sure this command is run at the project root";
 
-      await createModule({
-        name,
-        rootDir: process.cwd(),
-        components: opts.clientOnly ? "client" : opts.serverOnly ? "server" : undefined,
-      });
+      const components = opts.clientOnly ? "client" : opts.serverOnly ? "server" : "all";
+      await project.createModule({ moduleName, components });
+
+      console.log(`Created new module: modules/${moduleName}`);
     } catch (err) {
       console.error(parseErrorMessage(err));
       process.exit(-1);
