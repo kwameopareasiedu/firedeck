@@ -10,10 +10,9 @@
     "skipLibCheck": true,
     "jsx": "react-jsx",
     "rootDir": ".",
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["./src"]
 }

@@ -121,7 +121,7 @@ A guard file would resemble the snippet below:
 ```typescript jsx
 // import { redirect } from "react-router";
 
-// Required default export. The component which is displayed while the page component is fetched
+// Required default export. The function which controls access to the page component
 export default function indexGuard() {
     return true; // Allow access
     // return redirect("redirect-path"); // Redirect to another page
