@@ -73,47 +73,43 @@ test("analyze", async (t) => {
   const mainModuleFileTree = {
     "modules/main/client/pages/index-page.tsx": {
       content: `
-      export default function IndexPage() {
+      export default function() {
         return <p>Hello World</p>;
       }`,
     },
     "modules/main/client/pages/(public)/landing/landing-page.tsx": {
       content: `
-      const LandingPage = () => {
+      export default function() {
         return <p>Hello World</p>;
-      };
-
-      export default LandingPage;`,
+      };`,
     },
     "modules/main/client/pages/(public)/contact/contact-page.tsx": {
       content: `
-      function ContactPage() {
+      export default function() {
         return <p>Hello World</p>;
-      };
-
-      export default ContactPage;`,
+      };`,
     },
     "modules/main/client/pages/(public)/features/features-page.tsx": {
       content: `
-      export default function FeaturesPage() {
+      export default function() {
         return <p>Hello World</p>;
       }`,
     },
     "modules/main/client/pages/(dashboard)/dashboard-layout.tsx": {
       content: `
-      export default function DashboardLayout() {
+      export default function() {
         return <p>Hello World</p>;
       }`,
     },
     "modules/main/client/pages/(dashboard)/users/users-page.tsx": {
       content: `
-      export default function UsersPage() {
+      export default function() {
         return <p>Hello World</p>;
       }`,
     },
     "modules/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx": {
       content: `
-      export default function UserDetailsPage() {
+      export default function() {
         return <p>Hello World</p>;
       }`,
     },
@@ -126,44 +122,59 @@ test("analyze", async (t) => {
   t.is(workspace.clients.length, 1);
 
   t.deepEqual(workspace.clients[0].routes, {
-    name: "IndexPage",
+    pageName: null,
     pageImportPath: null,
+    layoutName: null,
     layoutImportPath: null,
+    placeholderName: null,
     placeholderImportPath: null,
+    guardName: null,
     guardImportPath: null,
     urlPath: null,
     children: [
       {
-        name: "IndexPage",
+        pageName: "IndexPage",
         pageImportPath: "@/main/client/pages/index-page.tsx",
+        layoutName: null,
         layoutImportPath: null,
+        placeholderName: null,
         placeholderImportPath: null,
+        guardName: null,
         guardImportPath: null,
         urlPath: "/",
         children: [],
       },
       {
-        name: "DashboardGroup",
+        pageName: null,
         pageImportPath: null,
+        layoutName: "DashboardLayout",
         layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
+        placeholderName: null,
         placeholderImportPath: null,
+        guardName: null,
         guardImportPath: null,
         urlPath: null,
         children: [
           {
-            name: "UsersPage",
+            pageName: "UsersPage",
             pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx",
+            layoutName: null,
             layoutImportPath: null,
+            placeholderName: null,
             placeholderImportPath: null,
+            guardName: null,
             guardImportPath: null,
             urlPath: "/users",
             children: [
               {
-                name: "UserDetailsPage",
+                pageName: "UserDetailsPage",
                 pageImportPath:
                   "@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx",
+                layoutName: null,
                 layoutImportPath: null,
+                placeholderName: null,
                 placeholderImportPath: null,
+                guardName: null,
                 guardImportPath: null,
                 urlPath: "/users/:userId",
                 children: [],
@@ -173,36 +184,48 @@ test("analyze", async (t) => {
         ],
       },
       {
-        name: "PublicGroup",
+        pageName: null,
         pageImportPath: null,
+        layoutName: null,
         layoutImportPath: null,
+        placeholderName: null,
         placeholderImportPath: null,
+        guardName: null,
         guardImportPath: null,
         urlPath: null,
         children: [
           {
-            name: "ContactPage",
+            pageName: "ContactPage",
             pageImportPath: "@/main/client/pages/(public)/contact/contact-page.tsx",
+            layoutName: null,
             layoutImportPath: null,
+            placeholderName: null,
             placeholderImportPath: null,
+            guardName: null,
             guardImportPath: null,
             urlPath: "/contact",
             children: [],
           },
           {
-            name: "FeaturesPage",
+            pageName: "FeaturesPage",
             pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx",
+            layoutName: null,
             layoutImportPath: null,
+            placeholderName: null,
             placeholderImportPath: null,
+            guardName: null,
             guardImportPath: null,
             urlPath: "/features",
             children: [],
           },
           {
-            name: "LandingPage",
+            pageName: "LandingPage",
             pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx",
+            layoutName: null,
             layoutImportPath: null,
+            placeholderName: null,
             placeholderImportPath: null,
+            guardName: null,
             guardImportPath: null,
             urlPath: "/landing",
             children: [],
@@ -210,10 +233,13 @@ test("analyze", async (t) => {
         ],
       },
       {
-        name: "NotFoundPage",
+        pageName: "NotFoundPage",
         pageImportPath: "@/main/client/pages/404/not-found-page.tsx",
+        layoutName: null,
         layoutImportPath: null,
+        placeholderName: null,
         placeholderImportPath: null,
+        guardName: null,
         guardImportPath: null,
         urlPath: "/*",
         children: [],
@@ -327,7 +353,7 @@ test("update-runtime", async (t) => {
         import { createBrowserRouter } from "react-router";
         
         const IndexPage = lazy(() => import("@/main/client/pages/index-page.tsx"));
-        import DashboardGroupLayout from "@/main/client/pages/(dashboard)/dashboard-layout.tsx";
+        import DashboardLayout from "@/main/client/pages/(dashboard)/dashboard-layout.tsx";
         const UsersPage = lazy(() => import("@/main/client/pages/(dashboard)/users/users-page.tsx"));
         const UserDetailsPage = lazy(() => import("@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx"));
         const ContactPage = lazy(() => import("@/main/client/pages/(public)/contact/contact-page.tsx"));
@@ -352,8 +378,8 @@ test("update-runtime", async (t) => {
             children: [
               { id: "IndexPage", path: "/", element: withSuspense(<IndexPage />) },
               {
-                id: "DashboardGroupLayout",
-                element: <DashboardGroupLayout />,
+                id: "DashboardLayout",
+                element: <DashboardLayout />,
                 children: [
                   {
                     id: "UsersPage",

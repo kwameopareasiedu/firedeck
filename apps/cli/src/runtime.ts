@@ -1,8 +1,11 @@
 export interface ClientRoute {
-  name: string;
+  pageName: string | null;
   pageImportPath: string | null;
+  layoutName: string | null;
   layoutImportPath: string | null;
+  placeholderName: string | null;
   placeholderImportPath: string | null;
+  guardName: string | null;
   guardImportPath: string | null;
   urlPath: string | null;
   children: ClientRoute[];
@@ -47,7 +50,6 @@ export class Runtime {
     }
 
     const sourceClients = new Map(source.clients.map((client) => [client.name, client]));
-    const destClients = new Map(this.clients.map((client) => [client.name, client]));
 
     for (const destClient of this.clients) {
       const sourceClient = sourceClients.get(destClient.name);
@@ -93,6 +95,8 @@ export class Runtime {
         }
       }
     }
+
+    const destClients = new Map(this.clients.map((client) => [client.name, client]));
 
     for (const sourceClient of source.clients) {
       const destClient = destClients.get(sourceClient.name);

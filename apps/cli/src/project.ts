@@ -7,26 +7,18 @@ import {
   generateRuntimeClientFileTree,
   generateRuntimeFileTree,
 } from "@/templates";
-import { snakeCase, camelCase } from "@/utils";
 import { ModuleComponents } from "@/types";
-import * as acorn from "acorn";
-import { tsPlugin } from "@sveltejs/acorn-typescript";
-import jsx from "acorn-jsx";
-import * as walk from "acorn-walk";
-// @ts-expect-error declaration don't exist
-import * as walkJsx from "acorn-jsx-walk";
 import { ClientRoute, ReactRouterRoute, Runtime, RuntimeChange, RuntimeClient } from "@/runtime";
 import { format } from "prettier";
-import { startCase } from "lodash";
+import { camelCase, snakeCase, startCase } from "lodash";
 import { spawn } from "node:child_process";
 import chokidar from "chokidar";
 import kill from "tree-kill";
 
-walkJsx.extend(walk.base);
-
 export class Project {
   private static readonly RESERVED_MODULE_NAMES = ["shared", "sdk"];
   private static readonly NOT_FOUND_DIR_SUFFIX = "404";
+  private static readonly NOT_FOUND_URL_PATH = "/*";
 
   private readonly rootDir: string;
   private readonly modulesDir: string;
@@ -296,37 +288,41 @@ export class Project {
     const dirFiles = dirContents.filter((item) => fs.lstatSync(item).isFile());
     const dirIsRoutable = !/\(\w+\)/.test(dir.split(sep).slice(-1)[0]);
 
+    const getNameAndImportPath = (itemPath?: string): [null, null] | [string, string] => {
+      if (!itemPath) return [null, null];
+
+      const rawItemName = itemPath.split(sep).slice(-1)[0].split(".")[0];
+      const itemName = rawItemName[0].toUpperCase() + camelCase(rawItemName).slice(1);
+      if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(itemName))
+        throw `${relative(this.modulesDir, itemPath)}: filename cannot be resolved to valid variable name: "${itemName}"`;
+
+      const itemImportPath = `@/${relative(this.modulesDir, itemPath)}`;
+      return [itemName, itemImportPath];
+    };
+
     const pageFiles = dirFiles.filter((itemPath) => itemPath.endsWith("page.tsx"));
     if (dirIsRoutable && pageFiles.length > 1) {
       throw `${relativeDir} contains multiple page files`;
     } else if (!dirIsRoutable && pageFiles.length > 0) {
       throw `${relativeDir} is not routable but contains a page file: ${pageFiles[0]}`;
     }
-
-    const pageImportPath =
-      dirIsRoutable && pageFiles.length > 0 ? `@/${relative(this.modulesDir, pageFiles[0])}` : null;
+    const [pageName, pageImportPath] = getNameAndImportPath(pageFiles[0]);
 
     const layoutFiles = dirFiles.filter((itemPath) => itemPath.endsWith("layout.tsx"));
     if (layoutFiles.length > 1) throw `${relativeDir} contains multiple layout files`;
-
-    const layoutImportPath =
-      layoutFiles.length > 0 ? `@/${relative(this.modulesDir, layoutFiles[0])}` : null;
+    const [layoutName, layoutImportPath] = getNameAndImportPath(layoutFiles[0]);
 
     const placeholderFiles = dirFiles.filter((itemPath) => itemPath.endsWith("placeholder.tsx"));
     if (placeholderFiles.length > 1) throw `${relativeDir} contains multiple placeholder files`;
-
-    const placeholderImportPath =
-      placeholderFiles.length > 0 ? `@/${relative(this.modulesDir, placeholderFiles[0])}` : null;
+    const [placeholderName, placeholderImportPath] = getNameAndImportPath(placeholderFiles[0]);
 
     const guardFiles = dirFiles.filter((itemPath) => itemPath.endsWith("guard.ts"));
     if (guardFiles.length > 1) throw `${relativeDir} contains multiple guard files`;
-
-    const guardImportPath =
-      guardFiles.length > 0 ? `@/${relative(this.modulesDir, guardFiles[0])}` : null;
+    const [guardName, guardImportPath] = getNameAndImportPath(guardFiles[0]);
 
     const urlPath = (() => {
       if (!pageImportPath) return null;
-      if (dir.endsWith(Project.NOT_FOUND_DIR_SUFFIX)) return "/*";
+      if (dir.endsWith(Project.NOT_FOUND_DIR_SUFFIX)) return Project.NOT_FOUND_URL_PATH;
 
       return (
         "/" +
@@ -347,38 +343,6 @@ export class Project {
       );
     })();
 
-    const routeName = (() => {
-      const pageFilePath = pageFiles[0];
-      const fallbackName =
-        (relative(pagesDir, dir) || "__root")
-          .split(sep)
-          .map((seg) => {
-            const nonSymbolMatches = /(\w+)/.exec(seg);
-            const $seg = nonSymbolMatches?.[1] || seg;
-            return $seg[0].toUpperCase() + $seg.slice(1);
-          })
-          .join("") + "Group";
-
-      if (!pageFilePath) return fallbackName;
-
-      const parser = acorn.Parser.extend(tsPlugin(), jsx());
-      const pageFileSource = fs.readFileSync(pageFilePath, { encoding: "utf-8" });
-      const ast = parser.parse(pageFileSource, { ecmaVersion: "latest", sourceType: "module" });
-      let routeName = fallbackName;
-
-      walk.simple(ast, {
-        ExportDefaultDeclaration: (node) => {
-          if (node.declaration.type === "FunctionDeclaration") {
-            routeName = (node.declaration as acorn.FunctionDeclaration).id?.name;
-          } else if (node.declaration.type === "Identifier") {
-            routeName = (node.declaration as acorn.Identifier).name;
-          }
-        },
-      });
-
-      return routeName;
-    })();
-
     if ((pageImportPath && layoutImportPath) || urlPath === "/") {
       const dirDirsWith404Last = (() => {
         if (urlPath !== "/" || dirDirs.every((dir) => !dir.endsWith(Project.NOT_FOUND_DIR_SUFFIX)))
@@ -392,18 +356,24 @@ export class Project {
       })();
 
       return {
-        name: routeName,
+        pageName: null,
         pageImportPath: null,
+        layoutName: layoutName,
         layoutImportPath: layoutImportPath,
+        placeholderName: null,
         placeholderImportPath: null,
+        guardName: null,
         guardImportPath: null,
         urlPath: null,
         children: [
           {
-            name: routeName,
+            pageName: pageName,
             pageImportPath: pageImportPath,
+            layoutName: null,
             layoutImportPath: null,
+            placeholderName: placeholderName,
             placeholderImportPath: placeholderImportPath,
+            guardName: guardName,
             guardImportPath: guardImportPath,
             urlPath: urlPath,
             children: [],
@@ -416,10 +386,13 @@ export class Project {
     }
 
     return {
-      name: routeName,
+      pageName: pageName,
       pageImportPath: pageImportPath,
+      layoutName: layoutName,
       layoutImportPath: layoutImportPath,
+      placeholderName: placeholderName,
       placeholderImportPath: placeholderImportPath,
+      guardName: guardName,
       guardImportPath: guardImportPath,
       urlPath: urlPath,
       children: dirDirs.map((childDir) => {
@@ -433,16 +406,11 @@ export class Project {
       return `$$${str}$$`;
     }
 
-    function transformClientRouteToReactRouterRoute(route: ClientRoute): ReactRouterRoute {
-      const pageName = route.name;
-      const layoutName = route.name + "Layout";
-      const placeholderName = route.name + "Placeholder";
-      const guardName = camelCase(route.name) + "Guard";
-
-      const elementName = route.pageImportPath
-        ? pageName
-        : route.layoutImportPath
-          ? layoutName
+    function generateReactRouterRoute(route: ClientRoute): ReactRouterRoute {
+      const elementName = route.pageName
+        ? route.pageName
+        : route.layoutName
+          ? route.layoutName
           : undefined;
 
       return {
@@ -450,46 +418,41 @@ export class Project {
         path: route.pageImportPath ? route.urlPath : undefined,
         element: elementName
           ? createReplaceTarget(
-              route.pageImportPath && route.placeholderImportPath
-                ? `withSuspense(<${elementName} />, <${placeholderName} />)`
-                : route.pageImportPath && !route.placeholderImportPath
-                  ? `withSuspense(<${elementName} />)`
-                  : `<${elementName} />`,
+              route.pageName && route.placeholderName
+                ? `withSuspense(<${route.pageName} />, <${route.placeholderName} />)`
+                : route.pageName && !route.placeholderName
+                  ? `withSuspense(<${route.pageName} />)`
+                  : `<${route.layoutName} />`,
             )
           : undefined,
-        loader: route.guardImportPath ? createReplaceTarget(guardName) : undefined,
+        loader: route.guardName ? createReplaceTarget(route.guardName) : undefined,
         children:
-          route.children.length > 0
-            ? route.children.map(transformClientRouteToReactRouterRoute)
-            : undefined,
+          route.children.length > 0 ? route.children.map(generateReactRouterRoute) : undefined,
       };
     }
 
     const routeImportSource = this.flattenRoutes(routes).reduce((importSrc, route) => {
-      const routeImports = [];
-      const pageName = route.name;
-      const layoutName = route.name + "Layout";
-      const placeholderName = route.name + "Placeholder";
-      const guardName = camelCase(route.name) + "Guard";
+      const imports = [];
 
       if (route.pageImportPath)
-        routeImports.push(`const ${pageName} = lazy(() => import("${route.pageImportPath}"));`);
+        imports.push(`const ${route.pageName} = lazy(() => import("${route.pageImportPath}"));`);
 
       if (route.layoutImportPath)
-        routeImports.push(`import ${layoutName} from "${route.layoutImportPath}";`);
+        imports.push(`import ${route.layoutName} from "${route.layoutImportPath}";`);
 
       if (route.placeholderImportPath)
-        routeImports.push(`import ${placeholderName} from "${route.placeholderImportPath}";`);
+        imports.push(`import ${route.placeholderName} from "${route.placeholderImportPath}";`);
 
       if (route.guardImportPath)
-        routeImports.push(`import ${guardName} from "${route.guardImportPath}";`);
+        imports.push(`import ${route.guardName} from "${route.guardImportPath}";`);
 
-      return routeImports.length === 0 ? importSrc : importSrc + routeImports.join("\n") + "\n";
+      return imports.length === 0 ? importSrc : importSrc + imports.join("\n") + "\n";
     }, "");
 
-    const reactRouterSource = JSON.stringify(
-      transformClientRouteToReactRouterRoute(routes),
-    ).replace(/"?\$\$"?/gm, "");
+    const routeDeclarationSource = JSON.stringify(generateReactRouterRoute(routes)).replace(
+      /"?\$\$"?/gm,
+      "",
+    );
 
     const routerSource = `
       import { type ReactNode, lazy, Suspense } from "react";
@@ -510,7 +473,7 @@ export class Project {
         );
       }
       
-      export default createBrowserRouter([${reactRouterSource}]);
+      export default createBrowserRouter([${routeDeclarationSource}]);
     `;
 
     return format(routerSource, getPrettierConfig({ filePath: "a.tsx" }));
@@ -519,8 +482,10 @@ export class Project {
   private async generateClientSdkRoutesSource(clients: RuntimeClient[]) {
     const routerSource = clients.reduce((source, client) => {
       const routeEnumSource = this.flattenRoutes(client.routes).reduce((source, route) => {
-        if (!route.urlPath || route.urlPath === "/*") return source;
-        return source + `${snakeCase(route.name).toUpperCase()} = "${route.urlPath}",\n`;
+        if (!route.pageName || !route.urlPath || route.urlPath === Project.NOT_FOUND_URL_PATH)
+          return source;
+
+        return source + `${snakeCase(route.pageName).toUpperCase()} = "${route.urlPath}",\n`;
       }, "");
 
       const clientSource = `export enum ${startCase(client.name).replaceAll(" ", "")}Route { ${routeEnumSource} };\n`;

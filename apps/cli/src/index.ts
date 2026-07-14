@@ -3,7 +3,7 @@
 import fs from "fs-extra";
 import { isAbsolute, relative, resolve } from "node:path";
 import { Command } from "commander";
-import { parseErrorMessage } from "@/utils";
+import { error, info, parseErrorMessage } from "@/utils";
 import { input } from "@inquirer/prompts";
 import { Project } from "@/project";
 
@@ -45,12 +45,12 @@ cli
 
       await project.init({ projectName, projectDescription, projectVersion, projectAuthor });
 
-      console.log("\nNext steps");
-      console.log(`1. cd ${relative(process.cwd(), rootDir)}`);
-      console.log(`2. npm install`);
-      console.log(`3. npm run dev`);
+      info("\nNext steps");
+      info(`1. cd ${relative(process.cwd(), rootDir)}`);
+      info(`2. npm install`);
+      info(`3. npm run dev`);
     } catch (err) {
-      console.error(parseErrorMessage(err));
+      error(parseErrorMessage(err), err);
       process.exit(-1);
     }
   });
@@ -59,22 +59,32 @@ cli
   .command("compile")
   .description("Analyzes the project and compiles the Firedeck runtime")
   .action(async () => {
-    const project = new Project({ rootDir: process.cwd() });
-    const runtime = await project.analyze();
-    const changes = runtime.diffFrom(null);
-    await project.updateRuntime(changes);
+    try {
+      const project = new Project({ rootDir: process.cwd() });
+      const runtime = await project.analyze();
+      const changes = runtime.diffFrom(null);
+      await project.updateRuntime(changes);
 
-    console.log(`Project compiled ✅`);
-    console.log(`Runtime:     .firedeck/runtime`);
-    console.log(`Client SDK:  modules/sdk/client`);
+      info("Project compiled");
+      info("Runtime: .firedeck/runtime");
+      info("Client SDK: modules/sdk/client");
+    } catch (err) {
+      error(parseErrorMessage(err), err);
+      process.exit(-1);
+    }
   });
 
 cli
   .command("run")
   .description("Starts the development runtime")
   .action(async () => {
-    const project = new Project({ rootDir: process.cwd() });
-    await project.run({ log: console.log, error: console.error });
+    try {
+      const project = new Project({ rootDir: process.cwd() });
+      await project.run({ log: console.log, error: console.error });
+    } catch (err) {
+      error(parseErrorMessage(err), err);
+      process.exit(-1);
+    }
   });
 
 const moduleCli = new Command("module");
@@ -95,9 +105,9 @@ moduleCli
       const components = opts.clientOnly ? "client" : opts.serverOnly ? "server" : "all";
       await project.createModule({ moduleName, components });
 
-      console.log(`Created new module: modules/${moduleName}`);
+      info(`Created new module: modules/${moduleName}`);
     } catch (err) {
-      console.error(parseErrorMessage(err));
+      error(parseErrorMessage(err), err);
       process.exit(-1);
     }
   });

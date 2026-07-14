@@ -2,6 +2,7 @@ import { format, Options } from "prettier";
 import { extname, resolve } from "node:path";
 import fs from "fs-extra";
 import { FileTree } from "@/types";
+import chalk from "chalk";
 
 export function getPrettierConfig(args: { filePath: string }): Options {
   return {
@@ -43,6 +44,18 @@ export function parseErrorMessage(err: unknown) {
   else return (err as object).toString();
 }
 
+export function info(msg: string, ...args: unknown[]) {
+  console.log(`${chalk.bgGreen.black("firedeck")}: ${chalk.green(msg)}`, ...args);
+}
+
+export function warn(msg: string, ...args: unknown[]) {
+  console.log(`${chalk.bgYellow.black("firedeck")}: ${chalk.yellow(msg)}`, ...args);
+}
+
+export function error(msg: string, ...args: unknown[]) {
+  console.log(`${chalk.bgRed.black("firedeck")}: ${chalk.red(msg)}`, ...args);
+}
+
 export function generateStringHash(str: string) {
   let hash = 0;
 
@@ -52,19 +65,4 @@ export function generateStringHash(str: string) {
   }
 
   return hash;
-}
-
-export function snakeCase(str: string) {
-  return str
-    .replace(/([a-z])([A-Z])/g, "$1_$2")
-    .replace(/[\s-]+/g, "_")
-    .toLowerCase();
-}
-
-export function camelCase(str: string) {
-  let replaceIndex = 0;
-  return str.toLowerCase().replace(/[^a-zA-Z0-9]+(.)/g, (match, chr) => {
-    if (replaceIndex++ === 0) return match.toUpperCase();
-    return chr.toUpperCase();
-  });
 }
