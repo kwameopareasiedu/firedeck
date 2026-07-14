@@ -144,7 +144,7 @@ export function generateProjectFileTree(opts: {
 
     "modules/main/client/pages/index-page.tsx": {
       content: `
-      export default function IndexPage() {
+      export default function() {
         return (
           <div className="h-screen bg-black flex flex-col items-center justify-center">
             <div className="w-full max-w-96 max-sm:px-8">
@@ -172,7 +172,7 @@ export function generateProjectFileTree(opts: {
       import { MainRoute } from "@/sdk/client/routes";
       import { Link } from "react-router";
       
-      export default function NotFoundPage() {
+      export default function () {
         return (
           <div className="h-screen bg-black flex flex-col items-center justify-center space-y-6">
             <div className="w-full max-w-96 max-sm:px-8">
@@ -274,7 +274,7 @@ export function generateModuleFileTree(args: {
 
       [`modules/${args.name}/client/pages/index-page.tsx`]: {
         content: `
-          export default function IndexPage() {
+          export default function() {
             return (
               <div className="grid place-items-center">
                 <p>Module: ${args.name} Home</p>
@@ -288,7 +288,7 @@ export function generateModuleFileTree(args: {
           import { MainRoute } from "@/sdk/client/routes";
           import { Link } from "react-router";
           
-          export default function NotFoundPage() {
+          export default function() {
             return (
               <div className="h-screen bg-black flex flex-col items-center justify-center space-y-6">
                 <div className="w-full max-w-96 max-sm:px-8">

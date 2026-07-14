@@ -250,11 +250,11 @@ export class Project {
 
           if (restartRuntimeDevProc) {
             kill(runtimeDevProc.pid!);
-            await new Promise((resolve) => setTimeout(resolve, 500));
+            await new Promise((resolve) => setTimeout(resolve, 1250));
 
             if (runtimeDevProc.exitCode === null) {
               kill(runtimeDevProc.pid!, "SIGKILL");
-              await new Promise((resolve) => setTimeout(resolve, 500));
+              await new Promise((resolve) => setTimeout(resolve, 1250));
             }
 
             runtimeDevProc = spawn("yarn", ["dev"], { cwd: this.runtimeDir, stdio: "inherit" });
@@ -283,11 +283,11 @@ export class Project {
         args.log("SIGINT received; terminating runtime");
         kill(runtimeDevProc.pid!);
         await fileWatcher.close();
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 1250));
 
         if (runtimeDevProc.exitCode === null) {
           kill(runtimeDevProc.pid!, "SIGKILL");
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 1250));
         }
       } else args.log("runtime terminating");
     });
