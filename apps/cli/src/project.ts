@@ -25,6 +25,7 @@ walkJsx.extend(walk.base);
 
 export class Project {
   private static readonly RESERVED_MODULE_NAMES = ["shared", "sdk"];
+  private static readonly NOT_FOUND_DIR_SUFFIX = "404";
 
   private readonly rootDir: string;
   private readonly modulesDir: string;
@@ -322,8 +323,12 @@ export class Project {
     const guardImportPath =
       guardFiles.length > 0 ? `@/${relative(this.modulesDir, guardFiles[0])}` : null;
 
-    const urlPath = pageImportPath
-      ? "/" +
+    const urlPath = (() => {
+      if (!pageImportPath) return null;
+      if (dir.endsWith(Project.NOT_FOUND_DIR_SUFFIX)) return "/*";
+
+      return (
+        "/" +
         relative(pagesDir, dir)
           .split(sep)
           .filter((segment) => !/^\(\w+\)$/.test(segment))
@@ -338,7 +343,8 @@ export class Project {
             return ":" + matches[1];
           })
           .join("/")
-      : null;
+      );
+    })();
 
     const routeName = (() => {
       const pageFilePath = pageFiles[0];
@@ -373,6 +379,17 @@ export class Project {
     })();
 
     if ((pageImportPath && layoutImportPath) || urlPath === "/") {
+      const dirDirsWith404Last = (() => {
+        if (urlPath !== "/" || dirDirs.every((dir) => !dir.endsWith(Project.NOT_FOUND_DIR_SUFFIX)))
+          return dirDirs;
+
+        const newDirDirs = [...dirDirs];
+        const notFoundDir = newDirDirs.find((dir) => dir.endsWith(Project.NOT_FOUND_DIR_SUFFIX))!;
+        newDirDirs.splice(newDirDirs.indexOf(notFoundDir), 1);
+        newDirDirs.push(notFoundDir);
+        return newDirDirs;
+      })();
+
       return {
         name: routeName,
         pageImportPath: null,
@@ -390,7 +407,7 @@ export class Project {
             urlPath: urlPath,
             children: [],
           },
-          ...dirDirs.map((childDir) => {
+          ...dirDirsWith404Last.map((childDir) => {
             return this.discoverRoutes(childDir, pagesDir);
           }),
         ],
