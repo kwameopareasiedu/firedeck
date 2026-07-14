@@ -9,7 +9,7 @@ export interface ClientRoute {
 }
 
 export interface ReactRouterRoute {
-  id: string;
+  id?: string;
   path?: string | null;
   element?: string | null;
   loader?: string | null;

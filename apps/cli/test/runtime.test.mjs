@@ -18,12 +18,21 @@ test("runtime-diff", async (t) => {
         name: "main",
         routes: {
           name: "IndexPage",
-          pageImportPath: "@/main/client/pages/index-page.tsx",
+          pageImportPath: null,
           layoutImportPath: null,
           placeholderImportPath: null,
           guardImportPath: null,
-          urlPath: "/",
+          urlPath: null,
           children: [
+            {
+              name: "IndexPage",
+              pageImportPath: "@/main/client/pages/index-page.tsx",
+              layoutImportPath: null,
+              placeholderImportPath: null,
+              guardImportPath: null,
+              urlPath: "/",
+              children: [],
+            },
             {
               name: "DashboardGroup",
               pageImportPath: null,
@@ -104,12 +113,21 @@ test("runtime-diff", async (t) => {
         name: "main",
         routes: {
           name: "IndexPage",
-          pageImportPath: "@/main/client/pages/index-page.tsx",
+          pageImportPath: null,
           layoutImportPath: null,
           placeholderImportPath: null,
           guardImportPath: null,
-          urlPath: "/",
+          urlPath: null,
           children: [
+            {
+              name: "IndexPage",
+              pageImportPath: "@/main/client/pages/index-page.tsx",
+              layoutImportPath: null,
+              placeholderImportPath: null,
+              guardImportPath: null,
+              urlPath: "/",
+              children: [],
+            },
             {
               name: "DashboardGroup",
               pageImportPath: null,
@@ -197,12 +215,21 @@ test("runtime-diff", async (t) => {
         name: "external",
         routes: {
           name: "IndexPage",
-          pageImportPath: "@/external/client/pages/index-page.tsx",
+          pageImportPath: null,
           layoutImportPath: null,
           placeholderImportPath: null,
           guardImportPath: null,
-          urlPath: "/",
+          urlPath: null,
           children: [
+            {
+              name: "IndexPage",
+              pageImportPath: "@/external/client/pages/index-page.tsx",
+              layoutImportPath: null,
+              placeholderImportPath: null,
+              guardImportPath: null,
+              urlPath: "/",
+              children: [],
+            },
             {
               name: "DashboardGroup",
               pageImportPath: null,
@@ -288,12 +315,21 @@ test("runtime-diff", async (t) => {
       clientName: "main",
       clientRoutes: {
         name: "IndexPage",
-        pageImportPath: "@/main/client/pages/index-page.tsx",
+        pageImportPath: null,
         layoutImportPath: null,
         placeholderImportPath: null,
         guardImportPath: null,
-        urlPath: "/",
+        urlPath: null,
         children: [
+          {
+            name: "IndexPage",
+            pageImportPath: "@/main/client/pages/index-page.tsx",
+            layoutImportPath: null,
+            placeholderImportPath: null,
+            guardImportPath: null,
+            urlPath: "/",
+            children: [],
+          },
           {
             name: "DashboardGroup",
             pageImportPath: null,
@@ -362,12 +398,21 @@ test("runtime-diff", async (t) => {
           name: "main",
           routes: {
             name: "IndexPage",
-            pageImportPath: "@/main/client/pages/index-page.tsx",
+            pageImportPath: null,
             layoutImportPath: null,
             placeholderImportPath: null,
             guardImportPath: null,
-            urlPath: "/",
+            urlPath: null,
             children: [
+              {
+                name: "IndexPage",
+                pageImportPath: "@/main/client/pages/index-page.tsx",
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: "/",
+                children: [],
+              },
               {
                 name: "DashboardGroup",
                 pageImportPath: null,
@@ -460,12 +505,21 @@ test("runtime-diff", async (t) => {
       clientName: "external",
       clientRoutes: {
         name: "IndexPage",
-        pageImportPath: "@/external/client/pages/index-page.tsx",
+        pageImportPath: null,
         layoutImportPath: null,
         placeholderImportPath: null,
         guardImportPath: null,
-        urlPath: "/",
+        urlPath: null,
         children: [
+          {
+            name: "IndexPage",
+            pageImportPath: "@/external/client/pages/index-page.tsx",
+            layoutImportPath: null,
+            placeholderImportPath: null,
+            guardImportPath: null,
+            urlPath: "/",
+            children: [],
+          },
           {
             name: "DashboardGroup",
             pageImportPath: null,
@@ -557,12 +611,21 @@ test("runtime-diff", async (t) => {
           name: "external",
           routes: {
             name: "IndexPage",
-            pageImportPath: "@/external/client/pages/index-page.tsx",
+            pageImportPath: null,
             layoutImportPath: null,
             placeholderImportPath: null,
             guardImportPath: null,
-            urlPath: "/",
+            urlPath: null,
             children: [
+              {
+                name: "IndexPage",
+                pageImportPath: "@/external/client/pages/index-page.tsx",
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: "/",
+                children: [],
+              },
               {
                 name: "DashboardGroup",
                 pageImportPath: null,
@@ -660,12 +723,21 @@ test("runtime-diff", async (t) => {
       clientName: "external",
       clientRoutes: {
         name: "IndexPage",
-        pageImportPath: "@/external/client/pages/index-page.tsx",
+        pageImportPath: null,
         layoutImportPath: null,
         placeholderImportPath: null,
         guardImportPath: null,
-        urlPath: "/",
+        urlPath: null,
         children: [
+          {
+            name: "IndexPage",
+            pageImportPath: "@/external/client/pages/index-page.tsx",
+            layoutImportPath: null,
+            placeholderImportPath: null,
+            guardImportPath: null,
+            urlPath: "/",
+            children: [],
+          },
           {
             name: "DashboardGroup",
             pageImportPath: null,
@@ -756,12 +828,21 @@ test("runtime-diff", async (t) => {
           name: "external",
           routes: {
             name: "IndexPage",
-            pageImportPath: "@/external/client/pages/index-page.tsx",
+            pageImportPath: null,
             layoutImportPath: null,
             placeholderImportPath: null,
             guardImportPath: null,
-            urlPath: "/",
+            urlPath: null,
             children: [
+              {
+                name: "IndexPage",
+                pageImportPath: "@/external/client/pages/index-page.tsx",
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: "/",
+                children: [],
+              },
               {
                 name: "DashboardGroup",
                 pageImportPath: null,

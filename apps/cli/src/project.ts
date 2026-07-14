@@ -16,7 +16,7 @@ import * as walk from "acorn-walk";
 import * as walkJsx from "acorn-jsx-walk";
 import { ClientRoute, ReactRouterRoute, Runtime, RuntimeChange, RuntimeClient } from "@/runtime";
 import { format } from "prettier";
-import { snakeCase, startCase } from "lodash";
+import { camelCase, snakeCase, startCase } from "lodash";
 import { spawn } from "node:child_process";
 import chokidar from "chokidar";
 import kill from "tree-kill";
@@ -295,10 +295,9 @@ export class Project {
     const dirIsRoutable = !/\(\w+\)/.test(dir.split(sep).slice(-1)[0]);
 
     const pageFiles = dirFiles.filter((itemPath) => itemPath.endsWith("page.tsx"));
-    if (dirIsRoutable) {
-      if (pageFiles.length === 0) throw `${relativeDir} contains no page files`;
-      else if (pageFiles.length > 1) throw `${relativeDir} contains multiple page files`;
-    } else if (pageFiles.length > 0) {
+    if (dirIsRoutable && pageFiles.length > 1) {
+      throw `${relativeDir} contains multiple page files`;
+    } else if (!dirIsRoutable && pageFiles.length > 0) {
       throw `${relativeDir} is not routable but contains a page file: ${pageFiles[0]}`;
     }
 
@@ -323,7 +322,7 @@ export class Project {
     const guardImportPath =
       guardFiles.length > 0 ? `@/${relative(this.modulesDir, guardFiles[0])}` : null;
 
-    const urlPath = dirIsRoutable
+    const urlPath = pageImportPath
       ? "/" +
         relative(pagesDir, dir)
           .split(sep)
@@ -373,6 +372,31 @@ export class Project {
       return routeName;
     })();
 
+    if ((pageImportPath && layoutImportPath) || urlPath === "/") {
+      return {
+        name: routeName,
+        pageImportPath: null,
+        layoutImportPath: layoutImportPath,
+        placeholderImportPath: null,
+        guardImportPath: null,
+        urlPath: null,
+        children: [
+          {
+            name: routeName,
+            pageImportPath: pageImportPath,
+            layoutImportPath: null,
+            placeholderImportPath: placeholderImportPath,
+            guardImportPath: guardImportPath,
+            urlPath: urlPath,
+            children: [],
+          },
+          ...dirDirs.map((childDir) => {
+            return this.discoverRoutes(childDir, pagesDir);
+          }),
+        ],
+      };
+    }
+
     return {
       name: routeName,
       pageImportPath: pageImportPath,
@@ -395,16 +419,24 @@ export class Project {
       const pageName = route.name;
       const layoutName = route.name + "Layout";
       const placeholderName = route.name + "Placeholder";
-      const guardName = route.name.toLowerCase() + "Guard";
+      const guardName = camelCase(route.name) + "Guard";
 
-      const pageTarget = {
-        id: route.name,
+      const elementName = route.pageImportPath
+        ? pageName
+        : route.layoutImportPath
+          ? layoutName
+          : undefined;
+
+      return {
+        id: elementName,
         path: route.pageImportPath ? route.urlPath : undefined,
-        element: route.pageImportPath
+        element: elementName
           ? createReplaceTarget(
-              route.placeholderImportPath
-                ? `withSuspense(<${pageName} />, <${placeholderName} />)`
-                : `withSuspense(<${pageName} />)`,
+              route.pageImportPath && route.placeholderImportPath
+                ? `withSuspense(<${elementName} />, <${placeholderName} />)`
+                : route.pageImportPath && !route.placeholderImportPath
+                  ? `withSuspense(<${elementName} />)`
+                  : `<${elementName} />`,
             )
           : undefined,
         loader: route.guardImportPath ? createReplaceTarget(guardName) : undefined,
@@ -413,16 +445,6 @@ export class Project {
             ? route.children.map(transformClientRouteToReactRouterRoute)
             : undefined,
       };
-
-      if (route.layoutImportPath) {
-        return {
-          id: route.name + "Layout",
-          element: createReplaceTarget(`<${layoutName} />`),
-          children: [pageTarget],
-        };
-      }
-
-      return pageTarget;
     }
 
     const routeImportSource = this.flattenRoutes(routes).reduce((importSrc, route) => {
@@ -430,7 +452,7 @@ export class Project {
       const pageName = route.name;
       const layoutName = route.name + "Layout";
       const placeholderName = route.name + "Placeholder";
-      const guardName = route.name.toLowerCase() + "Guard";
+      const guardName = camelCase(route.name) + "Guard";
 
       if (route.pageImportPath)
         routeImports.push(`const ${pageName} = lazy(() => import("${route.pageImportPath}"));`);

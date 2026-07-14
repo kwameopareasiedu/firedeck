@@ -126,12 +126,21 @@ test("analyze", async (t) => {
 
   t.deepEqual(workspace.clients[0].routes, {
     name: "IndexPage",
-    pageImportPath: "@/main/client/pages/index-page.tsx",
+    pageImportPath: null,
     layoutImportPath: null,
     placeholderImportPath: null,
     guardImportPath: null,
-    urlPath: "/",
+    urlPath: null,
     children: [
+      {
+        name: "IndexPage",
+        pageImportPath: "@/main/client/pages/index-page.tsx",
+        layoutImportPath: null,
+        placeholderImportPath: null,
+        guardImportPath: null,
+        urlPath: "/",
+        children: [],
+      },
       {
         name: "DashboardGroup",
         pageImportPath: null,
@@ -315,40 +324,41 @@ test("update-runtime", async (t) => {
         const FeaturesPage = lazy(() => import("@/main/client/pages/(public)/features/features-page.tsx"));
         const LandingPage = lazy(() => import("@/main/client/pages/(public)/landing/landing-page.tsx"));
         function withSuspense(child: ReactNode, placeholder?: ReactNode) {
-          return <Suspense fallback={<div className="w-screen h-full grid place-items-center">{placeholder ?? <p>Please wait</p>}</div>}>{child}</Suspense>;
+          return (
+            <Suspense
+              fallback={
+                <div className="w-screen h-full grid place-items-center">
+                  {placeholder ?? <p>Please wait</p>}
+                </div>
+              }>
+              {child}
+            </Suspense>
+          );
         }
         
         export default createBrowserRouter([
           {
-            id: "IndexPage",
-            path: "/",
-            element: withSuspense(<IndexPage />),
             children: [
+              { id: "IndexPage", path: "/", element: withSuspense(<IndexPage />) },
               {
                 id: "DashboardGroupLayout",
                 element: <DashboardGroupLayout />,
                 children: [
                   {
-                    id: "DashboardGroup",
+                    id: "UsersPage",
+                    path: "/users",
+                    element: withSuspense(<UsersPage />),
                     children: [
                       {
-                        id: "UsersPage",
-                        path: "/users",
-                        element: withSuspense(<UsersPage />),
-                        children: [
-                          {
-                            id: "UserDetailsPage",
-                            path: "/users/:userId",
-                            element: withSuspense(<UserDetailsPage />),
-                          },
-                        ],
+                        id: "UserDetailsPage",
+                        path: "/users/:userId",
+                        element: withSuspense(<UserDetailsPage />),
                       },
                     ],
                   },
                 ],
               },
               {
-                id: "PublicGroup",
                 children: [
                   {
                     id: "ContactPage",
