@@ -60,3 +60,11 @@ export function snakeCase(str: string) {
     .replace(/[\s-]+/g, "_")
     .toLowerCase();
 }
+
+export function camelCase(str: string) {
+  let replaceIndex = 0;
+  return str.toLowerCase().replace(/[^a-zA-Z0-9]+(.)/g, (match, chr) => {
+    if (replaceIndex++ === 0) return match.toUpperCase();
+    return chr.toUpperCase();
+  });
+}

@@ -7,7 +7,7 @@ import {
   generateRuntimeClientFileTree,
   generateRuntimeFileTree,
 } from "@/templates";
-import { snakeCase } from "@/utils";
+import { snakeCase, camelCase } from "@/utils";
 import { ModuleComponents } from "@/types";
 import * as acorn from "acorn";
 import { tsPlugin } from "@sveltejs/acorn-typescript";
@@ -17,7 +17,7 @@ import * as walk from "acorn-walk";
 import * as walkJsx from "acorn-jsx-walk";
 import { ClientRoute, ReactRouterRoute, Runtime, RuntimeChange, RuntimeClient } from "@/runtime";
 import { format } from "prettier";
-import { camelCase, startCase } from "lodash";
+import { startCase } from "lodash";
 import { spawn } from "node:child_process";
 import chokidar from "chokidar";
 import kill from "tree-kill";
