@@ -291,6 +291,26 @@ export function IndexPage() {
 >
 > Navigating to a route in a different module will display a 404 (Not found) page.
 
+## Firedeck.config.ts
+
+Since Firedeck generates the resulting Vite and Firebase projects at runtime, manual changes made to
+the generated artifacts will be overwritten.
+
+Configuration of the runtime artifacts is done via the provided `firedeck.config.ts`, which has the
+following structure:
+
+```typescript
+import { defineConfig } from "firedeck";
+
+export default defineConfig({
+    vite: {},
+    firebase: {}
+})
+```
+
+The `vite` config 
+
+
 [//]: # (The server functions defined by the module will be available to the client via the `useApi` hook.)
 
 [//]: # (This hook is)
@@ -408,3 +428,4 @@ export function IndexPage() {
 [//]: # (| `init`               | Initializes the project folder structure and copies templates files |)
 
 [//]: # (| `module create NAME` | Creates a new module                                                |)
+

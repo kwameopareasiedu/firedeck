@@ -1,17 +1,20 @@
 {
-  "name": "firedeck-cli",
+  "name": "firedeck",
   "version": "0.1.0",
-  "description": "Firedeck CLI",
+  "description": "Firedeck utility package installed in firedeck projects",
   "author": "Kwame Opare Asiedu",
   "license": "MIT",
-  "bin": {
-    "firedeck": "bin/index.js"
+  "main": "./dist/index.js",
+  "exports": {
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js",
+      "default": "./dist/*.js"
+    }
   },
   "scripts": {
     "dev": "rollup -c -w --no-watch.clearScreen",
-    "build": "rollup -c",
-    "cli": "node --env-file=.env.local bin/index.js",
-    "test": "ava --serial --fail-fast"
+    "build": "rollup -c"
   },
   "dependencies": {
     "@inquirer/prompts": "^8.5.2",
@@ -34,6 +37,7 @@
     "rollup-plugin-dts": "^6.4.1",
     "rollup-plugin-typescript-paths": "^1.5.0",
     "tslib": "^2.8.1",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vite": "^8.1.1"
   }
 }
