@@ -107,6 +107,11 @@ export function generateProjectFileTree(opts: {
       {}`,
     },
 
+    "modules/main/client/.env": {
+      content: "",
+      extension: "md",
+    },
+
     "modules/main/client/index.html": {
       content: `
       <!doctype html>
@@ -232,6 +237,11 @@ export function generateModuleFileTree(args: {
   if (["all", "client"].includes(args.components)) {
     contents = {
       ...contents,
+      [`modules/${args.name}/client/.env`]: {
+        content: "",
+        extension: "md",
+      },
+
       [`modules/${args.name}/client/index.html`]: {
         content: `
         <!doctype html>

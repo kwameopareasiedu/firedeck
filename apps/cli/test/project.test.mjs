@@ -53,6 +53,7 @@ test("create-module", async (t) => {
     components: "all",
   });
 
+  t.true(fs.existsSync(resolve(testDir, "modules/admin/client/.env")));
   t.true(fs.existsSync(resolve(testDir, "modules/admin/client/index.html")));
   t.true(fs.existsSync(resolve(testDir, "modules/admin/client/index.css")));
   t.true(fs.existsSync(resolve(testDir, "modules/admin/client/index.tsx")));
