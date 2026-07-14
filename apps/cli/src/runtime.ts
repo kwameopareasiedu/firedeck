@@ -23,6 +23,7 @@ export interface RuntimeClient {
   name: string;
   routes: ClientRoute;
   htmlHash: number;
+  envHash: number;
 }
 
 export type RuntimeChange =
@@ -32,6 +33,7 @@ export type RuntimeChange =
   | { type: "rename-runtime-client"; oldClientName: string; newClientName: string }
   | { type: "update-runtime-client-routes"; clientName: string; clientRoutes: ClientRoute }
   | { type: "update-runtime-client-html"; clientName: string }
+  | { type: "update-runtime-client-env"; clientName: string }
   | { type: "update-client-sdk-routes"; clients: RuntimeClient[] };
 
 export class Runtime {
@@ -69,6 +71,10 @@ export class Runtime {
             type: "update-runtime-client-html",
             clientName: destClient.name,
           },
+          {
+            type: "update-runtime-client-env",
+            clientName: destClient.name,
+          },
         );
       } else {
         if (sourceClient.name !== destClient.name) {
@@ -90,6 +96,13 @@ export class Runtime {
         if (sourceClient.htmlHash !== destClient.htmlHash) {
           changes.push({
             type: "update-runtime-client-html",
+            clientName: destClient.name,
+          });
+        }
+
+        if (sourceClient.envHash !== destClient.envHash) {
+          changes.push({
+            type: "update-runtime-client-env",
             clientName: destClient.name,
           });
         }

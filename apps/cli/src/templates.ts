@@ -79,7 +79,8 @@ export function generateProjectFileTree(opts: {
           "rootDir": ".",
           "paths": {
             "@/*": ["./modules/*"]
-          }
+          },
+          "types": ["vite/client"]
         },
         "include": ["./modules"]
       }`,

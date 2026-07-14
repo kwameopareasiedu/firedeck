@@ -103,6 +103,7 @@ test("runtime-diff", async (t) => {
           ],
         },
         htmlHash: 0x123456,
+        envHash: 0x98ab24,
       },
     ],
   });
@@ -189,6 +190,7 @@ test("runtime-diff", async (t) => {
           ],
         },
         htmlHash: 0x123456,
+        envHash: 0x98ab24,
       },
     ],
   });
@@ -210,6 +212,7 @@ test("runtime-diff", async (t) => {
           children: [],
         },
         htmlHash: 0xa88980,
+        envHash: 0x88bc13,
       },
       {
         name: "external",
@@ -300,6 +303,7 @@ test("runtime-diff", async (t) => {
           ],
         },
         htmlHash: 0x654321,
+        envHash: 0x0013fe,
       },
     ],
   });
@@ -474,6 +478,7 @@ test("runtime-diff", async (t) => {
             ],
           },
           htmlHash: 0x123456,
+          envHash: 0x98ab24,
         },
       ],
     },
@@ -499,6 +504,7 @@ test("runtime-diff", async (t) => {
       },
     },
     { type: "update-runtime-client-html", clientName: "admin" },
+    { type: "update-runtime-client-env", clientName: "admin" },
     { type: "add-runtime-client", clientName: "external" },
     {
       type: "update-runtime-client-routes",
@@ -591,6 +597,7 @@ test("runtime-diff", async (t) => {
       },
     },
     { type: "update-runtime-client-html", clientName: "external" },
+    { type: "update-runtime-client-env", clientName: "external" },
     { type: "remove-runtime-client", clientName: "main" },
     {
       type: "update-client-sdk-routes",
@@ -606,6 +613,7 @@ test("runtime-diff", async (t) => {
             children: [],
           },
           htmlHash: 0xa88980,
+          envHash: 0x88bc13,
         },
         {
           name: "external",
@@ -696,6 +704,7 @@ test("runtime-diff", async (t) => {
             ],
           },
           htmlHash: 0x654321,
+          envHash: 0x0013fe,
         },
       ],
     },
@@ -717,6 +726,7 @@ test("runtime-diff", async (t) => {
       },
     },
     { type: "update-runtime-client-html", clientName: "admin" },
+    { type: "update-runtime-client-env", clientName: "admin" },
     { type: "add-runtime-client", clientName: "external" },
     {
       type: "update-runtime-client-routes",
@@ -809,6 +819,7 @@ test("runtime-diff", async (t) => {
       },
     },
     { type: "update-runtime-client-html", clientName: "external" },
+    { type: "update-runtime-client-env", clientName: "external" },
     {
       type: "update-client-sdk-routes",
       clients: [
@@ -823,6 +834,7 @@ test("runtime-diff", async (t) => {
             children: [],
           },
           htmlHash: 0xa88980,
+          envHash: 0x88bc13,
         },
         {
           name: "external",
@@ -913,6 +925,7 @@ test("runtime-diff", async (t) => {
             ],
           },
           htmlHash: 0x654321,
+          envHash: 0x0013fe,
         },
       ],
     },

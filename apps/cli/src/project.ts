@@ -110,10 +110,16 @@ export class Project {
 
         const htmlContent = fs.readFileSync(htmlPath, { encoding: "utf-8" });
 
+        const envPath = resolve(clientDir, ".env");
+        const envContent = fs.existsSync(envPath)
+          ? fs.readFileSync(envPath, { encoding: "utf-8" })
+          : "";
+
         runtimeClients.push({
           name: moduleName,
           routes: clientRoutes,
           htmlHash: generateStringHash(htmlContent),
+          envHash: generateStringHash(envContent),
         });
       }
 
@@ -165,6 +171,13 @@ export class Project {
           const htmlDest = resolve(this.runtimeModulesDir, change.clientName, "index.html");
 
           if (fs.existsSync(htmlSrc)) fs.copyFileSync(htmlSrc, htmlDest);
+          break;
+        }
+        case "update-runtime-client-env": {
+          const envSrc = resolve(this.modulesDir, change.clientName, "client/.env");
+          const envDest = resolve(this.runtimeModulesDir, change.clientName, ".env");
+
+          if (fs.existsSync(envSrc)) fs.copyFileSync(envSrc, envDest);
           break;
         }
         case "update-client-sdk-routes": {
@@ -230,6 +243,7 @@ export class Project {
                 "add-runtime-client",
                 "remove-runtime-client",
                 "rename-runtime-client",
+                "update-runtime-client-env",
               ] as RuntimeChange["type"][]
             ).includes(change.type),
           );

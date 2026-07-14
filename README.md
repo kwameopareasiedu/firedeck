@@ -133,8 +133,9 @@ export default function () {
 
 #### Tailwindcss Configuration
 
-Each module client is automatically configured to use Tailwindcss 4 out of the box. Changes can be
-made to the `index.css` within the module which reflects in the app immediately.
+Each module client is automatically configured to use [Tailwind 4](https://www.tailwindcss.com/) out
+of the box. Changes can be made to the `index.css` within the module which reflects in the app
+immediately.
 
 #### App Customization
 
@@ -170,8 +171,8 @@ Simply place a `.env` file in the respective `<module>name/client` directory.
 
 > ⚡ **Important Note**
 >
-> _Since this client component gets transformed into a Vite application, you need to prefix all
-> variables with `VITE_`_
+> _Since client components of modules gets transformed into a Vite application, you need to prefix
+> all variables with `VITE_`_
 
 ## Firedeck Runtime
 
