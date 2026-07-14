@@ -7,6 +7,7 @@ import {
   generateRuntimeClientFileTree,
   generateRuntimeFileTree,
 } from "@/templates";
+import { snakeCase } from "@/utils";
 import { ModuleComponents } from "@/types";
 import * as acorn from "acorn";
 import { tsPlugin } from "@sveltejs/acorn-typescript";
@@ -16,7 +17,7 @@ import * as walk from "acorn-walk";
 import * as walkJsx from "acorn-jsx-walk";
 import { ClientRoute, ReactRouterRoute, Runtime, RuntimeChange, RuntimeClient } from "@/runtime";
 import { format } from "prettier";
-import { camelCase, snakeCase, startCase } from "lodash";
+import { camelCase, startCase } from "lodash";
 import { spawn } from "node:child_process";
 import chokidar from "chokidar";
 import kill from "tree-kill";
@@ -518,7 +519,7 @@ export class Project {
   private async generateClientSdkRoutesSource(clients: RuntimeClient[]) {
     const routerSource = clients.reduce((source, client) => {
       const routeEnumSource = this.flattenRoutes(client.routes).reduce((source, route) => {
-        if (!route.urlPath) return source;
+        if (!route.urlPath || route.urlPath === "/*") return source;
         return source + `${snakeCase(route.name).toUpperCase()} = "${route.urlPath}",\n`;
       }, "");
 

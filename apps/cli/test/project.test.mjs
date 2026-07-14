@@ -28,8 +28,8 @@ test("init", async (t) => {
   t.true(fs.existsSync(resolve(testDir, "tsconfig.json")));
   t.true(fs.existsSync(resolve(testDir, ".prettierrc")));
   t.true(fs.existsSync(resolve(testDir, ".gitignore")));
-  t.true(fs.existsSync(resolve(testDir, "modules", "main")));
-  t.true(fs.existsSync(resolve(testDir, "modules", "shared")));
+  t.true(fs.existsSync(resolve(testDir, "modules/main")));
+  t.true(fs.existsSync(resolve(testDir, "modules/shared")));
 
   const packageJson = await fs.readJSONSync(resolve(testDir, "package.json"));
   t.is(packageJson.name, "ava-test");
@@ -57,6 +57,7 @@ test("create-module", async (t) => {
   t.true(fs.existsSync(resolve(testDir, "modules/admin/client/index.css")));
   t.true(fs.existsSync(resolve(testDir, "modules/admin/client/index.tsx")));
   t.true(fs.existsSync(resolve(testDir, "modules/admin/client/pages/index-page.tsx")));
+  t.true(fs.existsSync(resolve(testDir, "modules/admin/client/pages/404/not-found-page.tsx")));
 });
 
 test("analyze", async (t) => {
@@ -208,6 +209,15 @@ test("analyze", async (t) => {
           },
         ],
       },
+      {
+        name: "NotFoundPage",
+        pageImportPath: "@/main/client/pages/404/not-found-page.tsx",
+        layoutImportPath: null,
+        placeholderImportPath: null,
+        guardImportPath: null,
+        urlPath: "/*",
+        children: [],
+      },
     ],
   });
 });
@@ -323,6 +333,7 @@ test("update-runtime", async (t) => {
         const ContactPage = lazy(() => import("@/main/client/pages/(public)/contact/contact-page.tsx"));
         const FeaturesPage = lazy(() => import("@/main/client/pages/(public)/features/features-page.tsx"));
         const LandingPage = lazy(() => import("@/main/client/pages/(public)/landing/landing-page.tsx"));
+        const NotFoundPage = lazy(() => import("@/main/client/pages/404/not-found-page.tsx"));
         function withSuspense(child: ReactNode, placeholder?: ReactNode) {
           return (
             <Suspense
@@ -376,6 +387,11 @@ test("update-runtime", async (t) => {
                     element: withSuspense(<LandingPage />),
                   },
                 ],
+              },
+              {
+                id: "NotFoundPage",
+                path: "/*",
+                element: withSuspense(<NotFoundPage />),
               },
             ],
           },
