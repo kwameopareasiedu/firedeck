@@ -1,4 +1,11 @@
-import { generateStringHash, getPrettierConfig, pathIsFiredeckRoot, writeFileTree } from "@/utils";
+import {
+  error,
+  generateStringHash,
+  getPrettierConfig,
+  info,
+  pathIsFiredeckRoot,
+  writeFileTree,
+} from "@/utils";
 import { relative, resolve, sep } from "node:path";
 import fs from "fs-extra";
 import {
@@ -171,7 +178,7 @@ export class Project {
     }
   }
 
-  async run(args: { log: (message: unknown) => void; error: (message: unknown) => void }) {
+  async run(args: { log: typeof info; error: typeof error }) {
     this.assertFiredeckRootDir();
 
     const compile = async (currentRuntime: Runtime | null) => {
@@ -213,7 +220,7 @@ export class Project {
 
       changeDebounceTimer = setTimeout(async () => {
         try {
-          args.log(`firedeck: ${eventName}: ${relative(this.modulesDir, path)}`);
+          args.log(`${eventName}: ${relative(this.modulesDir, path)}`);
           const [updatedRuntime, runtimeChanges] = await compile(currentRuntime);
           currentRuntime = updatedRuntime;
 
@@ -246,8 +253,8 @@ export class Project {
 
     const fileWatcher = chokidar
       .watch(this.modulesDir, { persistent: true, awaitWriteFinish: { stabilityThreshold: 500 } })
-      .on("ready", () => args.log("firedeck: watching modules"))
-      .on("error", (err) => args.error(`firedeck: error: ${err}`))
+      .on("ready", () => args.log("watching modules"))
+      .on("error", (err) => args.error(`error: ${err}`))
       .on("add", async (path) => await handleChange(path, "new-file"))
       .on("addDir", async (path) => await handleChange(path, "new-dir"))
       .on("change", async (path) => await handleChange(path, "change"))
@@ -259,7 +266,7 @@ export class Project {
     process.on("SIGINT", async () => {
       if (!stopping) {
         stopping = true;
-        args.log("firedeck: SIGINT received; terminating runtime");
+        args.log("SIGINT received; terminating runtime");
         kill(runtimeDevProc.pid!);
         await fileWatcher.close();
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -268,10 +275,10 @@ export class Project {
           kill(runtimeDevProc.pid!, "SIGKILL");
           await new Promise((resolve) => setTimeout(resolve, 500));
         }
-      } else args.log("firedeck: runtime terminating");
+      } else args.log("runtime terminating");
     });
 
-    args.log("firedeck: runtime started");
+    args.log("runtime started");
   }
 
   private assertFiredeckRootDir() {

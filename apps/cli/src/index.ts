@@ -80,7 +80,7 @@ cli
   .action(async () => {
     try {
       const project = new Project({ rootDir: process.cwd() });
-      await project.run({ log: console.log, error: console.error });
+      await project.run({ log: info, error: console.error });
     } catch (err) {
       error(parseErrorMessage(err), err);
       process.exit(-1);

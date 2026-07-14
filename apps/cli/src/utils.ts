@@ -48,11 +48,11 @@ export function info(msg: string, ...args: unknown[]) {
   console.log(`${chalk.bgGreen.black("firedeck")}: ${chalk.green(msg)}`, ...args);
 }
 
-export function warn(msg: string, ...args: unknown[]) {
+export function warn(msg: unknown, ...args: unknown[]) {
   console.log(`${chalk.bgYellow.black("firedeck")}: ${chalk.yellow(msg)}`, ...args);
 }
 
-export function error(msg: string, ...args: unknown[]) {
+export function error(msg: unknown, ...args: unknown[]) {
   console.log(`${chalk.bgRed.black("firedeck")}: ${chalk.red(msg)}`, ...args);
 }
 

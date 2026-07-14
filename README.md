@@ -86,7 +86,7 @@ The page file would resemble the snippet below:
 
 ```typescript jsx
 // Required default export. The page for the generated URL at the directory path
-export default function IndexPage() {
+export default function () {
     return (
         <div>
             <p>Home page</p>
@@ -101,7 +101,7 @@ A layout file would resemble the snippet below:
 import {Outlet} from "react-router";
 
 // Required default export. The layout used for the generated URL at the directory path and its subtree
-export default function IndexLayout() {
+export default function () {
     return (
         <div>
             <Outlet/>
@@ -114,7 +114,7 @@ A placeholder file would resemble the snippet below:
 
 ```typescript jsx
 // Required default export. The component which is displayed while the page component is fetched
-export default function IndexPlaceholder() {
+export default function () {
     return <p className="text-center">Please wait</p>;
 }
 ```
@@ -125,7 +125,7 @@ A guard file would resemble the snippet below:
 // import { redirect } from "react-router";
 
 // Required default export. The function which controls access to the page component
-export default function indexGuard() {
+export default function () {
     return true; // Allow access
     // return redirect("redirect-path"); // Redirect to another page
 }
@@ -164,6 +164,15 @@ export default function (appRouter: ReactNode) {
 }
 ```
 
+#### Environment Variables
+
+Simply place a `.env` file in the respective `<module>name/client` directory.
+
+> ⚡ **Important Note**
+>
+> _Since this client component gets transformed into a Vite application, you need to prefix all
+> variables with `VITE_`_
+
 ## Firedeck Runtime
 
 Firedeck compiles the "modules" directory into a final application at runtime.
@@ -182,8 +191,10 @@ utilities which connect the frontend and backend module component.
 The package lives at `modules/sdk/client`. Because it is part of the user code, IDE auto-complete
 and intellisense work out of the box and can also be commited to version control.
 
-> ⚠ Code in `modules/sdk/client` is maintained by the Firedeck compiler. Any user changes would be
-> overwritten.
+> ⚡ **Important Note**
+>
+> _Code in `modules/sdk/client` is maintained by the Firedeck compiler. Any user changes would be
+> overwritten._
 
 The client SDK contains the following files:
 
@@ -238,17 +249,46 @@ export function IndexPage() {
 }
 ```
 
-Take note of the following:
-
-> ⚡ Route enums are derived from the module name.
+> ⚡ **Important Note**
 >
-> (E.g. `main` module yields `MainRoute`, `admin` module yields `AdminRoute`)
+> _Route enums are derived from the module name, so `main` module would yield `enum MainRoute {}`,
+> likewise, `admin` module would yield `enum AdminRoute {}`_
 
-> ⚡ Route enum members are derived from page file component names.
+> ⚡ **Important Note**
 >
-> (E.g. `export default function IndexPage() {}` yields a route enum member `INDEX_PAGE`)
+> _Route enum members are derived from page file names, so a folder structure like so_:
+> ```
+> <root-dir>/
+>   - modules/
+>     - main/
+>       - client/
+>         - pages/
+>           - index-page.tsx
+>           - about/
+>             - about-page.tsx
+>     - admin/
+>       - client/
+>         - pages/
+>           - index-page.tsx
+>           - settings/
+>             - settings-page.tsx
+> ```
+> _would yield the route enum:_
+> ```typescript
+> export enum MainRoute {
+>   INDEX_PAGE = "/",
+>   ABOUT_PAGE = "/about",
+> }
+> 
+> export enum AdminRoute {
+>   INDEX_PAGE = "/",
+>   SETTINGS_PAGE = "/settings",
+> }
+> ```
 
-> ⚡ Navigating to a route in a different module will yield a 404 (Not found) response.
+> ⚡ **Important Note**
+>
+> Navigating to a route in a different module will display a 404 (Not found) page.
 
 [//]: # (The server functions defined by the module will be available to the client via the `useApi` hook.)
 
