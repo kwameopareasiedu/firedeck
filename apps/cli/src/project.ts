@@ -18,7 +18,7 @@ import { ModuleComponents } from "@/types";
 import { ClientRoute, ReactRouterRoute, Runtime, RuntimeChange, RuntimeClient } from "@/runtime";
 import { format } from "prettier";
 import { camelCase, snakeCase, startCase } from "lodash";
-import { spawn } from "node:child_process";
+import { exec, spawn } from "node:child_process";
 import chokidar from "chokidar";
 import kill from "tree-kill";
 
@@ -293,6 +293,50 @@ export class Project {
     });
 
     args.log("runtime started");
+  }
+
+  async build(args: { log: typeof info; error: typeof error }) {
+    this.assertFiredeckRootDir();
+
+    const lockFileNames = [
+      "package-lock.json",
+      "yarn.lock",
+      "pnpm-lock.yaml",
+      "bun.lock",
+      "bun.lockb",
+      "deno.lock",
+    ];
+
+    for (const lockFileName of lockFileNames) {
+      const lockFilePath = resolve(this.rootDir, lockFileName);
+
+      if (fs.existsSync(lockFilePath)) {
+        const destPath = resolve(this.runtimeDir, lockFileName);
+        fs.copyFileSync(lockFilePath, destPath);
+        break;
+      }
+    }
+
+    const runtime = await this.analyze();
+    const runtimeChanges = runtime.diffFrom(null);
+    await this.updateRuntime(runtimeChanges);
+
+    const runtimeBuildProc = exec("yarn build", { cwd: this.runtimeDir });
+    runtimeBuildProc.stdout?.on("data", console.log);
+    runtimeBuildProc.stderr?.on("error", console.error);
+    runtimeBuildProc.on("error", args.error);
+    runtimeBuildProc.on("close", (exitCode) => {
+      if (exitCode !== 0) {
+        args.error("build failed");
+      } else {
+        const msg = runtime.clients.reduce((msg, client) => {
+          const clientDist = `${this.runtimeDir}/modules/${client.name}/dist`;
+          return msg + `${client.name}: ${relative(this.rootDir, clientDist)}\n`;
+        }, "");
+
+        args.log("build complete\n" + msg);
+      }
+    });
   }
 
   private assertFiredeckRootDir() {

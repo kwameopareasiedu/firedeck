@@ -460,7 +460,8 @@ export function generateRuntimeClientFileTree(args: { clientName: string }): Fil
           "rootDir": "../../../../",
           "paths": {
             "@/*": ["../../../../modules/*"],
-          }
+          },
+          "types": ["vite/client"]
         },
         "include": ["./src", "./global.d.ts", "../../../../modules"]
       }`,

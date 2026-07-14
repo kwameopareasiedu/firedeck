@@ -17,7 +17,7 @@ cli.version(packageInfo.version, "-v");
 
 cli
   .command("init <rootDir>")
-  .description("Create a new Firedeck project at the specified directory <rootDir>")
+  .description("Create a new Firedeck project")
   .action(async (rootDir) => {
     try {
       rootDir = isAbsolute(rootDir) ? rootDir : resolve(process.cwd(), rootDir);
@@ -56,8 +56,30 @@ cli
   });
 
 cli
+  .command("module <moduleName>")
+  .option("--client-only", "client-only module")
+  .option("--server-only", "server-only module")
+  .description("Adds a new module to a Firedeck project")
+  .action(async (moduleName, opts) => {
+    try {
+      const project = new Project({ rootDir: process.cwd() });
+
+      if (opts.clientOnly && opts.serverOnly)
+        throw "--client-only and --server-only cannot be specified at the same time";
+
+      const components = opts.clientOnly ? "client" : opts.serverOnly ? "server" : "all";
+      await project.createModule({ moduleName, components });
+
+      info(`Created new module: modules/${moduleName}`);
+    } catch (err) {
+      error(parseErrorMessage(err), err);
+      process.exit(-1);
+    }
+  });
+
+cli
   .command("compile")
-  .description("Analyzes the project and compiles the Firedeck runtime")
+  .description("Compiles the Firedeck runtime")
   .action(async () => {
     try {
       const project = new Project({ rootDir: process.cwd() });
@@ -76,7 +98,7 @@ cli
 
 cli
   .command("run")
-  .description("Starts the development runtime")
+  .description("Starts the Firedeck runtime")
   .action(async () => {
     try {
       const project = new Project({ rootDir: process.cwd() });
@@ -87,31 +109,17 @@ cli
     }
   });
 
-const moduleCli = new Command("module");
-moduleCli.description("Manages firedeck modules in the project");
-
-moduleCli
-  .command("new <name>")
-  .option("--client-only", "client-only module")
-  .option("--server-only", "server-only module")
-  .description("Create a new Firedeck module named <name> with client and server components")
-  .action(async (moduleName, opts) => {
+cli
+  .command("build")
+  .description("Builds all modules for deployment")
+  .action(async () => {
     try {
       const project = new Project({ rootDir: process.cwd() });
-
-      if (opts.clientOnly && opts.serverOnly)
-        throw "--client-only and --server-only cannot be specified at the same time";
-
-      const components = opts.clientOnly ? "client" : opts.serverOnly ? "server" : "all";
-      await project.createModule({ moduleName, components });
-
-      info(`Created new module: modules/${moduleName}`);
+      await project.build({ log: info, error: console.error });
     } catch (err) {
       error(parseErrorMessage(err), err);
       process.exit(-1);
     }
   });
-
-cli.addCommand(moduleCli);
 
 cli.parse(process.argv);
