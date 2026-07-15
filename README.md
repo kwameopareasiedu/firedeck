@@ -30,6 +30,12 @@ Each module ultimately maps to:
 As such, a module should contain either `client` or `server` directories or both. A module without
 any of these is ignored by the compiler.
 
+> ⚡ **Important Note**
+>
+> The following module names are reserved for Firedeck:
+> - `shared`
+> - `sdk`
+
 A module directory will have the following structure:
 
 ```
