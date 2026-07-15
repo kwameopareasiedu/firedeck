@@ -1,6 +1,6 @@
 {
   "name": "firedeck",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Firedeck utility package installed in firedeck projects",
   "author": "Kwame Opare Asiedu",
   "license": "MIT",
@@ -14,6 +14,7 @@
   },
   "files": [
     "dist",
+    "README.md",
     "package.json",
     "yarn.lock"
   ],
