@@ -5,8 +5,12 @@ import { isAbsolute, relative, resolve } from "node:path";
 import { Command } from "commander";
 import { error, info, parseErrorMessage } from "@/utils";
 import { input, select } from "@inquirer/prompts";
-import { Project } from "@/project";
 import { PackageManagerName } from "shared/package-manager";
+import { init } from "@/init";
+import { createModule } from "@/create-module";
+import { compileProject } from "@/compile-project";
+import { runProject } from "@/run-project";
+import { buildProject } from "@/build-project";
 
 const packageInfo = JSON.parse(
   fs.readFileSync(resolve(__dirname, "../package.json"), { encoding: "utf-8" }),
@@ -46,9 +50,8 @@ cli
         message: "Package Manager",
         choices: Object.values(PackageManagerName).map((name) => ({ name, value: name })),
       });
-      const project = new Project({ rootDir });
 
-      await project.init({
+      await init(rootDir, {
         projectName,
         projectDescription,
         projectVersion,
@@ -91,13 +94,11 @@ cli
   .description("Adds a new module to a Firedeck project")
   .action(async (moduleName, opts) => {
     try {
-      const project = new Project({ rootDir: process.cwd() });
-
       if (opts.clientOnly && opts.serverOnly)
         throw "--client-only and --server-only cannot be specified at the same time";
 
       const components = opts.clientOnly ? "client" : opts.serverOnly ? "server" : "all";
-      await project.createModule({ moduleName, components });
+      await createModule(process.cwd(), { moduleName, components });
 
       info(`Created new module: modules/${moduleName}`);
     } catch (err) {
@@ -111,10 +112,7 @@ cli
   .description("Compiles the Firedeck runtime")
   .action(async () => {
     try {
-      const project = new Project({ rootDir: process.cwd() });
-      const runtime = await project.analyze();
-      const changes = runtime.diffFrom(null);
-      await project.updateRuntime(changes);
+      await compileProject(process.cwd());
 
       info("Project compiled");
       info("Runtime: .firedeck/runtime");
@@ -130,8 +128,7 @@ cli
   .description("Starts the Firedeck runtime")
   .action(async () => {
     try {
-      const project = new Project({ rootDir: process.cwd() });
-      await project.run({ log: info, error: console.error });
+      await runProject(process.cwd(), { log: info, error: console.error });
     } catch (err) {
       error(parseErrorMessage(err), err);
       process.exit(-1);
@@ -143,8 +140,7 @@ cli
   .description("Builds all modules for deployment")
   .action(async () => {
     try {
-      const project = new Project({ rootDir: process.cwd() });
-      await project.build({ log: info, error: console.error });
+      await buildProject(process.cwd(), { log: info, error: console.error });
     } catch (err) {
       error(parseErrorMessage(err), err);
       process.exit(-1);

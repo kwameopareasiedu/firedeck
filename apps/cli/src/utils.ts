@@ -4,6 +4,28 @@ import fs from "fs-extra";
 import { FileTree } from "@/types";
 import chalk from "chalk";
 
+export const RESERVED_MODULE_NAMES = ["shared", "sdk"];
+export const NOT_FOUND_DIR_SUFFIX = "404";
+export const NOT_FOUND_URL_PATH = "/*";
+
+export function getProjectPaths(rootDir: string) {
+  return {
+    rootDir: rootDir,
+    configFile: resolve(rootDir, "firedeck.config.ts"),
+    modulesDir: resolve(rootDir, "modules"),
+    workspaceDir: resolve(rootDir, ".firedeck"),
+    runtimeDir: resolve(rootDir, ".firedeck/runtime"),
+    runtimeModulesDir: resolve(rootDir, ".firedeck/runtime/modules"),
+    clientSdkDir: resolve(rootDir, "modules/sdk/client"),
+  };
+}
+
+export function assertFiredeckRootDir(rootDir: string) {
+  const { configFile } = getProjectPaths(rootDir);
+
+  if (!fs.existsSync(configFile)) throw `${rootDir}: directory is not a firedeck project`;
+}
+
 export function getPrettierConfig(args: { filePath: string }): Options {
   return {
     filepath: args.filePath,

@@ -1,7 +1,7 @@
 import test from "ava";
 import fs from "fs-extra";
 import { resolve } from "node:path";
-import { Runtime } from "../temp/runtime.js";
+import { compareProjectModels } from "../temp/compare-project-models.js";
 
 const __dirname = import.meta.dirname;
 const testRoot = resolve(__dirname, "../temp/testing");
@@ -11,8 +11,8 @@ test.beforeEach(() => {
   fs.ensureDirSync(testRoot);
 });
 
-test("runtime-diff", async (t) => {
-  const r1 = new Runtime({
+test("compare-project-models", async (t) => {
+  const p1 = {
     config: {},
     clients: [
       {
@@ -107,9 +107,9 @@ test("runtime-diff", async (t) => {
         envHash: 0x98ab24,
       },
     ],
-  });
+  };
 
-  const r2 = new Runtime({
+  const p2 = {
     config: {},
     clients: [
       {
@@ -195,14 +195,14 @@ test("runtime-diff", async (t) => {
         envHash: 0x98ab24,
       },
     ],
-  });
+  };
 
-  const r3 = new Runtime({
+  const p3 = {
     config: { vite: {} },
     clients: [],
-  });
+  };
 
-  const r4 = new Runtime({
+  const p4 = {
     config: { firebase: { projects: {} } },
     clients: [
       {
@@ -310,14 +310,14 @@ test("runtime-diff", async (t) => {
         envHash: 0x0013fe,
       },
     ],
-  });
+  };
 
-  const r1r2Changes = r2.diffFrom(r1);
-  const r1r3Changes = r3.diffFrom(r1);
-  const r1r4Changes = r4.diffFrom(r1);
-  const nullR4Changes = r4.diffFrom(null);
+  const p1p2Changes = compareProjectModels(p1, p2);
+  const p1p3Changes = compareProjectModels(p1, p3);
+  const p1p4Changes = compareProjectModels(p1, p4);
+  const nullP4Changes = compareProjectModels(null, p4);
 
-  t.deepEqual(r1r2Changes, [
+  t.deepEqual(p1p2Changes, [
     {
       type: "update-runtime-client-routes",
       clientName: "main",
@@ -488,13 +488,13 @@ test("runtime-diff", async (t) => {
     },
   ]);
 
-  t.deepEqual(r1r3Changes, [
+  t.deepEqual(p1p3Changes, [
     { type: "update-config", config: { vite: {} } },
     { type: "remove-runtime-client", clientName: "main" },
     { type: "update-client-sdk-routes", clients: [] },
   ]);
 
-  t.deepEqual(r1r4Changes, [
+  t.deepEqual(p1p4Changes, [
     { type: "update-config", config: { firebase: { projects: {} } } },
     { type: "add-runtime-client", clientName: "admin" },
     {
@@ -716,7 +716,7 @@ test("runtime-diff", async (t) => {
     },
   ]);
 
-  t.deepEqual(nullR4Changes, [
+  t.deepEqual(nullP4Changes, [
     { type: "create-runtime" },
     { type: "update-config", config: { firebase: { projects: {} } } },
     { type: "add-runtime-client", clientName: "admin" },

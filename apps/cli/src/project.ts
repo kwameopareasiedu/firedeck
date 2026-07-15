@@ -19,8 +19,9 @@ import nodeResolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import typescript from "@rollup/plugin-typescript";
 import { FiredeckConfig } from "shared/firedeck-config";
-import { packageManagers, PackageManagerName } from "shared/package-manager";
+import { PackageManagerName, packageManagers } from "shared/package-manager";
 
+/** @deprecated Replace with relevant functions */
 export class Project {
   private static readonly RESERVED_MODULE_NAMES = ["shared", "sdk"];
   private static readonly NOT_FOUND_DIR_SUFFIX = "404";
@@ -34,6 +35,7 @@ export class Project {
   private readonly runtimeModulesDir: string;
   private readonly clientSdkDir: string;
 
+  /** @deprecated Replace with relevant functions */
   constructor(args: { rootDir: string }) {
     this.rootDir = args.rootDir;
     this.configFile = resolve(args.rootDir, "firedeck.config.ts");

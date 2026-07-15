@@ -12,10 +12,12 @@ const external = [
   ...Object.keys(packageInfo.dependencies),
   ...Object.keys(packageInfo.devDependencies),
 ].map((dep) => new RegExp(`${dep}.+`));
+
 const sourcePaths = fs
   .readdirSync(resolve(__dirname, "src"), { encoding: "utf-8" })
   .filter((filename) => !["index.ts", "types.ts"].includes(filename))
-  .map((filename) => resolve(__dirname, "src", filename));
+  .map((filename) => resolve(__dirname, "src", filename))
+  .filter((filepath) => fs.lstatSync(filepath).isFile());
 
 export default defineConfig([
   {
