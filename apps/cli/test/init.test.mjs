@@ -5,7 +5,7 @@ import { execSync } from "node:child_process";
 import { init } from "../temp/init.js";
 
 const __dirname = import.meta.dirname;
-const testDir = resolve(__dirname, "../temp/testing");
+const testDir = resolve(__dirname, "../temp/test-init");
 
 test.beforeEach(() => {
   fs.removeSync(testDir);

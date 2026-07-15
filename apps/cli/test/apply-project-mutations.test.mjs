@@ -10,7 +10,7 @@ import { writeFileTree, getPrettierConfig } from "../temp/utils.js";
 import { format } from "prettier";
 
 const __dirname = import.meta.dirname;
-const testDir = resolve(__dirname, "../temp/testing");
+const testDir = resolve(__dirname, "../temp/test-apply-project-mutations");
 
 test.beforeEach(() => {
   fs.removeSync(testDir);

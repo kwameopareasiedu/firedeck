@@ -7,7 +7,7 @@ import { analyzeProject } from "../temp/analyze-project.js";
 import { writeFileTree } from "../temp/utils.js";
 
 const __dirname = import.meta.dirname;
-const testDir = resolve(__dirname, "../temp/testing");
+const testDir = resolve(__dirname, "../temp/test-analyze-project");
 
 test.beforeEach(() => {
   fs.removeSync(testDir);

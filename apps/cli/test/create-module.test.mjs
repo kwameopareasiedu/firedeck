@@ -6,7 +6,7 @@ import { init } from "../temp/init.js";
 import { createModule } from "../temp/create-module.js";
 
 const __dirname = import.meta.dirname;
-const testDir = resolve(__dirname, "../temp/testing");
+const testDir = resolve(__dirname, "../temp/test-create-module");
 
 test.beforeEach(() => {
   fs.removeSync(testDir);

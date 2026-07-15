@@ -1,15 +1,5 @@
 import test from "ava";
-import fs from "fs-extra";
-import { resolve } from "node:path";
 import { compareProjectModels } from "../temp/compare-project-models.js";
-
-const __dirname = import.meta.dirname;
-const testRoot = resolve(__dirname, "../temp/testing");
-
-test.beforeEach(() => {
-  fs.removeSync(testRoot);
-  fs.ensureDirSync(testRoot);
-});
 
 test("compare-project-models", async (t) => {
   const p1 = {
