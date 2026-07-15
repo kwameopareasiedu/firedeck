@@ -1,14 +1,19 @@
 # Firedeck
 
-Firedeck is an opinionated CLI application for building full stack applications with Firebase, React
-and Vite:
+Firedeck is an **opinionated**, batteries-included application **compiler** for Firebase-backed
+React SPAs.
 
-## Objectives
+Firedeck allows you to write modules which are your application logic, and it compiles them into a
+working runtime that can be built and deployed to Firebase.
 
-- Initialize project directories with boilerplate code
-- Manage Firebase projects based on current application state
-- Manage dynamic routing using client code directory
-- Deploy project to Firebase
+## Features
+
+- Skeleton project boilerplate
+- Managed [Turbo](https://turborepo.dev) runtime consisting of Vite and Firebase applications
+- Directory based routing, similar to [Next.js app router](https://nextjs.org/docs/app)
+- Automatic generation of client SDK to access firebase apps from the frontends
+- Simple environment variables setup
+- One config file to rule them all
 
 ## Modules
 
@@ -300,7 +305,7 @@ Configuration of the runtime artifacts is done via the provided `firedeck.config
 following structure:
 
 ```typescript
-import { defineConfig } from "firedeck";
+import {defineConfig} from "firedeck";
 
 export default defineConfig({
     vite: {},
@@ -308,7 +313,7 @@ export default defineConfig({
 })
 ```
 
-The `vite` config 
+The `vite` config
 
 
 [//]: # (The server functions defined by the module will be available to the client via the `useApi` hook.)

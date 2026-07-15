@@ -1,3 +1,5 @@
+import { FiredeckConfig } from "shared/firedeck-config";
+
 export interface ClientRoute {
   pageName: string | null;
   pageImportPath: string | null;
@@ -28,6 +30,7 @@ export interface RuntimeClient {
 
 export type RuntimeChange =
   | { type: "create-runtime" }
+  | { type: "update-config"; config: FiredeckConfig }
   | { type: "add-runtime-client"; clientName: string }
   | { type: "remove-runtime-client"; clientName: string }
   | { type: "rename-runtime-client"; oldClientName: string; newClientName: string }
@@ -37,9 +40,11 @@ export type RuntimeChange =
   | { type: "update-client-sdk-routes"; clients: RuntimeClient[] };
 
 export class Runtime {
+  readonly config: FiredeckConfig;
   readonly clients: RuntimeClient[];
 
-  constructor(args: { clients: RuntimeClient[] }) {
+  constructor(args: { config: FiredeckConfig; clients: RuntimeClient[] }) {
+    this.config = args.config;
     this.clients = args.clients;
   }
 
@@ -48,8 +53,11 @@ export class Runtime {
 
     if (!source) {
       changes.push({ type: "create-runtime" });
-      source = new Runtime({ clients: [] });
+      source = new Runtime({ config: {}, clients: [] });
     }
+
+    if (JSON.stringify(source.config) !== JSON.stringify(this.config))
+      changes.push({ type: "update-config", config: this.config });
 
     const sourceClients = new Map(source.clients.map((client) => [client.name, client]));
 

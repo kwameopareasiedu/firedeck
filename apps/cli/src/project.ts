@@ -21,6 +21,11 @@ import { camelCase, snakeCase, startCase } from "lodash";
 import { exec, spawn } from "node:child_process";
 import chokidar from "chokidar";
 import kill from "tree-kill";
+import { rollup } from "rollup";
+import nodeResolve from "@rollup/plugin-node-resolve";
+import commonjs from "@rollup/plugin-commonjs";
+import typescript from "@rollup/plugin-typescript";
+import { FiredeckConfig } from "shared/firedeck-config";
 
 export class Project {
   private static readonly RESERVED_MODULE_NAMES = ["shared", "sdk"];
@@ -28,14 +33,18 @@ export class Project {
   private static readonly NOT_FOUND_URL_PATH = "/*";
 
   private readonly rootDir: string;
+  private readonly configFile: string;
   private readonly modulesDir: string;
+  private readonly workspaceDir: string;
   private readonly runtimeDir: string;
   private readonly runtimeModulesDir: string;
   private readonly clientSdkDir: string;
 
   constructor(args: { rootDir: string }) {
     this.rootDir = args.rootDir;
+    this.configFile = resolve(args.rootDir, "firedeck.config.ts");
     this.modulesDir = resolve(args.rootDir, "modules");
+    this.workspaceDir = resolve(args.rootDir, ".firedeck");
     this.runtimeDir = resolve(args.rootDir, ".firedeck/runtime");
     this.runtimeModulesDir = resolve(args.rootDir, ".firedeck/runtime/modules");
     this.clientSdkDir = resolve(args.rootDir, "modules/sdk/client");
@@ -126,7 +135,12 @@ export class Project {
       // const serverRoot = resolve(moduleRoot, "server");
     }
 
-    return new Runtime({ clients: runtimeClients });
+    const firedeckConfig = await this.parseConfig();
+
+    return new Runtime({
+      config: firedeckConfig,
+      clients: runtimeClients,
+    });
   }
 
   async updateRuntime(changes: RuntimeChange[]) {
@@ -140,6 +154,10 @@ export class Project {
 
           const runtimeFileTree = generateRuntimeFileTree();
           await writeFileTree(this.runtimeDir, runtimeFileTree);
+          break;
+        }
+        case "update-config": {
+          // TODO: Generate config files
           break;
         }
         case "add-runtime-client": {
@@ -266,7 +284,10 @@ export class Project {
     };
 
     const fileWatcher = chokidar
-      .watch(this.modulesDir, { persistent: true, awaitWriteFinish: { stabilityThreshold: 500 } })
+      .watch([this.configFile, this.modulesDir], {
+        persistent: true,
+        awaitWriteFinish: { stabilityThreshold: 500 },
+      })
       .on("ready", () => args.log("watching modules"))
       .on("error", (err) => args.error(`error: ${err}`))
       .on("add", async (path) => await handleChange(path, "new-file"))
@@ -342,6 +363,26 @@ export class Project {
   private assertFiredeckRootDir() {
     if (!pathIsFiredeckRoot(this.rootDir))
       throw `${this.rootDir}: directory is not a valid firedeck project`;
+  }
+
+  private async parseConfig() {
+    this.assertFiredeckRootDir();
+
+    const bundle = await rollup({
+      input: this.configFile,
+      plugins: [nodeResolve(), commonjs(), typescript()],
+      treeshake: { moduleSideEffects: false },
+      external: ["firedeck"],
+    });
+
+    const bundledConfigFile = resolve(this.workspaceDir, "firedeck.config.mjs");
+    await bundle.write({ file: bundledConfigFile, format: "esm" });
+    await bundle.close();
+
+    const config: FiredeckConfig = await import(bundledConfigFile).then((mod) => mod.default);
+    fs.removeSync(bundledConfigFile);
+
+    return config;
   }
 
   private discoverRoutes(dir: string, pagesDir: string): ClientRoute {

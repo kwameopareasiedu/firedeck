@@ -13,6 +13,7 @@ test.beforeEach(() => {
 
 test("runtime-diff", async (t) => {
   const r1 = new Runtime({
+    config: {},
     clients: [
       {
         name: "main",
@@ -109,6 +110,7 @@ test("runtime-diff", async (t) => {
   });
 
   const r2 = new Runtime({
+    config: {},
     clients: [
       {
         name: "main",
@@ -196,10 +198,12 @@ test("runtime-diff", async (t) => {
   });
 
   const r3 = new Runtime({
+    config: { vite: {} },
     clients: [],
   });
 
   const r4 = new Runtime({
+    config: { firebase: { projects: {} } },
     clients: [
       {
         name: "admin",
@@ -485,11 +489,13 @@ test("runtime-diff", async (t) => {
   ]);
 
   t.deepEqual(r1r3Changes, [
+    { type: "update-config", config: { vite: {} } },
     { type: "remove-runtime-client", clientName: "main" },
     { type: "update-client-sdk-routes", clients: [] },
   ]);
 
   t.deepEqual(r1r4Changes, [
+    { type: "update-config", config: { firebase: { projects: {} } } },
     { type: "add-runtime-client", clientName: "admin" },
     {
       type: "update-runtime-client-routes",
@@ -712,6 +718,7 @@ test("runtime-diff", async (t) => {
 
   t.deepEqual(nullR4Changes, [
     { type: "create-runtime" },
+    { type: "update-config", config: { firebase: { projects: {} } } },
     { type: "add-runtime-client", clientName: "admin" },
     {
       type: "update-runtime-client-routes",

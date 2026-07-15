@@ -1,0 +1,11 @@
+{
+  "name": "shared",
+  "version": "0.1.0",
+  "private": true,
+  "author": "Kwame Opare Asiedu",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "vite": "^8.1.1"
+  }
+}

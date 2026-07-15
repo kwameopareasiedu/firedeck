@@ -1,6 +1,7 @@
 import test from "ava";
 import fs from "fs-extra";
 import { resolve } from "node:path";
+import { execSync } from "node:child_process";
 import { Project } from "../temp/project.js";
 import { writeFileTree, getPrettierConfig } from "../temp/utils.js";
 import { format } from "prettier";
@@ -23,8 +24,10 @@ test("init", async (t) => {
     projectAuthor: "Kwame",
   });
 
+  execSync("yarn --prefer-offline", { cwd: testDir });
+
   t.true(fs.existsSync(resolve(testDir, "package.json")));
-  t.true(fs.existsSync(resolve(testDir, "firedeck.json")));
+  t.true(fs.existsSync(resolve(testDir, "firedeck.config.ts")));
   t.true(fs.existsSync(resolve(testDir, "tsconfig.json")));
   t.true(fs.existsSync(resolve(testDir, ".prettierrc")));
   t.true(fs.existsSync(resolve(testDir, ".gitignore")));
@@ -48,6 +51,8 @@ test("create-module", async (t) => {
     projectAuthor: "Kwame",
   });
 
+  execSync("yarn --prefer-offline", { cwd: testDir });
+
   await project.createModule({
     moduleName: "admin",
     components: "all",
@@ -70,6 +75,8 @@ test("analyze", async (t) => {
     projectVersion: "0.1.0",
     projectAuthor: "Kwame",
   });
+
+  execSync("yarn --prefer-offline", { cwd: testDir });
 
   const mainModuleFileTree = {
     "modules/main/client/pages/index-page.tsx": {
@@ -258,6 +265,8 @@ test("update-runtime", async (t) => {
     projectVersion: "0.1.0",
     projectAuthor: "Kwame",
   });
+
+  execSync("yarn --prefer-offline", { cwd: testDir });
 
   const fileTree = {
     "modules/main/client/pages/index-page.tsx": {

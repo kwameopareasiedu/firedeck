@@ -1,8 +1,4 @@
-import type { UserConfig } from "vite";
-
-interface FiredeckConfig {
-  vite: UserConfig;
-}
+import { FiredeckConfig } from "shared/firedeck-config";
 
 export function defineConfig(config: FiredeckConfig) {
   return config;
