@@ -8,7 +8,10 @@ import fs from "fs-extra";
 
 const __dirname = import.meta.dirname;
 const packageInfo = JSON.parse(fs.readFileSync("package.json", { encoding: "utf-8" }));
-const external = Object.keys(packageInfo.dependencies).map((dep) => new RegExp(`${dep}.+`));
+const external = [
+  ...Object.keys(packageInfo.dependencies),
+  ...Object.keys(packageInfo.devDependencies),
+].map((dep) => new RegExp(`${dep}.+`));
 const sourcePaths = fs
   .readdirSync(resolve(__dirname, "src"), { encoding: "utf-8" })
   .filter((filename) => !["index.ts", "types.ts"].includes(filename))

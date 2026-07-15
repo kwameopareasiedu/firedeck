@@ -29,6 +29,7 @@ export function generateProjectFileTree(opts: {
           "@types/react": "^19.2.17",
           "@types/react-dom": "^19.2.3",
           "@vitejs/plugin-react": "^6.0.3",
+          "firedeck": "^0.1.2",
           "fs-extra": "^11.3.6",
           "prettier": "3.9.4",
           "react": "^19.2.7",
@@ -102,9 +103,13 @@ export function generateProjectFileTree(opts: {
       extension: "json",
     },
 
-    "firedeck.json": {
+    "firedeck.config.ts": {
       content: `
-      {}`,
+      import {defineConfig} from "firedeck";
+      
+      export default defineConfig({
+        // Firedeck configuration here
+      });`,
     },
 
     "modules/main/client/.env": {

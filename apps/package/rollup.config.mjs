@@ -29,6 +29,7 @@ export default defineConfig(
         input: sourcePath,
         output: { dir: "dist" },
         plugins: [typescript(), dts()],
+        external: ["vite"],
       },
     ];
   }, []),
