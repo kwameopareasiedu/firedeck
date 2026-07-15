@@ -1,11 +1,4 @@
-import {
-  error,
-  generateStringHash,
-  getPrettierConfig,
-  info,
-  pathIsFiredeckRoot,
-  writeFileTree,
-} from "@/utils";
+import { error, generateStringHash, getPrettierConfig, info, writeFileTree } from "@/utils";
 import { relative, resolve, sep } from "node:path";
 import fs from "fs-extra";
 import {
@@ -18,7 +11,7 @@ import { ModuleComponents } from "@/types";
 import { ClientRoute, ReactRouterRoute, Runtime, RuntimeChange, RuntimeClient } from "@/runtime";
 import { format } from "prettier";
 import { camelCase, snakeCase, startCase } from "lodash";
-import { exec, spawn } from "node:child_process";
+import { exec, execSync, spawn } from "node:child_process";
 import chokidar from "chokidar";
 import kill from "tree-kill";
 import { rollup } from "rollup";
@@ -26,6 +19,7 @@ import nodeResolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import typescript from "@rollup/plugin-typescript";
 import { FiredeckConfig } from "shared/firedeck-config";
+import { packageManagers, PackageManagerName } from "shared/package-manager";
 
 export class Project {
   private static readonly RESERVED_MODULE_NAMES = ["shared", "sdk"];
@@ -55,6 +49,7 @@ export class Project {
     projectDescription: string;
     projectVersion: string;
     projectAuthor: string;
+    packageManagerName: PackageManagerName;
   }) {
     if (!fs.existsSync(this.rootDir)) {
       fs.ensureDirSync(this.rootDir);
@@ -62,11 +57,22 @@ export class Project {
       throw `./${relative(process.cwd(), this.rootDir)}: directory is not empty`;
     }
 
+    const packageManager = packageManagers[args.packageManagerName];
+    if (!packageManager) throw `unsupported package manager: ${args.packageManagerName}`;
+
+    const packageManagerVersion = execSync(packageManager.commands.checkVersion, {
+      encoding: "utf-8",
+    }).trim();
+
+    if (!packageManagerVersion) throw `package manager not found: ${args.packageManagerName}`;
+
     const projectFileTree = generateProjectFileTree({
       projectName: args.projectName,
       projectDescription: args.projectDescription,
       projectVersion: args.projectVersion,
       projectAuthor: args.projectAuthor,
+      packageManagerName: args.packageManagerName,
+      packageManagerVersion: packageManagerVersion,
     });
 
     await writeFileTree(this.rootDir, projectFileTree);
@@ -135,7 +141,7 @@ export class Project {
       // const serverRoot = resolve(moduleRoot, "server");
     }
 
-    const firedeckConfig = await this.parseConfig();
+    const firedeckConfig = await this.parseFiredeckConfig();
 
     return new Runtime({
       config: firedeckConfig,
@@ -146,13 +152,18 @@ export class Project {
   async updateRuntime(changes: RuntimeChange[]) {
     this.assertFiredeckRootDir();
 
+    const firedeckConfig = await this.parseFiredeckConfig();
+
     for (const change of changes) {
       switch (change.type) {
         case "create-runtime": {
           fs.removeSync(this.runtimeDir);
           fs.ensureDirSync(this.runtimeDir);
 
-          const runtimeFileTree = generateRuntimeFileTree();
+          const runtimeFileTree = generateRuntimeFileTree({
+            packageManagerName: firedeckConfig.packageManager.name,
+            packageManagerVersion: firedeckConfig.packageManager.version,
+          });
           await writeFileTree(this.runtimeDir, runtimeFileTree);
           break;
         }
@@ -361,11 +372,11 @@ export class Project {
   }
 
   private assertFiredeckRootDir() {
-    if (!pathIsFiredeckRoot(this.rootDir))
+    if (!fs.existsSync(this.configFile))
       throw `${this.rootDir}: directory is not a valid firedeck project`;
   }
 
-  private async parseConfig() {
+  private async parseFiredeckConfig() {
     this.assertFiredeckRootDir();
 
     const bundle = await rollup({
@@ -623,4 +634,6 @@ export class Project {
       }, [] as ClientRoute[]),
     ];
   }
+
+  // private async generateFirebaseConfigSources(config: FiredeckConfig) {}
 }

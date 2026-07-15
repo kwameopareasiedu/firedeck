@@ -34,10 +34,6 @@ export async function writeFileTree(rootDir: string, tree: FileTree) {
   }
 }
 
-export function pathIsFiredeckRoot(path: string) {
-  return fs.existsSync(resolve(path, "firedeck.config.ts"));
-}
-
 export function parseErrorMessage(err: unknown) {
   if (typeof err === "string") return err;
   else if (typeof err === "object") return (err as Record<string, string>).message;

@@ -15,6 +15,10 @@ working runtime that can be built and deployed to Firebase.
 - Simple environment variables setup
 - One config file to rule them all
 
+> ⚡ **Important Note**
+> 
+> Firedeck depends on `firebase-tools`, so make sure you have it installed globally
+
 ## Modules
 
 Firedeck is based on the concept of **modules**, which are directories of your application component
@@ -43,7 +47,10 @@ A module directory will have the following structure:
   - server/
   - client/
     - pages/
+    - .env
     - index.html
+    - index.css
+    - index.tsx
 ```
 
 ### Module Client

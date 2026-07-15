@@ -1,4 +1,5 @@
 import { FiredeckConfig } from "shared/firedeck-config";
+import { PackageManagerName } from "shared/package-manager";
 
 export interface ClientRoute {
   pageName: string | null;
@@ -53,7 +54,16 @@ export class Runtime {
 
     if (!source) {
       changes.push({ type: "create-runtime" });
-      source = new Runtime({ config: {}, clients: [] });
+
+      source = new Runtime({
+        config: {
+          packageManager: {
+            name: PackageManagerName.YARN,
+            version: "1.22.22",
+          },
+        },
+        clients: [],
+      });
     }
 
     if (JSON.stringify(source.config) !== JSON.stringify(this.config))

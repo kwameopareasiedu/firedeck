@@ -1,19 +1,21 @@
 import { FileTree } from "@/types";
 
-export function generateProjectFileTree(opts: {
+export function generateProjectFileTree(args: {
   projectName: string;
   projectDescription: string;
   projectVersion: string;
   projectAuthor: string;
+  packageManagerName: string;
+  packageManagerVersion: string;
 }): FileTree {
   return {
     "package.json": {
       content: `
       {
-        "name": "${opts.projectName}",
-        "description": "${opts.projectDescription}",
-        "version": "${opts.projectVersion}",
-        "author": "${opts.projectAuthor}",
+        "name": "${args.projectName}",
+        "description": "${args.projectDescription}",
+        "version": "${args.projectVersion}",
+        "author": "${args.projectAuthor}",
         "private": true,
         "type": "module",
         "scripts": {
@@ -108,7 +110,10 @@ export function generateProjectFileTree(opts: {
       import {defineConfig} from "firedeck";
       
       export default defineConfig({
-        // Firedeck configuration here
+        packageManager: {
+          name: "${args.packageManagerName}",
+          version: "${args.packageManagerVersion}",
+        },
       });`,
     },
 
@@ -140,10 +145,10 @@ export function generateProjectFileTree(opts: {
 
     "modules/main/client/index.tsx": {
       content: `
-      import type { ReactNode } from "react";
+      import { type ReactNode, StrictMode } from "react";
       
       export default function (appRouter: ReactNode) {
-        return appRouter;
+        return <StrictMode>{appRouter}</StrictMode>;
       }`,
     },
 
@@ -350,7 +355,10 @@ export function generateModuleFileTree(args: {
   return contents;
 }
 
-export function generateRuntimeFileTree(): FileTree {
+export function generateRuntimeFileTree(args: {
+  packageManagerName: string;
+  packageManagerVersion: string;
+}): FileTree {
   return {
     "package.json": {
       content: `
@@ -359,7 +367,7 @@ export function generateRuntimeFileTree(): FileTree {
         "version": "0.0.0",
         "private": true,
         "type": "module",
-        "packageManager": "yarn@1.22.22",
+        "packageManager": "${args.packageManagerName}@${args.packageManagerVersion}",
         "workspaces": [
           "modules/*"
         ],
@@ -567,16 +575,13 @@ export function generateRuntimeClientFileTree(args: { clientName: string }): Fil
     "src/index.tsx": {
       content: `
       import "./index.css";
-      import { StrictMode } from "react";
       import { createRoot } from "react-dom/client";
       import { RouterProvider } from "react-router";
       import customizer from "@/${args.clientName}/client/index.tsx";
       import router from "./router.tsx";
       
       createRoot(document.getElementById("root")!).render(
-        <StrictMode>
-          {customizer(<RouterProvider router={router} />)}
-        </StrictMode>,
+        customizer(<RouterProvider router={router} />)
       );`,
     },
 

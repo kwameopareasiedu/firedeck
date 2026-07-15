@@ -4,8 +4,9 @@ import fs from "fs-extra";
 import { isAbsolute, relative, resolve } from "node:path";
 import { Command } from "commander";
 import { error, info, parseErrorMessage } from "@/utils";
-import { input } from "@inquirer/prompts";
+import { input, select } from "@inquirer/prompts";
 import { Project } from "@/project";
+import { PackageManagerName } from "shared/package-manager";
 
 const packageInfo = JSON.parse(
   fs.readFileSync(resolve(__dirname, "../package.json"), { encoding: "utf-8" }),
@@ -41,9 +42,19 @@ cli
       });
       const projectVersion = await input({ message: "Version:", default: "0.1.0" });
       const projectAuthor = await input({ message: "Author:", default: "Kwame" });
+      const packageManagerName = await select({
+        message: "Package Manager",
+        choices: Object.values(PackageManagerName).map((name) => ({ name, value: name })),
+      });
       const project = new Project({ rootDir });
 
-      await project.init({ projectName, projectDescription, projectVersion, projectAuthor });
+      await project.init({
+        projectName,
+        projectDescription,
+        projectVersion,
+        projectAuthor,
+        packageManagerName,
+      });
 
       info("\nNext steps");
       info(`1. cd ${relative(process.cwd(), rootDir)}`);

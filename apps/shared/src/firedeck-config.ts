@@ -1,4 +1,5 @@
 import type { UserConfig } from "vite";
+import { PackageManagerName } from "./package-manager";
 
 interface FirestoreIndex {
   collectionGroup: string;
@@ -16,6 +17,10 @@ interface FirebaseProject {
 }
 
 export interface FiredeckConfig {
+  packageManager: {
+    name: PackageManagerName;
+    version: string;
+  };
   vite?: UserConfig;
   firebase?: {
     projects: {
