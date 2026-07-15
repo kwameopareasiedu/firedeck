@@ -31,7 +31,7 @@ export function generateProjectFileTree(args: {
           "@types/react": "^19.2.17",
           "@types/react-dom": "^19.2.3",
           "@vitejs/plugin-react": "^6.0.3",
-          "firedeck": "^0.1.2",
+          "firedeck": "^0.1.3",
           "fs-extra": "^11.3.6",
           "prettier": "3.9.4",
           "react": "^19.2.7",

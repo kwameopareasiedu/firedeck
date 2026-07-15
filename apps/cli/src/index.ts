@@ -56,10 +56,28 @@ cli
         packageManagerName,
       });
 
-      info("\nNext steps");
-      info(`1. cd ${relative(process.cwd(), rootDir)}`);
-      info(`2. npm install`);
-      info(`3. npm run dev`);
+      const nextSteps = [];
+      const relativeRootDir = relative(process.cwd(), rootDir);
+
+      if (relativeRootDir) nextSteps.push(`cd ${relativeRootDir}`);
+
+      switch (packageManagerName as PackageManagerName) {
+        case PackageManagerName.NPM:
+          nextSteps.push("npm install");
+          nextSteps.push("npm run dev");
+          break;
+        case PackageManagerName.YARN:
+          nextSteps.push("yarn install");
+          nextSteps.push("yarn dev");
+          break;
+      }
+
+      info("Next steps");
+
+      for (let i = 0; i < nextSteps.length; i++) {
+        const step = nextSteps[i];
+        info(`${i + 1}. ${step}`);
+      }
     } catch (err) {
       error(parseErrorMessage(err), err);
       process.exit(-1);
