@@ -20,8 +20,11 @@ export interface ProjectRoute {
 export interface RouterRoute {
   id?: string;
   path?: string | null;
-  element?: string | null;
-  loader?: string | null;
+  lazy?: {
+    Component?: string;
+  };
+  HydrateFallback?: string;
+  loader?: string;
   children?: RouterRoute[];
 }
 

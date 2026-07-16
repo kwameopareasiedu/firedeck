@@ -73,7 +73,7 @@ function generateProjectFileTree(args: {
           "@types/react": "^19.2.17",
           "@types/react-dom": "^19.2.3",
           "@vitejs/plugin-react": "^6.0.3",
-          "firedeck": "^0.1.3",
+          "firedeck": "^0.1.4",
           "fs-extra": "^11.3.6",
           "prettier": "3.9.4",
           "react": "^19.2.7",
@@ -196,7 +196,7 @@ function generateProjectFileTree(args: {
 
     "modules/main/client/pages/index-page.tsx": {
       content: `
-      export default function() {
+      export default function IndexPage() {
         return (
           <div className="h-screen bg-black flex flex-col items-center justify-center">
             <div className="w-full max-w-96 max-sm:px-8">
@@ -224,7 +224,7 @@ function generateProjectFileTree(args: {
       import { MainRoute } from "@/sdk/client/routes";
       import { Link } from "react-router";
       
-      export default function () {
+      export default function NotFoundPage() {
         return (
           <div className="h-screen bg-black flex flex-col items-center justify-center space-y-6">
             <div className="w-full max-w-96 max-sm:px-8">

@@ -109,91 +109,69 @@ test("apply-project-mutations", async (t) => {
   t.true(fs.existsSync(resolve(runtimeMainDir, ".gitignore")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "src/index.tsx")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "src/index.css")));
-  t.true(fs.existsSync(resolve(runtimeMainDir, "src/router.tsx")));
+  t.true(fs.existsSync(resolve(runtimeMainDir, "src/routes.ts")));
 
-  const routerSource = fs.readFileSync(resolve(runtimeMainDir, "src/router.tsx"), {
+  const routesSource = fs.readFileSync(resolve(runtimeMainDir, "src/routes.ts"), {
     encoding: "utf-8",
   });
 
   t.is(
-    routerSource,
+    routesSource,
     await format(
-      `
-        import { type ReactNode, lazy, Suspense } from "react";
-        import { createBrowserRouter } from "react-router";
-        
-        const IndexPage = lazy(() => import("@/main/client/pages/index-page.tsx"));
-        import DashboardLayout from "@/main/client/pages/(dashboard)/dashboard-layout.tsx";
-        const UsersPage = lazy(() => import("@/main/client/pages/(dashboard)/users/users-page.tsx"));
-        const UserDetailsPage = lazy(() => import("@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx"));
-        const ContactPage = lazy(() => import("@/main/client/pages/(public)/contact/contact-page.tsx"));
-        const FeaturesPage = lazy(() => import("@/main/client/pages/(public)/features/features-page.tsx"));
-        const LandingPage = lazy(() => import("@/main/client/pages/(public)/landing/landing-page.tsx"));
-        const NotFoundPage = lazy(() => import("@/main/client/pages/404/not-found-page.tsx"));
-        function withSuspense(child: ReactNode, placeholder?: ReactNode) {
-          return (
-            <Suspense
-              fallback={
-                <div className="w-screen h-full grid place-items-center">
-                  {placeholder ?? <p>Please wait</p>}
-                </div>
-              }>
-              {child}
-            </Suspense>
-          );
-        }
-        
-        export default createBrowserRouter([
-          {
-            children: [
-              { id: "IndexPage", path: "/", element: withSuspense(<IndexPage />) },
-              {
-                id: "DashboardLayout",
-                element: <DashboardLayout />,
-                children: [
-                  {
-                    id: "UsersPage",
-                    path: "/users",
-                    element: withSuspense(<UsersPage />),
-                    children: [
-                      {
-                        id: "UserDetailsPage",
-                        path: "/users/:userId",
-                        element: withSuspense(<UserDetailsPage />),
-                      },
-                    ],
-                  },
-                ],
-              },
-              {
-                children: [
-                  {
-                    id: "ContactPage",
-                    path: "/contact",
-                    element: withSuspense(<ContactPage />),
-                  },
-                  {
-                    id: "FeaturesPage",
-                    path: "/features",
-                    element: withSuspense(<FeaturesPage />),
-                  },
-                  {
-                    id: "LandingPage",
-                    path: "/landing",
-                    element: withSuspense(<LandingPage />),
-                  },
-                ],
-              },
-              {
-                id: "NotFoundPage",
-                path: "/*",
-                element: withSuspense(<NotFoundPage />),
-              },
-            ],
-          },
-        ]);
-      `,
-      getPrettierConfig({ filePath: "a.tsx" }),
+      `export default [
+        {
+          children: [
+            {
+              id: "IndexPage",
+              path: "/",
+              lazy: { Component: () => import("@/main/client/pages/index-page.tsx").then((mod) => mod.default) },
+            },
+            {
+              id: "DashboardLayout",
+              lazy: { Component: () => import("@/main/client/pages/(dashboard)/dashboard-layout.tsx").then((mod) => mod.default) },
+              children: [
+                {
+                  id: "UsersPage",
+                  path: "/users",
+                  lazy: { Component: () => import("@/main/client/pages/(dashboard)/users/users-page.tsx").then((mod) => mod.default) },
+                  children: [
+                    {
+                      id: "UserDetailsPage",
+                      path: "/users/:userId",
+                      lazy: { Component: () => import("@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx").then((mod) => mod.default) },
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              children: [
+                {
+                  id: "ContactPage",
+                  path: "/contact",
+                  lazy: { Component: () => import("@/main/client/pages/(public)/contact/contact-page.tsx").then((mod) => mod.default) },
+                },
+                {
+                  id: "FeaturesPage",
+                  path: "/features",
+                  lazy: { Component: () => import("@/main/client/pages/(public)/features/features-page.tsx").then((mod) => mod.default) },
+                },
+                {
+                  id: "LandingPage",
+                  path: "/landing",
+                  lazy: { Component: () => import("@/main/client/pages/(public)/landing/landing-page.tsx").then((mod) => mod.default) },
+                },
+              ],
+            },
+            {
+              id: "NotFoundPage",
+              path: "/*",
+              lazy: { Component: () => import("@/main/client/pages/404/not-found-page.tsx").then((mod) => mod.default) },
+            },
+          ],
+        },
+      ];`,
+      getPrettierConfig({ filePath: "a.ts" }),
     ),
   );
 

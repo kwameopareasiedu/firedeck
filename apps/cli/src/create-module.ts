@@ -75,7 +75,7 @@ function generateModuleFileTree(args: {
 
       [`modules/${args.name}/client/pages/index-page.tsx`]: {
         content: `
-          export default function() {
+          export default function IndexPage () {
             return (
               <div className="grid place-items-center">
                 <p>Module: ${args.name} Home</p>
@@ -89,7 +89,7 @@ function generateModuleFileTree(args: {
           import { MainRoute } from "@/sdk/client/routes";
           import { Link } from "react-router";
           
-          export default function() {
+          export default function NotFoundPage() {
             return (
               <div className="h-screen bg-black flex flex-col items-center justify-center space-y-6">
                 <div className="w-full max-w-96 max-sm:px-8">
