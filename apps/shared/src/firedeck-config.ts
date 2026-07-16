@@ -18,7 +18,7 @@ interface FirebaseProject {
 
 export interface FiredeckConfig {
   packageManager: {
-    name: PackageManagerName;
+    name: `${PackageManagerName}`;
     version: string;
   };
   vite?: UserConfig;
