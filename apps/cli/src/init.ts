@@ -65,6 +65,7 @@ function generateProjectFileTree(args: {
           "build": "firedeck build"
         },
         "devDependencies": {
+          "@eslint/js": "^10.0.1",
           "@rollup/plugin-commonjs": "^29.0.3",
           "@rollup/plugin-node-resolve": "^16.0.3",
           "@rollup/plugin-typescript": "^12.3.0",
@@ -73,8 +74,11 @@ function generateProjectFileTree(args: {
           "@types/react": "^19.2.17",
           "@types/react-dom": "^19.2.3",
           "@vitejs/plugin-react": "^6.0.3",
+          "eslint": "^10.7.0",
+          "eslint-plugin-react": "^7.37.5",
           "firedeck": "^0.1.4",
           "fs-extra": "^11.3.6",
+          "globals": "^17.7.0",
           "prettier": "3.9.4",
           "react": "^19.2.7",
           "react-dom": "^19.2.7",
@@ -129,6 +133,26 @@ function generateProjectFileTree(args: {
         },
         "include": ["./modules"]
       }`,
+    },
+
+    "eslint.config.js": {
+      content: `
+      import js from "@eslint/js";
+      import globals from "globals";
+      import tseslint from "typescript-eslint";
+      import pluginReact from "eslint-plugin-react";
+      import { defineConfig } from "eslint/config";
+      
+      export default defineConfig([
+        {
+          files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
+          plugins: { js },
+          extends: ["js/recommended"],
+          languageOptions: { globals: { ...globals.browser, ...globals.node } },
+        },
+        tseslint.configs.recommended,
+        pluginReact.configs.flat.recommended,
+      ]);`,
     },
 
     ".prettierrc": {
@@ -187,16 +211,16 @@ function generateProjectFileTree(args: {
 
     "modules/main/client/index.tsx": {
       content: `
-      import { type ReactNode, StrictMode } from "react";
+      import React, { type ReactNode, StrictMode } from "react";
       
-      export default function (appRouter: ReactNode) {
+      export default function AppRoot(appRouter: ReactNode) {
         return <StrictMode>{appRouter}</StrictMode>;
       }`,
     },
 
     "modules/main/client/pages/index-page.tsx": {
       content: `
-      import { useState } from "react";
+      import React, { useState } from "react";
 
       export default function IndexPage() {
         const [count, setCount] = useState(0);
@@ -231,6 +255,7 @@ function generateProjectFileTree(args: {
 
     "modules/main/client/pages/404/not-found-page.tsx": {
       content: `
+      import React from "react";
       import { MainRoute } from "@/sdk/client/routes";
       import { Link } from "react-router";
       

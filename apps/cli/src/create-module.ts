@@ -2,6 +2,7 @@ import { FileTree, ModuleComponents } from "@/types";
 import { relative, resolve } from "node:path";
 import fs from "fs-extra";
 import { assertFiredeckRootDir, getProjectPaths, writeFileTree } from "@/utils";
+import { startCase } from "lodash";
 
 export async function createModule(
   rootDir: string,
@@ -66,15 +67,17 @@ function generateModuleFileTree(args: {
 
       [`modules/${args.name}/client/index.tsx`]: {
         content: `
-        import type { ReactNode } from "react";
+        import React, { type ReactNode, StrictMode } from "react";
         
-        export default function (appRouter: ReactNode) {
-          return appRouter;
+        export default function AppRoot(appRouter: ReactNode) {
+          return <StrictMode>{appRouter}</StrictMode>;
         }`,
       },
 
       [`modules/${args.name}/client/pages/index-page.tsx`]: {
         content: `
+          import React from "react";
+
           export default function IndexPage () {
             return (
               <div className="grid place-items-center">
@@ -86,7 +89,8 @@ function generateModuleFileTree(args: {
 
       [`modules/${args.name}/client/pages/404/not-found-page.tsx`]: {
         content: `
-          import { MainRoute } from "@/sdk/client/routes";
+          import React from "react";
+          import { ${startCase(args.name).replaceAll(" ", "")}Route } from "@/sdk/client/routes";
           import { Link } from "react-router";
           
           export default function NotFoundPage() {
@@ -116,7 +120,7 @@ function generateModuleFileTree(args: {
                   The requested page does not exist or has been moved permanently.
                 </p>
           
-                <Link to={MainRoute.INDEX_PAGE}>
+                <Link to={${startCase(args.name).replaceAll(" ", "")}Route.INDEX_PAGE}>
                   <button
                     className="border border-slate-500 rounded-lg px-3.5 py-1 text-sm font-semibold text-white hover:border-white hover:cursor-pointer"
                     onClick={() => {}}>
