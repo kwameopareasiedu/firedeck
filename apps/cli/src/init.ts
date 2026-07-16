@@ -196,7 +196,11 @@ function generateProjectFileTree(args: {
 
     "modules/main/client/pages/index-page.tsx": {
       content: `
+      import { useState } from "react";
+
       export default function IndexPage() {
+        const [count, setCount] = useState(0);
+      
         return (
           <div className="h-screen bg-black flex flex-col items-center justify-center">
             <div className="w-full max-w-96 max-sm:px-8">
@@ -214,6 +218,12 @@ function generateProjectFileTree(args: {
                 modules/main/client/pages/index-page.tsx
               </code>
             </p>
+      
+            <button
+              className="border border-slate-400 px-2 py-1 rounded text-white text-sm font-semi-bold mt-4 transition-colors hover:cursor-pointer hover:border-white"
+              onClick={() => setCount(count + 1)}>
+              Count ({count})
+            </button>
           </div>
         );
       }`,
