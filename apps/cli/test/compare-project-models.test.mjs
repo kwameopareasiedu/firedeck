@@ -17,7 +17,7 @@ test("compare-project-models", async (t) => {
           children: [
             {
               name: "IndexPage",
-              pageImportPath: "@/main/client/pages/index-page.tsx",
+              pageImportPath: "@/client/main//pages/index-page.tsx",
               layoutImportPath: null,
               placeholderImportPath: null,
               guardImportPath: null,
@@ -27,14 +27,14 @@ test("compare-project-models", async (t) => {
             {
               name: "DashboardGroup",
               pageImportPath: null,
-              layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
+              layoutImportPath: "@/client/main//pages/(dashboard)/dashboard-layout.tsx",
               urlPath: null,
               placeholderImportPath: null,
               guardImportPath: null,
               children: [
                 {
                   name: "UsersPage",
-                  pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx",
+                  pageImportPath: "@/client/main//pages/(dashboard)/users/users-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -43,7 +43,7 @@ test("compare-project-models", async (t) => {
                     {
                       name: "UserDetailsPage",
                       pageImportPath:
-                        "@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx",
+                        "@/client/main//pages/(dashboard)/users/[userId]/user-details-page.tsx",
                       layoutImportPath: null,
                       placeholderImportPath: null,
                       guardImportPath: null,
@@ -64,7 +64,7 @@ test("compare-project-models", async (t) => {
               children: [
                 {
                   name: "ContactPage",
-                  pageImportPath: "@/main/client/pages/(public)/contact/contact-page.tsx",
+                  pageImportPath: "@/client/main//pages/(public)/contact/contact-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -73,7 +73,7 @@ test("compare-project-models", async (t) => {
                 },
                 {
                   name: "FeaturesPage",
-                  pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx",
+                  pageImportPath: "@/client/main//pages/(public)/features/features-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -82,7 +82,7 @@ test("compare-project-models", async (t) => {
                 },
                 {
                   name: "LandingPage",
-                  pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx",
+                  pageImportPath: "@/client/main//pages/(public)/landing/landing-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -114,7 +114,7 @@ test("compare-project-models", async (t) => {
           children: [
             {
               name: "IndexPage",
-              pageImportPath: "@/main/client/pages/index-page.tsx",
+              pageImportPath: "@/client/main//pages/index-page.tsx",
               layoutImportPath: null,
               placeholderImportPath: null,
               guardImportPath: null,
@@ -124,14 +124,14 @@ test("compare-project-models", async (t) => {
             {
               name: "DashboardGroup",
               pageImportPath: null,
-              layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
+              layoutImportPath: "@/client/main//pages/(dashboard)/dashboard-layout.tsx",
               placeholderImportPath: null,
               guardImportPath: null,
               urlPath: null,
               children: [
                 {
                   name: "UsersPage",
-                  pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx",
+                  pageImportPath: "@/client/main//pages/(dashboard)/users/users-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -140,7 +140,7 @@ test("compare-project-models", async (t) => {
                     {
                       name: "UserDetailsPage",
                       pageImportPath:
-                        "@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx",
+                        "@/client/main//pages/(dashboard)/users/[userId]/user-details-page.tsx",
                       layoutImportPath: null,
                       placeholderImportPath: null,
                       guardImportPath: null,
@@ -161,7 +161,7 @@ test("compare-project-models", async (t) => {
               children: [
                 {
                   name: "FeaturesPage",
-                  pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx",
+                  pageImportPath: "@/client/main//pages/(public)/features/features-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -170,7 +170,7 @@ test("compare-project-models", async (t) => {
                 },
                 {
                   name: "LandingPage",
-                  pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx",
+                  pageImportPath: "@/client/main//pages/(public)/landing/landing-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -321,7 +321,7 @@ test("compare-project-models", async (t) => {
         children: [
           {
             name: "IndexPage",
-            pageImportPath: "@/main/client/pages/index-page.tsx",
+            pageImportPath: "@/client/main//pages/index-page.tsx",
             layoutImportPath: null,
             placeholderImportPath: null,
             guardImportPath: null,
@@ -331,14 +331,14 @@ test("compare-project-models", async (t) => {
           {
             name: "DashboardGroup",
             pageImportPath: null,
-            layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
+            layoutImportPath: "@/client/main//pages/(dashboard)/dashboard-layout.tsx",
             placeholderImportPath: null,
             guardImportPath: null,
             urlPath: null,
             children: [
               {
                 name: "UsersPage",
-                pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx",
+                pageImportPath: "@/client/main//pages/(dashboard)/users/users-page.tsx",
                 layoutImportPath: null,
                 placeholderImportPath: null,
                 guardImportPath: null,
@@ -347,7 +347,7 @@ test("compare-project-models", async (t) => {
                   {
                     name: "UserDetailsPage",
                     pageImportPath:
-                      "@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx",
+                      "@/client/main//pages/(dashboard)/users/[userId]/user-details-page.tsx",
                     layoutImportPath: null,
                     placeholderImportPath: null,
                     guardImportPath: null,
@@ -368,7 +368,7 @@ test("compare-project-models", async (t) => {
             children: [
               {
                 name: "FeaturesPage",
-                pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx",
+                pageImportPath: "@/client/main//pages/(public)/features/features-page.tsx",
                 layoutImportPath: null,
                 placeholderImportPath: null,
                 guardImportPath: null,
@@ -377,7 +377,7 @@ test("compare-project-models", async (t) => {
               },
               {
                 name: "LandingPage",
-                pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx",
+                pageImportPath: "@/client/main//pages/(public)/landing/landing-page.tsx",
                 layoutImportPath: null,
                 placeholderImportPath: null,
                 guardImportPath: null,
@@ -404,7 +404,7 @@ test("compare-project-models", async (t) => {
             children: [
               {
                 name: "IndexPage",
-                pageImportPath: "@/main/client/pages/index-page.tsx",
+                pageImportPath: "@/client/main//pages/index-page.tsx",
                 layoutImportPath: null,
                 placeholderImportPath: null,
                 guardImportPath: null,
@@ -414,14 +414,14 @@ test("compare-project-models", async (t) => {
               {
                 name: "DashboardGroup",
                 pageImportPath: null,
-                layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
+                layoutImportPath: "@/client/main//pages/(dashboard)/dashboard-layout.tsx",
                 placeholderImportPath: null,
                 guardImportPath: null,
                 urlPath: null,
                 children: [
                   {
                     name: "UsersPage",
-                    pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx",
+                    pageImportPath: "@/client/main//pages/(dashboard)/users/users-page.tsx",
                     layoutImportPath: null,
                     placeholderImportPath: null,
                     guardImportPath: null,
@@ -430,7 +430,7 @@ test("compare-project-models", async (t) => {
                       {
                         name: "UserDetailsPage",
                         pageImportPath:
-                          "@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx",
+                          "@/client/main//pages/(dashboard)/users/[userId]/user-details-page.tsx",
                         layoutImportPath: null,
                         placeholderImportPath: null,
                         guardImportPath: null,
@@ -451,7 +451,7 @@ test("compare-project-models", async (t) => {
                 children: [
                   {
                     name: "FeaturesPage",
-                    pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx",
+                    pageImportPath: "@/client/main//pages/(public)/features/features-page.tsx",
                     layoutImportPath: null,
                     placeholderImportPath: null,
                     guardImportPath: null,
@@ -460,7 +460,7 @@ test("compare-project-models", async (t) => {
                   },
                   {
                     name: "LandingPage",
-                    pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx",
+                    pageImportPath: "@/client/main//pages/(public)/landing/landing-page.tsx",
                     layoutImportPath: null,
                     placeholderImportPath: null,
                     guardImportPath: null,
