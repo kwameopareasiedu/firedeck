@@ -1,7 +1,12 @@
 import { FileTree, ModuleComponents } from "@/types";
 import { relative, resolve } from "node:path";
 import fs from "fs-extra";
-import { assertFiredeckRootDir, getProjectPaths, writeFileTree } from "@/utils";
+import {
+  assertFiredeckRootDir,
+  getProjectPaths,
+  RESERVED_MODULE_NAMES,
+  writeFileTree,
+} from "@/utils";
 import { startCase } from "lodash";
 
 export async function createModule(
@@ -12,6 +17,9 @@ export async function createModule(
   },
 ) {
   assertFiredeckRootDir(rootDir);
+
+  if (RESERVED_MODULE_NAMES.includes(opts.moduleName))
+    throw `${opts.moduleName}: module name is reserved`;
 
   const { modulesDir } = getProjectPaths(rootDir);
   const moduleDir = resolve(modulesDir, opts.moduleName);
