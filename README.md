@@ -59,12 +59,6 @@ Firedeck offers different module types described in the table below:
 | Client      | Frontend related code which compiles to a React+Vite application and deploys to Firebase hosting      |
 | Server      | API related code which compiles to a Firebase functions application and deploys to Firebase functions |
 
-> ⚡ **Important Note**
->
-> The following module names are reserved for Firedeck:
-> - `shared`
-> - `sdk`
-
 ### Client Modules
 
 As mentioned already, client modules represent a frontend component within your application and are

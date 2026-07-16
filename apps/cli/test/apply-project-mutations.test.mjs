@@ -29,13 +29,13 @@ test("apply-project-mutations", async (t) => {
   execSync("yarn --prefer-offline", { cwd: testDir });
 
   const fileTree = {
-    "modules/main/client/pages/index-page.tsx": {
+    "modules/client/main/pages/index-page.tsx": {
       content: `
         export default function IndexPage() {
           return <p>Hello World</p>;
         }`,
     },
-    "modules/main/client/pages/(public)/landing/landing-page.tsx": {
+    "modules/client/main/pages/(public)/landing/landing-page.tsx": {
       content: `
         const LandingPage = () => {
           return <p>Hello World</p>;
@@ -44,7 +44,7 @@ test("apply-project-mutations", async (t) => {
         export default LandingPage
         `,
     },
-    "modules/main/client/pages/(public)/contact/contact-page.tsx": {
+    "modules/client/main/pages/(public)/contact/contact-page.tsx": {
       content: `
         function ContactPage() {
           return <p>Hello World</p>;
@@ -53,28 +53,28 @@ test("apply-project-mutations", async (t) => {
         export default ContactPage
       `,
     },
-    "modules/main/client/pages/(public)/features/features-page.tsx": {
+    "modules/client/main/pages/(public)/features/features-page.tsx": {
       content: `
         export default function FeaturesPage() {
           return <p>Hello World</p>;
         }
       `,
     },
-    "modules/main/client/pages/(dashboard)/dashboard-layout.tsx": {
+    "modules/client/main/pages/(dashboard)/dashboard-layout.tsx": {
       content: `
         export default function DashboardLayout() {
           return <p>Hello World</p>;
         }
       `,
     },
-    "modules/main/client/pages/(dashboard)/users/users-page.tsx": {
+    "modules/client/main/pages/(dashboard)/users/users-page.tsx": {
       content: `
         export default function UsersPage() {
           return <p>Hello World</p>;
         }
       `,
     },
-    "modules/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx": {
+    "modules/client/main/pages/(dashboard)/users/[userId]/user-details-page.tsx": {
       content: `
         export default function UserDetailsPage() {
           return <p>Hello World</p>;
@@ -85,7 +85,7 @@ test("apply-project-mutations", async (t) => {
 
   await writeFileTree(testDir, fileTree);
 
-  const pagesDir = resolve(testDir, "modules/main/client/pages");
+  const pagesDir = resolve(testDir, "modules/client/main/pages");
   t.true(fs.existsSync(resolve(pagesDir, "index-page.tsx")));
   t.true(fs.existsSync(resolve(pagesDir, "(public)/landing/landing-page.tsx")));
   t.true(fs.existsSync(resolve(pagesDir, "(public)/contact/contact-page.tsx")));
@@ -124,21 +124,21 @@ test("apply-project-mutations", async (t) => {
             {
               id: "IndexPage",
               path: "/",
-              lazy: { Component: () => import("@/main/client/pages/index-page.tsx").then((mod) => mod.default) },
+              lazy: { Component: () => import("@/client/main/pages/index-page.tsx").then((mod) => mod.default) },
             },
             {
               id: "DashboardLayout",
-              lazy: { Component: () => import("@/main/client/pages/(dashboard)/dashboard-layout.tsx").then((mod) => mod.default) },
+              lazy: { Component: () => import("@/client/main/pages/(dashboard)/dashboard-layout.tsx").then((mod) => mod.default) },
               children: [
                 {
                   id: "UsersPage",
                   path: "/users",
-                  lazy: { Component: () => import("@/main/client/pages/(dashboard)/users/users-page.tsx").then((mod) => mod.default) },
+                  lazy: { Component: () => import("@/client/main/pages/(dashboard)/users/users-page.tsx").then((mod) => mod.default) },
                   children: [
                     {
                       id: "UserDetailsPage",
                       path: "/users/:userId",
-                      lazy: { Component: () => import("@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx").then((mod) => mod.default) },
+                      lazy: { Component: () => import("@/client/main/pages/(dashboard)/users/[userId]/user-details-page.tsx").then((mod) => mod.default) },
                     },
                   ],
                 },
@@ -149,24 +149,24 @@ test("apply-project-mutations", async (t) => {
                 {
                   id: "ContactPage",
                   path: "/contact",
-                  lazy: { Component: () => import("@/main/client/pages/(public)/contact/contact-page.tsx").then((mod) => mod.default) },
+                  lazy: { Component: () => import("@/client/main/pages/(public)/contact/contact-page.tsx").then((mod) => mod.default) },
                 },
                 {
                   id: "FeaturesPage",
                   path: "/features",
-                  lazy: { Component: () => import("@/main/client/pages/(public)/features/features-page.tsx").then((mod) => mod.default) },
+                  lazy: { Component: () => import("@/client/main/pages/(public)/features/features-page.tsx").then((mod) => mod.default) },
                 },
                 {
                   id: "LandingPage",
                   path: "/landing",
-                  lazy: { Component: () => import("@/main/client/pages/(public)/landing/landing-page.tsx").then((mod) => mod.default) },
+                  lazy: { Component: () => import("@/client/main/pages/(public)/landing/landing-page.tsx").then((mod) => mod.default) },
                 },
               ],
             },
             {
               id: "NotFoundPage",
               path: "/*",
-              lazy: { Component: () => import("@/main/client/pages/404/not-found-page.tsx").then((mod) => mod.default) },
+              lazy: { Component: () => import("@/client/main/pages/404/not-found-page.tsx").then((mod) => mod.default) },
             },
           ],
         },

@@ -4,7 +4,6 @@ import fs from "fs-extra";
 import { FileTree } from "@/types";
 import chalk from "chalk";
 
-export const RESERVED_MODULE_NAMES = ["shared", "sdk"];
 export const NOT_FOUND_DIR_SUFFIX = "404";
 export const NOT_FOUND_URL_PATH = "/*";
 
