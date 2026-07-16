@@ -183,12 +183,12 @@ function generateProjectFileTree(args: {
       });`,
     },
 
-    "modules/main/client/.env": {
+    "modules/client/main/.env": {
       content: "",
       extension: "md",
     },
 
-    "modules/main/client/index.html": {
+    "modules/client/main/index.html": {
       content: `
       <!doctype html>
       <html lang="en">
@@ -205,20 +205,20 @@ function generateProjectFileTree(args: {
       </html>`,
     },
 
-    "modules/main/client/index.css": {
+    "modules/client/main/index.css": {
       content: '@source "./pages/**/*.tsx";',
     },
 
-    "modules/main/client/index.tsx": {
+    "modules/client/main/root.tsx": {
       content: `
       import React, { type ReactNode, StrictMode } from "react";
       
-      export default function AppRoot(appRouter: ReactNode) {
+      export default function RootBuilder(appRouter: ReactNode) {
         return <StrictMode>{appRouter}</StrictMode>;
       }`,
     },
 
-    "modules/main/client/pages/index-page.tsx": {
+    "modules/client/main/pages/index-page.tsx": {
       content: `
       import React, { useState } from "react";
 
@@ -239,7 +239,7 @@ function generateProjectFileTree(args: {
             <p className="text-center text-white mt-2">
               Get started by editing{" "}
               <code className="px-1 py-0.5 bg-gray-800 rounded-lg text-sm font-semibold">
-                modules/main/client/pages/index-page.tsx
+                modules/client/main/pages/index-page.tsx
               </code>
             </p>
       
@@ -253,7 +253,7 @@ function generateProjectFileTree(args: {
       }`,
     },
 
-    "modules/main/client/pages/404/not-found-page.tsx": {
+    "modules/client/main/pages/404/not-found-page.tsx": {
       content: `
       import React from "react";
       import { MainRoute } from "@/sdk/client/routes";
@@ -298,18 +298,7 @@ function generateProjectFileTree(args: {
       }`,
     },
 
-    // "modules/main/server/hello.ts": {
-    //   content: `
-    //   import { defineFunction } from "firedeck";
-    //
-    //   export default defineFunction({
-    //     async handler() {
-    //       console.log("Hello Firedeck");
-    //     },
-    //   });`,
-    // },
-
-    "modules/shared/client/components/index.tsx": {
+    "modules/shared/components/index.tsx": {
       content: ``,
     },
   };

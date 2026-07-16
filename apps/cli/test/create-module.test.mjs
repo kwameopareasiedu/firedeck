@@ -24,15 +24,12 @@ test("create-module", async (t) => {
 
   execSync("yarn --prefer-offline", { cwd: testDir });
 
-  await createModule(testDir, {
-    moduleName: "admin",
-    components: "all",
-  });
+  await createModule(testDir, { name: "admin", type: "client" });
 
-  t.true(fs.existsSync(resolve(testDir, "modules/admin/client/.env")));
-  t.true(fs.existsSync(resolve(testDir, "modules/admin/client/index.html")));
-  t.true(fs.existsSync(resolve(testDir, "modules/admin/client/index.css")));
-  t.true(fs.existsSync(resolve(testDir, "modules/admin/client/index.tsx")));
-  t.true(fs.existsSync(resolve(testDir, "modules/admin/client/pages/index-page.tsx")));
-  t.true(fs.existsSync(resolve(testDir, "modules/admin/client/pages/404/not-found-page.tsx")));
+  t.true(fs.existsSync(resolve(testDir, "modules/client/admin/.env")));
+  t.true(fs.existsSync(resolve(testDir, "modules/client/admin/index.html")));
+  t.true(fs.existsSync(resolve(testDir, "modules/client/admin/index.css")));
+  t.true(fs.existsSync(resolve(testDir, "modules/client/admin/root.tsx")));
+  t.true(fs.existsSync(resolve(testDir, "modules/client/admin/pages/index-page.tsx")));
+  t.true(fs.existsSync(resolve(testDir, "modules/client/admin/pages/404/not-found-page.tsx")));
 });

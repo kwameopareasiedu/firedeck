@@ -82,27 +82,30 @@ cli
         info(`${i + 1}. ${step}`);
       }
     } catch (err) {
-      error(parseErrorMessage(err), err);
+      error(parseErrorMessage(err));
       process.exit(-1);
     }
   });
 
 cli
   .command("module <moduleName>")
-  .option("--client-only", "client-only module")
-  .option("--server-only", "server-only module")
+  .option("--client", "create a client module")
+  .option("--server", "create a server module")
   .description("Adds a new module to a Firedeck project")
   .action(async (moduleName, opts) => {
     try {
-      if (opts.clientOnly && opts.serverOnly)
-        throw "--client-only and --server-only cannot be specified at the same time";
+      if (!opts.client && !opts.server) throw "either --client or --server option required";
+      if (opts.client && opts.server)
+        throw "--client and --server cannot be specified at the same time";
 
-      const components = opts.clientOnly ? "client" : opts.serverOnly ? "server" : "all";
-      await createModule(process.cwd(), { moduleName, components });
+      const moduleType = opts.client ? "client" : opts.server ? "server" : undefined;
+      if (!moduleType) throw `invalid module type: ${moduleType}`;
 
-      info(`Created new module: modules/${moduleName}`);
+      await createModule(process.cwd(), { name: moduleName, type: moduleType });
+
+      info(`Created new ${moduleType} module: modules/${moduleType}/${moduleName}`);
     } catch (err) {
-      error(parseErrorMessage(err), err);
+      error(parseErrorMessage(err));
       process.exit(-1);
     }
   });
@@ -118,7 +121,7 @@ cli
       info("Runtime: .firedeck/runtime");
       info("Client SDK: modules/sdk/client");
     } catch (err) {
-      error(parseErrorMessage(err), err);
+      error(parseErrorMessage(err));
       process.exit(-1);
     }
   });
@@ -130,7 +133,7 @@ cli
     try {
       await runProject(process.cwd(), { log: info, error: console.error });
     } catch (err) {
-      error(parseErrorMessage(err), err);
+      error(parseErrorMessage(err));
       process.exit(-1);
     }
   });
@@ -142,7 +145,7 @@ cli
     try {
       await buildProject(process.cwd(), { log: info, error: console.error });
     } catch (err) {
-      error(parseErrorMessage(err), err);
+      error(parseErrorMessage(err));
       process.exit(-1);
     }
   });

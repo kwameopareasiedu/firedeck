@@ -1,6 +1,6 @@
 import { FiredeckConfig } from "shared/firedeck-config";
 
-export type ModuleComponents = "all" | "client" | "server";
+export type ModuleType = "client" | "server";
 export type FileNode = { content: string; extension?: string };
 export type FileTree = { [path: string]: FileNode };
 
