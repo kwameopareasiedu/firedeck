@@ -4,7 +4,6 @@ import {
   getProjectPaths,
   NOT_FOUND_DIR_SUFFIX,
   NOT_FOUND_URL_PATH,
-  RESERVED_MODULE_NAMES,
 } from "@/utils";
 import { relative, resolve, sep } from "node:path";
 import fs from "fs-extra";
@@ -16,58 +15,64 @@ import typescript from "@rollup/plugin-typescript";
 import { FiredeckConfig } from "shared/firedeck-config";
 import { ProjectClient, ProjectModel, ProjectRoute } from "@/types";
 
-export async function analyzeProject(rootDir: string) {
+export async function analyzeProject(rootDir: string): Promise<ProjectModel> {
   assertFiredeckRootDir(rootDir);
 
-  const { modulesDir } = getProjectPaths(rootDir);
+  const { clientModulesDir, serverModulesDir } = getProjectPaths(rootDir);
 
-  const moduleNames = fs.readdirSync(modulesDir, { encoding: "utf-8" }).filter((moduleName) => {
-    return (
-      fs.lstatSync(resolve(modulesDir, moduleName)).isDirectory() &&
-      !RESERVED_MODULE_NAMES.includes(moduleName)
-    );
-  });
+  const clientModuleDirs = fs.existsSync(clientModulesDir)
+    ? fs
+        .readdirSync(clientModulesDir, { encoding: "utf-8" })
+        .map((moduleName) => resolve(clientModulesDir, moduleName))
+        .filter((moduleDir) => fs.lstatSync(moduleDir).isDirectory())
+    : [];
 
-  const projectClients: ProjectClient[] = [];
+  const serverModuleDirs = fs.existsSync(serverModulesDir)
+    ? fs
+        .readdirSync(serverModulesDir, { encoding: "utf-8" })
+        .map((moduleName) => resolve(serverModulesDir, moduleName))
+        .filter((moduleDir) => fs.lstatSync(moduleDir).isDirectory())
+    : [];
 
-  for (const moduleName of moduleNames) {
-    const clientDir = resolve(modulesDir, moduleName, "client");
+  if (clientModuleDirs.length === 0 && serverModuleDirs.length === 0)
+    throw "no modules found in project";
 
-    if (fs.existsSync(clientDir)) {
-      const pagesDir = resolve(clientDir, "pages");
-      if (!fs.existsSync(pagesDir)) throw `${relative(rootDir, pagesDir)} directory not found`;
+  const projectClients: ProjectClient[] = clientModuleDirs.map((clientModulesDir) =>
+    analyzeClientModule(rootDir, clientModulesDir),
+  );
 
-      const clientRoutes = discoverRoutes(rootDir, pagesDir, pagesDir);
-
-      const htmlPath = resolve(clientDir, "index.html");
-      if (!fs.existsSync(htmlPath)) throw `${moduleName}/client/index.html not found`;
-
-      const htmlContent = fs.readFileSync(htmlPath, { encoding: "utf-8" });
-
-      const envPath = resolve(clientDir, ".env");
-      const envContent = fs.existsSync(envPath)
-        ? fs.readFileSync(envPath, { encoding: "utf-8" })
-        : "";
-
-      projectClients.push({
-        name: moduleName,
-        routes: clientRoutes,
-        htmlHash: generateStringHash(htmlContent),
-        envHash: generateStringHash(envContent),
-      });
-    }
-
-    // const serverRoot = resolve(moduleRoot, "server");
-  }
+  // TODO: Analyze server modules
 
   const firedeckConfig = await parseFiredeckConfig(rootDir);
 
-  const projectModel: ProjectModel = {
+  return {
     config: firedeckConfig,
     clients: projectClients,
   };
+}
 
-  return projectModel;
+function analyzeClientModule(rootDir: string, clientModuleDir: string): ProjectClient {
+  const moduleName = clientModuleDir.split(sep).slice(-1)[0];
+
+  const pagesDir = resolve(clientModuleDir, "pages");
+  if (!fs.existsSync(pagesDir)) throw `${relative(rootDir, pagesDir)}: directory not found`;
+
+  const clientRoutes = discoverRoutes(rootDir, pagesDir, pagesDir);
+
+  const htmlPath = resolve(clientModuleDir, "index.html");
+  if (!fs.existsSync(htmlPath)) throw `${relative(rootDir, htmlPath)}: file not found`;
+  const htmlContent = fs.readFileSync(htmlPath, { encoding: "utf-8" });
+
+  const envPath = resolve(clientModuleDir, ".env");
+  if (!fs.existsSync(envPath)) throw `${relative(rootDir, envPath)}: file not found`;
+  const envContent = fs.readFileSync(envPath, { encoding: "utf-8" });
+
+  return {
+    name: moduleName,
+    routes: clientRoutes,
+    htmlHash: generateStringHash(htmlContent),
+    envHash: generateStringHash(envContent),
+  };
 }
 
 function discoverRoutes(rootDir: string, dir: string, pagesDir: string): ProjectRoute {

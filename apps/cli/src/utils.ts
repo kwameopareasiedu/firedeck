@@ -12,7 +12,6 @@ export function getProjectPaths(rootDir: string) {
   return {
     rootDir: rootDir,
     configFile: resolve(rootDir, "firedeck.config.ts"),
-    /** @deprecated Replace with `clientModulesDir` or `serverModulesDir` */
     modulesDir: resolve(rootDir, "modules"),
     clientModulesDir: resolve(rootDir, "modules/client"),
     serverModulesDir: resolve(rootDir, "modules/server"),

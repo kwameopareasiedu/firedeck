@@ -26,43 +26,43 @@ test("analyze-project", async (t) => {
   execSync("yarn --prefer-offline", { cwd: testDir });
 
   const mainModuleFileTree = {
-    "modules/main/client/pages/index-page.tsx": {
+    "modules/client/main/pages/index-page.tsx": {
       content: `
       export default function() {
         return <p>Hello World</p>;
       }`,
     },
-    "modules/main/client/pages/(public)/landing/landing-page.tsx": {
+    "modules/client/main/pages/(public)/landing/landing-page.tsx": {
       content: `
       export default function() {
         return <p>Hello World</p>;
       };`,
     },
-    "modules/main/client/pages/(public)/contact/contact-page.tsx": {
+    "modules/client/main/pages/(public)/contact/contact-page.tsx": {
       content: `
       export default function() {
         return <p>Hello World</p>;
       };`,
     },
-    "modules/main/client/pages/(public)/features/features-page.tsx": {
+    "modules/client/main/pages/(public)/features/features-page.tsx": {
       content: `
       export default function() {
         return <p>Hello World</p>;
       }`,
     },
-    "modules/main/client/pages/(dashboard)/dashboard-layout.tsx": {
+    "modules/client/main/pages/(dashboard)/dashboard-layout.tsx": {
       content: `
       export default function() {
         return <p>Hello World</p>;
       }`,
     },
-    "modules/main/client/pages/(dashboard)/users/users-page.tsx": {
+    "modules/client/main/pages/(dashboard)/users/users-page.tsx": {
       content: `
       export default function() {
         return <p>Hello World</p>;
       }`,
     },
-    "modules/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx": {
+    "modules/client/main/pages/(dashboard)/users/[userId]/user-details-page.tsx": {
       content: `
       export default function() {
         return <p>Hello World</p>;
@@ -89,7 +89,7 @@ test("analyze-project", async (t) => {
     children: [
       {
         pageName: "IndexPage",
-        pageImportPath: "@/main/client/pages/index-page.tsx",
+        pageImportPath: "@/client/main/pages/index-page.tsx",
         layoutName: null,
         layoutImportPath: null,
         placeholderName: null,
@@ -103,7 +103,7 @@ test("analyze-project", async (t) => {
         pageName: null,
         pageImportPath: null,
         layoutName: "DashboardLayout",
-        layoutImportPath: "@/main/client/pages/(dashboard)/dashboard-layout.tsx",
+        layoutImportPath: "@/client/main/pages/(dashboard)/dashboard-layout.tsx",
         placeholderName: null,
         placeholderImportPath: null,
         guardName: null,
@@ -112,7 +112,7 @@ test("analyze-project", async (t) => {
         children: [
           {
             pageName: "UsersPage",
-            pageImportPath: "@/main/client/pages/(dashboard)/users/users-page.tsx",
+            pageImportPath: "@/client/main/pages/(dashboard)/users/users-page.tsx",
             layoutName: null,
             layoutImportPath: null,
             placeholderName: null,
@@ -124,7 +124,7 @@ test("analyze-project", async (t) => {
               {
                 pageName: "UserDetailsPage",
                 pageImportPath:
-                  "@/main/client/pages/(dashboard)/users/[userId]/user-details-page.tsx",
+                  "@/client/main/pages/(dashboard)/users/[userId]/user-details-page.tsx",
                 layoutName: null,
                 layoutImportPath: null,
                 placeholderName: null,
@@ -151,7 +151,7 @@ test("analyze-project", async (t) => {
         children: [
           {
             pageName: "ContactPage",
-            pageImportPath: "@/main/client/pages/(public)/contact/contact-page.tsx",
+            pageImportPath: "@/client/main/pages/(public)/contact/contact-page.tsx",
             layoutName: null,
             layoutImportPath: null,
             placeholderName: null,
@@ -163,7 +163,7 @@ test("analyze-project", async (t) => {
           },
           {
             pageName: "FeaturesPage",
-            pageImportPath: "@/main/client/pages/(public)/features/features-page.tsx",
+            pageImportPath: "@/client/main/pages/(public)/features/features-page.tsx",
             layoutName: null,
             layoutImportPath: null,
             placeholderName: null,
@@ -175,7 +175,7 @@ test("analyze-project", async (t) => {
           },
           {
             pageName: "LandingPage",
-            pageImportPath: "@/main/client/pages/(public)/landing/landing-page.tsx",
+            pageImportPath: "@/client/main/pages/(public)/landing/landing-page.tsx",
             layoutName: null,
             layoutImportPath: null,
             placeholderName: null,
@@ -189,7 +189,7 @@ test("analyze-project", async (t) => {
       },
       {
         pageName: "NotFoundPage",
-        pageImportPath: "@/main/client/pages/404/not-found-page.tsx",
+        pageImportPath: "@/client/main/pages/404/not-found-page.tsx",
         layoutName: null,
         layoutImportPath: null,
         placeholderName: null,
