@@ -10,29 +10,54 @@ working runtime that can be built and deployed to Firebase.
 
 - Skeleton project boilerplate
 - Managed [Turbo](https://turborepo.dev) runtime consisting of Vite and Firebase applications
-- Directory based routing, similar to [Next.js app router](https://nextjs.org/docs/app)
+- Directory based routing, similar to [Next.js app router](https://nextjs.org/docs/app), implemented
+  with [React Router](https://reactrouter.com)
 - Automatic generation of client SDK to access firebase apps from the frontends
 - Simple environment variables setup
 - One config file to rule them all
 
 > ⚡ **Important Note**
-> 
+>
 > Firedeck depends on `firebase-tools`, so make sure you have it installed globally
+
+## Project Structure
+
+A Firedeck application has the following structure:
+
+```
+- modules/
+  - client/
+  - server/
+- .gitignore
+- .pretierrc
+- eslint.config.js
+- firedeck.config.ts
+- package.json
+- tsconfig.json
+```
+
+| Path                 | Description                               |
+|----------------------|-------------------------------------------|
+| `modules/client`     | Client [modules](#Modules) directory      |
+| `modules/server`     | Server [modules](#Modules) directory      |
+| `.gitignore`         | Ignore file list for Git                  |
+| `.prettierrc`        | Configuration file for Prettier formatter |
+| `eslint.config.js`   | Configuration file for ESlint linter      |
+| `firedeck.config.ts` | Configuration file for Firedeck compiler  |
+| `package.json`       | Configuration file for package managers   |
+| `tsconfig.json`      | Configuration file for Typescript         |
 
 ## Modules
 
-Firedeck is based on the concept of **modules**, which are directories of your application component
-consisting of client code, server code or both. A Firedeck application should have at least one
-module.
+Firedeck is based on the concept of **modules**, which are simply directories representing different
+parts of your application structure.
 
-Each module ultimately maps to:
+Firedeck offers different module types described in the table below:
 
-- A React+Vite frontend app,
-- A Firebase functions group in the generated Firebase backend
-- A Firebase hosting site which is the deployment target of the frontend app.
-
-As such, a module should contain either `client` or `server` directories or both. A module without
-any of these is ignored by the compiler.
+| Module Type | Description                                                                                           |
+|-------------|-------------------------------------------------------------------------------------------------------|
+| Client      | Frontend related code which compiles to a React+Vite application and deploys to Firebase hosting      |
+| Server      | API related code which compiles to a Firebase functions application and deploys to Firebase functions |
 
 > ⚡ **Important Note**
 >
@@ -40,125 +65,119 @@ any of these is ignored by the compiler.
 > - `shared`
 > - `sdk`
 
-A module directory will have the following structure:
+### Client Modules
+
+As mentioned already, client modules represent a frontend component within your application and are
+compiled to fully configured React+Vite applications.
+
+Client modules live under `modules/client` and have the following directory structure:
+
+```
+<module-name>/  
+  - pages/        #(Contains component files which make up the compiled React+Vite application)
+  - .env          #(The env file for the compiled React+Vite application. Env variables must be prefixed with 'VITE_')
+  - index.html    #(The entry point into the React+Vite application)
+  - index.css     #(The stylesheet of the React+Vite, configured to use Tailwind 4)
+  - root.tsx      #(The root builder of the React+Vite application. More on this below)
+```
+
+#### Directory Based Routing
+
+Client modules use directory based routing, where the URL paths are generated based on the
+`<module-name>/pages/` directory structure.
+
+This is illustrated in the following client module directory:
 
 ```
 <module-name>/
-  - server/
-  - client/
-    - pages/
-    - .env
-    - index.html
-    - index.css
-    - index.tsx
-```
-
-### Module Client
-
-The `client` directory contains the source that would be included in the frontend application of the
-Firedeck runtime via Typescript path aliasing.
-
-The client directory copies [Next.js' app-router](https://nextjs.org/docs/app) structure (_minus
-server components and functions_) and has a structure like so:
-
-```
-<module-name>/
-  - client/
-    - pages/
-      - (dashboard)/
-        - dashboard-layout.tsx
-        - dashboard-page.tsx
-        - dashboard-guard.ts
-        - users
-          - users-page.tsx
-          - users-placeholder.tsx
-          - [userId]/
-            - user-details-page.tsx
-      - (public)/
-        - landing
-          - landing-page.tsx
-        - contact
-          - contact-page.tsx
-        - login/
-          - login-page.tsx
+  - pages/
+    - (dashboard)/
+      - dashboard-layout.tsx
+      - dashboard-page.tsx                URL: "/"
+      - dashboard-before.ts
+      - users
+        - users-page.tsx                  URL: "/users"
+        - users-placeholder.tsx
+        - [userId]/
+          - user-details-page.tsx         URL: "/users/:userId"
+    - (public)/
+      - landing
+        - landing-page.tsx                URL: "/landing"
+      - contact
+        - contact-page.tsx                URL: "/contact"
+      - login/
+        - login-page.tsx                  URL: "/login"
   - index.css
   - index.html
-  - index.tsx
+  - root.tsx
 ```
 
-At runtime, Firedeck builds the router that links to pages using an approach called "directory
-router spec". With this approach, firedeck examines the `client/pages` directory in a depth-first
-manner searching for the following files within each directory:
+> ⚡ **Important Note**
+>
+> Client module routing is heavily inspired by [Next.js' App Router](https://nextjs.org/docs/app).
+> I highly recommend going through its documentation for more in-depth information.
 
-| File               | Description                                                                           |
-|--------------------|---------------------------------------------------------------------------------------|
-| `*page.tsx`        | Defines the page component to display for the generated URL for the directory path    |
-| `*layout.tsx`      | Defines the layout component to use for the generated URL tree for the directory path |
-| `*placeholder.tsx` | Defines the component to display while the page component is being fetched            |
-| `*guard.ts`        | Defines the function to control access to the page component                          |
+At compile-time, Firedeck builds the client module router. With this approach, firedeck examines the
+`<module-name>/pages` directory in a depth-first manner searching for the following file name
+patterns within each directory:
 
-Using a suffix-based convention avoids naming every page, `page.tsx` or `layout.tsx`, which would
-lead to editor fatigue and affect the developer experience.
+| File Name **Suffix** Pattern | Description                                                                | Required In Directory |
+|------------------------------|----------------------------------------------------------------------------|-----------------------|
+| `*page.tsx`                  | The page component to display for the URL of the directory                 | No                    |
+| `*layout.tsx`                | The layout component to use for the URL tree of the directory path         | No                    |
+| `*placeholder.tsx`           | The component to display while the page component is being fetched         | No                    |
+| `*before.ts`                 | The the function to evaluate **before** rendering the route page component | No                    |
 
-The page file would resemble the snippet below:
+##### Points To Note
 
-```typescript jsx
-// Required default export. The page for the generated URL at the directory path
-export default function () {
-    return (
-        <div>
-            <p>Home page</p>
-        </div>
-    );
-}
-```
+- The client module router is a [React Router](https://reactrouter.com/)
+  in [data mode](https://reactrouter.com/start/data/routing).
 
-A layout file would resemble the snippet below:
 
-```typescript jsx
-import {Outlet} from "react-router";
+- Firedeck uses a suffix-based file name convention, which avoids the annoying `page.tsx` or
+  `layout.tsx` duplication.
 
-// Required default export. The layout used for the generated URL at the directory path and its subtree
-export default function () {
-    return (
-        <div>
-            <Outlet/>
-        </div>
-    );
-}
-```
 
-A placeholder file would resemble the snippet below:
+- You can give descriptive names to your page file (E.g. `user.page.tsx`, `settings-page.tsx`)
+  allowing you to easily navigate through them in your editor.
 
-```typescript jsx
-// Required default export. The component which is displayed while the page component is fetched
-export default function () {
-    return <p className="text-center">Please wait</p>;
-}
-```
 
-A guard file would resemble the snippet below:
+- You can also co-locate other component files in the same directory without issue.
 
-```typescript jsx
-// import { redirect } from "react-router";
 
-// Required default export. The function which controls access to the page component
-export default function () {
+- If defined, `*page.tsx`, `*layout.tsx` and `*placeholder.tsx` files must **default export** a
+  single plain React component. E.g:
+
+  ```typescript jsx
+  export default function MyAwesomePage() {
+    return <div>Hello World</div>;
+  }
+  ```
+
+- If defined, `*before.ts` must **default export** a single (async) function which can fetch data
+  before the page is rendered or even redirect to another page if a condition is not met.
+
+  ```typescript jsx
+  // import { redirect } from "react-router";
+
+  export default function () {
     return true; // Allow access
     // return redirect("redirect-path"); // Redirect to another page
-}
-```
+  }
+  ```
 
 #### Tailwindcss Configuration
 
-Each module client is automatically configured to use [Tailwind 4](https://www.tailwindcss.com/) out
-of the box. Changes can be made to the `index.css` within the module which reflects in the app
-immediately.
+Client modules are configured to use [Tailwind 4](https://www.tailwindcss.com/) right out of the
+box.
 
-#### App Customization
+Simply add Tailwind class names in component files or put reusable class names in the `index.css`
+file.
 
-Each module has an `index.tsx` at its root. This file exports a default function which is used to
-customize the router component. You can use this file to wrap the router with other providers.
+#### Root Builder
+
+Each client module has a `root.tsx` file which exports a default function which is used to build
+the root of the resulting React app. You can use this file to wrap the router with other providers.
 
 In the example below, we wrap our router with Tanstack Query provider:
 
@@ -185,7 +204,8 @@ export default function (appRouter: ReactNode) {
 
 #### Environment Variables
 
-Simply place a `.env` file in the respective `<module>name/client` directory.
+Each module client has a `.env` file at their root which specifies the environment variables to use
+for the compiled Vite application.
 
 > ⚡ **Important Note**
 >
