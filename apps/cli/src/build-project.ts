@@ -16,7 +16,7 @@ export async function buildProject(
   const firedeckConfig = await parseFiredeckConfig(rootDir);
   const packageManager = packageManagers[firedeckConfig.packageManager.name];
 
-  for (const lockFileName of packageManager.lockFile) {
+  for (const lockFileName of packageManager.lockFiles) {
     const lockFilePath = resolve(rootDir, lockFileName);
 
     if (fs.existsSync(lockFilePath)) {
@@ -28,7 +28,7 @@ export async function buildProject(
 
   const [projectModel] = await compileProject(rootDir);
 
-  const runtimeBuildProc = exec("yarn build", { cwd: runtimeDir });
+  const runtimeBuildProc = exec(`${packageManager.commands.runScript} build`, { cwd: runtimeDir });
   runtimeBuildProc.stdout?.on("data", console.log);
   runtimeBuildProc.stderr?.on("error", console.error);
   runtimeBuildProc.on("error", opts.error);

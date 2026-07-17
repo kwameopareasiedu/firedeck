@@ -5,7 +5,7 @@ import { isAbsolute, relative, resolve } from "node:path";
 import { Command } from "commander";
 import { error, info, parseErrorMessage } from "@/utils";
 import { input, select } from "@inquirer/prompts";
-import { PackageManagerName } from "shared/package-manager";
+import { PackageManagerName, packageManagers } from "shared/package-manager";
 import { init } from "@/init";
 import { createModule } from "@/create-module";
 import { compileProject } from "@/compile-project";
@@ -61,19 +61,10 @@ cli
 
       const nextSteps = [];
       const relativeRootDir = relative(process.cwd(), rootDir);
+      const packageManager = packageManagers[packageManagerName];
 
       if (relativeRootDir) nextSteps.push(`cd ${relativeRootDir}`);
-
-      switch (packageManagerName as PackageManagerName) {
-        case PackageManagerName.NPM:
-          nextSteps.push("npm install");
-          nextSteps.push("npm run dev");
-          break;
-        case PackageManagerName.YARN:
-          nextSteps.push("yarn install");
-          nextSteps.push("yarn dev");
-          break;
-      }
+      nextSteps.push(...packageManager.postInitSteps);
 
       info("Next steps");
 

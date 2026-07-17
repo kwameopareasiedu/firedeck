@@ -4,7 +4,8 @@ interface PackageManager {
     runScript: string;
     checkVersion: string;
   };
-  lockFile: [string];
+  postInitSteps: string[];
+  lockFiles: [string];
 }
 
 export enum PackageManagerName {
@@ -19,7 +20,8 @@ export const packageManagers: Record<PackageManagerName, PackageManager> = {
       runScript: "yarn",
       checkVersion: "yarn -v",
     },
-    lockFile: ["yarn.lock"],
+    postInitSteps: ["yarn install", "yarn dev"],
+    lockFiles: ["yarn.lock"],
   },
   [PackageManagerName.NPM]: {
     name: "NPM",
@@ -27,6 +29,7 @@ export const packageManagers: Record<PackageManagerName, PackageManager> = {
       runScript: "npm run",
       checkVersion: "npm -v",
     },
-    lockFile: ["package-lock.json"],
+    postInitSteps: ["npm install", "npm run dev"],
+    lockFiles: ["package-lock.json"],
   },
 };

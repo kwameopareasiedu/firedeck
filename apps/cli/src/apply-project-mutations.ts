@@ -304,22 +304,23 @@ export function generateRuntimeClientFileTree(args: { clientName: string }): Fil
     "src/index.tsx": {
       content: `
       import "./index.css";
+      import React from "react";
       import { createRoot } from "react-dom/client";
       import { RouterProvider, createBrowserRouter } from "react-router";
-      import customizer from "@/${args.clientName}/client/index.tsx";
+      import buildRoot from "@/client/${args.clientName}/root.tsx";
       import routes from "./routes.ts";
       
       const router = createBrowserRouter(routes);
       
       createRoot(document.getElementById("root")!).render(
-        customizer(<RouterProvider router={router} />)
+        buildRoot(<RouterProvider router={router} />)
       );`,
     },
 
     "src/index.css": {
       content: `
       @import "tailwindcss";
-      @import "../../../../../modules/${args.clientName}/client/index.css";
+      @import "../../../../../modules/client/${args.clientName}/index.css";
       `,
     },
   };
