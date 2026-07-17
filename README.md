@@ -225,13 +225,13 @@ API__SERVICE_KEY=oiroinvowijref0928f2398
 > ⚡ **Important Note**
 >
 > _Since client modules get transformed into a Vite application, you need to prefix client modules
-env variables with `VITE_`. This results in a full prefix of `<MODULE_NAME>::VITE_`._
+env variables with `VITE_`. This results in a full prefix of `<MODULE_NAME>__VITE_`._
 
 > ⚡ **Important Note**
 >
 > After `firedeck compile` is run, typings are generated for the env file. This way your IDE can
 > provide intellisense for `import.meta.env` with the exact variables in your `.env`, improving your
-> developer experience just a bit more.
+> developer experience a little bit more.
 
 ## Firedeck Runtime
 
