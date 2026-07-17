@@ -28,8 +28,10 @@ export async function runProject(rootDir: string, opts: { log: typeof info; erro
     }
   }
 
-  const runScriptCmd = packageManager.commands.runScript;
-  let runtimeDevProc = spawn(runScriptCmd, ["dev"], { cwd: runtimeDir, stdio: "inherit" });
+  const cmd = `${packageManager.commands.runScript} dev`;
+  const cmdName = cmd.split(" ")[0];
+  const cmdOpts = cmd.split(" ").slice(1);
+  let runtimeDevProc = spawn(cmdName, cmdOpts, { cwd: runtimeDir, stdio: "inherit" });
   let changeDebounceTimer: NodeJS.Timeout | null = null;
 
   const handleChange = async (path: string, eventName: string) => {
@@ -63,7 +65,7 @@ export async function runProject(rootDir: string, opts: { log: typeof info; erro
             await new Promise((resolve) => setTimeout(resolve, 1250));
           }
 
-          runtimeDevProc = spawn(runScriptCmd, ["dev"], { cwd: runtimeDir, stdio: "inherit" });
+          runtimeDevProc = spawn(cmdName, cmdOpts, { cwd: runtimeDir, stdio: "inherit" });
         }
       } catch (err) {
         opts.error(err);
