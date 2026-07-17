@@ -18,7 +18,7 @@ working runtime that can be built and deployed to Firebase.
 
 > ⚡ **Important Note**
 >
-> Firedeck depends on `firebase-tools`, so make sure you have it installed globally
+> _Firedeck depends on `firebase-tools`, so make sure you have it installed globally_
 
 ## Project Structure
 
@@ -108,8 +108,8 @@ This is illustrated in the following client module directory:
 
 > ⚡ **Important Note**
 >
-> Client module routing is heavily inspired by [Next.js' App Router](https://nextjs.org/docs/app).
-> I highly recommend going through its documentation for more in-depth information.
+> _Client module routing is heavily inspired by [Next.js' App Router](https://nextjs.org/docs/app).
+> I highly recommend going through its documentation for more in-depth information._
 
 At compile-time, Firedeck builds the client module router. With this approach, firedeck examines the
 `<module-name>/pages` directory in a depth-first manner searching for the following file name
@@ -229,9 +229,9 @@ env variables with `VITE_`. This results in a full prefix of `<MODULE_NAME>__VIT
 
 > ⚡ **Important Note**
 >
-> After `firedeck compile` is run, typings are generated for the env file. This way your IDE can
+> _After `firedeck compile` is run, typings are generated for the env file. This way your IDE can
 > provide intellisense for `import.meta.env` with the exact variables in your `.env`, improving your
-> developer experience a little bit more.
+> developer experience a little bit more._
 
 ## Firedeck Runtime
 
@@ -242,7 +242,7 @@ The runtime is a [Turbo](https://turborepo.dev/) monorepo which lives at `.fired
 contains [Vite](https://vite.dev/) applications for each client module, and a single
 [Firebase cloud functions app](https://firebase.google.com/docs/functions) for all server modules.
 
-This monorepo application is completely handled by Firedeck so you don't need to worry about it.
+This monorepo application is completely managed by Firedeck so you don't need to worry about it.
 
 ## Client SDK
 
@@ -254,7 +254,7 @@ and intellisense work out of the box and can also be commited to version control
 
 > ⚡ **Important Note**
 >
-> _Code in `modules/sdk/client` is maintained by the Firedeck compiler. Any user changes would be
+> _Code in `modules/sdk/client` is managed by the Firedeck compiler. Any manual changes would be
 > overwritten._
 
 The client SDK contains the following files:
@@ -316,23 +316,9 @@ export function IndexPage() {
 
 > ⚡ **Important Note**
 >
-> _Route enum members are derived from page file names, so a folder structure like so_:
-> ```
-> <root-dir>/
->   - modules/
->     - client/
->       - main/
->         - pages/
->           - index-page.tsx
->           - about/
->             - about-page.tsx
->       - admin/
->         - pages/
->           - index-page.tsx
->           - settings/
->             - settings-page.tsx
-> ```
-> _would yield the route enum:_
+> _Route enum members are derived from page file names. Thus, the folder structure above would yield
+the route enums:_
+>
 > ```typescript
 > export enum MainRoute {
 >   INDEX_PAGE = "/",
@@ -347,7 +333,7 @@ export function IndexPage() {
 
 > ⚡ **Important Note**
 >
-> Navigating to a route in a different module will display a 404 (Not found) page.
+> _Navigating to a route in a different module will display a 404 (Not found) page._
 
 ## Firedeck.config.ts
 
