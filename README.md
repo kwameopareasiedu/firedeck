@@ -235,11 +235,12 @@ env variables with `VITE_`. This results in a full prefix of `<MODULE_NAME>__VIT
 
 ## Firedeck Runtime
 
-Firedeck compiles the "modules" directory into a final application at runtime.
+When `firedeck compile`, `firedeck run` or `firedeck buid` is invoked, Firedeck compiles the
+"modules" directory into a full runtime.
 
-At runtime, a [Turbo](https://turborepo.dev/) monorepo is created at `.firedeck/runtime` which
-contains [Vite](https://vite.dev/) applications
-and[Firebase cloud function apps](https://firebase.google.com/docs/functions) for all modules.
+The runtime is a [Turbo](https://turborepo.dev/) monorepo which lives at `.firedeck/runtime` and
+contains [Vite](https://vite.dev/) applications for each client module, and a single
+[Firebase cloud functions app](https://firebase.google.com/docs/functions) for all server modules.
 
 This monorepo application is completely handled by Firedeck so you don't need to worry about it.
 
@@ -249,7 +250,7 @@ Firedeck also generates a client SDK source files based on the modules. This pac
 utilities which connect the frontend and backend module component.
 
 The package lives at `modules/sdk/client`. Because it is part of the user code, IDE auto-complete
-and intellisense work out of the box and can also be commited to version control.
+and intellisense work out of the box and can also be commited to version control if you so wish.
 
 > ⚡ **Important Note**
 >
@@ -267,16 +268,15 @@ Let's assume your project has two modules; `main` and `admin`:
 ```
 <root-dir>
   - modules/
-    - main/
-      - client/
+    - client/
+      - main/
         - pages/
           - index-page.tsx
           - contact/
             - contact-page.tsx
           - features/
             - features-page.tsx
-    - admin/
-      - client/
+      - admin/
         - pages/
           - settings/
             - settings-page.tsx
@@ -285,7 +285,7 @@ Let's assume your project has two modules; `main` and `admin`:
 You can access the routes for these modules in a component like so:
 
 ```typescript jsx
-/* modules/main/client/pages/index-page.tsx */
+/* modules/client/main/pages/index-page.tsx */
 
 import {Link, useNavigate} from "react-router";
 import {AdminRoute, MainRoute} from "@/sdk/client/routes";
@@ -320,14 +320,13 @@ export function IndexPage() {
 > ```
 > <root-dir>/
 >   - modules/
->     - main/
->       - client/
+>     - client/
+>       - main/
 >         - pages/
 >           - index-page.tsx
 >           - about/
 >             - about-page.tsx
->     - admin/
->       - client/
+>       - admin/
 >         - pages/
 >           - index-page.tsx
 >           - settings/
@@ -377,6 +376,9 @@ and an env object file.
 The function should return a promise resolving to a [Vite
 `UserConfig` object](https://vite.dev/config/).
 
+### Firebase Config
+
+[//]: # (TODO)
 
 [//]: # (The server functions defined by the module will be available to the client via the `useApi` hook.)
 
