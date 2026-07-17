@@ -186,7 +186,11 @@ export function generateRuntimeClientFileTree(args: { clientName: string }): Fil
         const env = loadEnv(mode, process.cwd(), "");
         
         const configOverride = firedeckConfig.vite 
-          ? await firedeckConfig.vite({ mode: mode as never, env })
+          ? await firedeckConfig.vite({ 
+              module: "${args.clientName}",
+              mode: mode as never,
+              env
+            })
           : {};
       
         return mergeConfig(

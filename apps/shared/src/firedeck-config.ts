@@ -2,6 +2,7 @@ import type { UserConfig } from "vite";
 import { PackageManagerName } from "./package-manager";
 
 type ViteConfig = (args: {
+  module: string;
   mode: "development" | "production";
   env: Record<string, string>;
 }) => Promise<UserConfig>;
