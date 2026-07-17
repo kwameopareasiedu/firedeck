@@ -104,6 +104,7 @@ test("apply-project-mutations", async (t) => {
   t.true(fs.existsSync(resolve(runtimeMainDir, "tsconfig.node.json")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "tsconfig.json")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "vite.config.ts")));
+  t.true(fs.existsSync(resolve(runtimeMainDir, "firedeck.config.mjs")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "index.html")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "global.d.ts")));
   t.true(fs.existsSync(resolve(runtimeMainDir, ".gitignore")));

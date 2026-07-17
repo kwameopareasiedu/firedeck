@@ -16,7 +16,14 @@ export async function applyProjectMutations(rootDir: string, mutations: ProjectM
   assertFiredeckRootDir(rootDir);
 
   const firedeckConfig = await parseFiredeckConfig(rootDir);
-  const { modulesDir, runtimeDir, runtimeModulesDir, clientSdkDir } = getProjectPaths(rootDir);
+  const {
+    modulesDir,
+    runtimeDir,
+    runtimeModulesDir,
+    clientSdkDir,
+    workspaceConfigFile,
+    workspaceConfigTypesFile,
+  } = getProjectPaths(rootDir);
 
   for (const mutation of mutations) {
     switch (mutation.type) {
@@ -29,10 +36,6 @@ export async function applyProjectMutations(rootDir: string, mutations: ProjectM
           packageManagerVersion: firedeckConfig.packageManager.version,
         });
         await writeFileTree(runtimeDir, runtimeFileTree);
-        break;
-      }
-      case "update-config": {
-        // TODO: Generate config files
         break;
       }
       case "add-runtime-client": {
@@ -60,17 +63,25 @@ export async function applyProjectMutations(rootDir: string, mutations: ProjectM
         break;
       }
       case "update-runtime-client-html": {
-        const htmlSrc = resolve(modulesDir, mutation.clientName, "client/index.html");
+        const htmlSrc = resolve(modulesDir, "client", mutation.clientName, "index.html");
         const htmlDest = resolve(runtimeModulesDir, mutation.clientName, "index.html");
-
-        if (fs.existsSync(htmlSrc)) fs.copyFileSync(htmlSrc, htmlDest);
+        fs.copyFileSync(htmlSrc, htmlDest);
         break;
       }
       case "update-runtime-client-env": {
-        const envSrc = resolve(modulesDir, mutation.clientName, "client/.env");
+        const envSrc = resolve(modulesDir, "client", mutation.clientName, ".env");
         const envDest = resolve(runtimeModulesDir, mutation.clientName, ".env");
+        fs.copyFileSync(envSrc, envDest);
+        break;
+      }
+      case "update-runtime-client-config": {
+        for (const client of mutation.clients) {
+          const destFile = resolve(runtimeModulesDir, client.name, "firedeck.config.mjs");
+          const destTypesFile = resolve(runtimeModulesDir, client.name, "firedeck.config.d.mts");
+          fs.copyFileSync(workspaceConfigFile, destFile);
+          fs.copyFileSync(workspaceConfigTypesFile, destTypesFile);
+        }
 
-        if (fs.existsSync(envSrc)) fs.copyFileSync(envSrc, envDest);
         break;
       }
       case "update-client-sdk-routes": {
@@ -163,21 +174,32 @@ export function generateRuntimeClientFileTree(args: { clientName: string }): Fil
 
     "vite.config.ts": {
       content: `
-      import { defineConfig } from "vite";
+      import { defineConfig, mergeConfig, loadEnv } from "vite";
       import react from "@vitejs/plugin-react";
       import tailwindcss from "@tailwindcss/vite";
       import { resolve } from "node:path";
-      
+      import firedeckConfig from "./firedeck.config.mjs";
+
       const __dirname = import.meta.dirname;
+
+      export default defineConfig(async ({ mode }) => {
+        const env = loadEnv(mode, process.cwd(), "");
+        
+        const configOverride = firedeckConfig.vite 
+          ? await firedeckConfig.vite({ mode: mode as never, env })
+          : {};
       
-      // https://vite.dev/config/
-      export default defineConfig({
-        plugins: [react(), tailwindcss()],
-        resolve: {
-          alias: {
-            "@": resolve(__dirname, "../../../../modules"),
+        return mergeConfig(
+          {
+            plugins: [react(), tailwindcss()],
+            resolve: {
+              alias: {
+                "@": resolve(__dirname, "../../../../modules"),
+              },
+            }
           },
-        }
+          configOverride
+        );
       })`,
     },
 

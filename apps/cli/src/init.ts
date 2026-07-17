@@ -76,7 +76,7 @@ function generateProjectFileTree(args: {
           "@vitejs/plugin-react": "^6.0.3",
           "eslint": "^10.7.0",
           "eslint-plugin-react": "^7.37.5",
-          "firedeck": "^0.1.4",
+          "firedeck": "^0.1.5",
           "fs-extra": "^11.3.6",
           "globals": "^17.7.0",
           "prettier": "3.9.4",

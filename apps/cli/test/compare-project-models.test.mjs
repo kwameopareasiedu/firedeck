@@ -188,7 +188,7 @@ test("compare-project-models", async (t) => {
   };
 
   const p3 = {
-    config: { vite: {} },
+    config: { vite: async () => ({}) },
     clients: [],
   };
 
@@ -479,13 +479,12 @@ test("compare-project-models", async (t) => {
   ]);
 
   t.deepEqual(p1p3Changes, [
-    { type: "update-config", config: { vite: {} } },
     { type: "remove-runtime-client", clientName: "main" },
+    { type: "update-runtime-client-config", config: { vite: async () => ({}) }, clients: [] },
     { type: "update-client-sdk-routes", clients: [] },
   ]);
 
   t.deepEqual(p1p4Changes, [
-    { type: "update-config", config: { firebase: { projects: {} } } },
     { type: "add-runtime-client", clientName: "admin" },
     {
       type: "update-runtime-client-routes",
@@ -595,6 +594,116 @@ test("compare-project-models", async (t) => {
     { type: "update-runtime-client-html", clientName: "external" },
     { type: "update-runtime-client-env", clientName: "external" },
     { type: "remove-runtime-client", clientName: "main" },
+    {
+      type: "update-runtime-client-config",
+      config: { firebase: { projects: {} } },
+      clients: [
+        {
+          name: "admin",
+          routes: {
+            pageImportPath: "@/admin/client/pages/index-page.tsx",
+            layoutImportPath: null,
+            placeholderImportPath: null,
+            guardImportPath: null,
+            urlPath: "/",
+            children: [],
+          },
+          htmlHash: 0xa88980,
+          envHash: 0x88bc13,
+        },
+        {
+          name: "external",
+          routes: {
+            name: "IndexPage",
+            pageImportPath: null,
+            layoutImportPath: null,
+            placeholderImportPath: null,
+            guardImportPath: null,
+            urlPath: null,
+            children: [
+              {
+                name: "IndexPage",
+                pageImportPath: "@/external/client/pages/index-page.tsx",
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: "/",
+                children: [],
+              },
+              {
+                name: "DashboardGroup",
+                pageImportPath: null,
+                layoutImportPath: "@/external/client/pages/(dashboard)/dashboard-layout.tsx",
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: null,
+                children: [
+                  {
+                    name: "UsersPage",
+                    pageImportPath: "@/external/client/pages/(dashboard)/users/users-page.tsx",
+                    layoutImportPath: null,
+                    placeholderImportPath: null,
+                    guardImportPath: null,
+                    urlPath: "/users",
+                    children: [
+                      {
+                        name: "UserDetailsPage",
+                        pageImportPath:
+                          "@/external/client/pages/(dashboard)/users/[userId]/user-detail-page.tsx",
+                        layoutImportPath: null,
+                        placeholderImportPath: null,
+                        guardImportPath: null,
+                        urlPath: "/users/:userId",
+                        children: [],
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                name: null,
+                pageImportPath: null,
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: null,
+                children: [
+                  {
+                    name: "ContactPage",
+                    pageImportPath: "@/external/client/pages/(public)/contact/contact-page.tsx",
+                    layoutImportPath: null,
+                    placeholderImportPath: null,
+                    guardImportPath: null,
+                    urlPath: "/contact",
+                    children: [],
+                  },
+                  {
+                    name: "FeaturesPage",
+                    pageImportPath: "@/external/client/pages/(public)/features/features-page.tsx",
+                    layoutImportPath: null,
+                    placeholderImportPath: null,
+                    guardImportPath: null,
+                    urlPath: "/features",
+                    children: [],
+                  },
+                  {
+                    name: "LandingPage",
+                    pageImportPath: "@/external/client/pages/(public)/landing/landing-page.tsx",
+                    layoutImportPath: null,
+                    placeholderImportPath: null,
+                    guardImportPath: null,
+                    urlPath: "/landing",
+                    children: [],
+                  },
+                ],
+              },
+            ],
+          },
+          htmlHash: 0x654321,
+          envHash: 0x0013fe,
+        },
+      ],
+    },
     {
       type: "update-client-sdk-routes",
       clients: [
@@ -708,7 +817,6 @@ test("compare-project-models", async (t) => {
 
   t.deepEqual(nullP4Changes, [
     { type: "create-runtime" },
-    { type: "update-config", config: { firebase: { projects: {} } } },
     { type: "add-runtime-client", clientName: "admin" },
     {
       type: "update-runtime-client-routes",
@@ -817,6 +925,116 @@ test("compare-project-models", async (t) => {
     },
     { type: "update-runtime-client-html", clientName: "external" },
     { type: "update-runtime-client-env", clientName: "external" },
+    {
+      type: "update-runtime-client-config",
+      config: { firebase: { projects: {} } },
+      clients: [
+        {
+          name: "admin",
+          routes: {
+            pageImportPath: "@/admin/client/pages/index-page.tsx",
+            layoutImportPath: null,
+            placeholderImportPath: null,
+            guardImportPath: null,
+            urlPath: "/",
+            children: [],
+          },
+          htmlHash: 0xa88980,
+          envHash: 0x88bc13,
+        },
+        {
+          name: "external",
+          routes: {
+            name: "IndexPage",
+            pageImportPath: null,
+            layoutImportPath: null,
+            placeholderImportPath: null,
+            guardImportPath: null,
+            urlPath: null,
+            children: [
+              {
+                name: "IndexPage",
+                pageImportPath: "@/external/client/pages/index-page.tsx",
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: "/",
+                children: [],
+              },
+              {
+                name: "DashboardGroup",
+                pageImportPath: null,
+                layoutImportPath: "@/external/client/pages/(dashboard)/dashboard-layout.tsx",
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: null,
+                children: [
+                  {
+                    name: "UsersPage",
+                    pageImportPath: "@/external/client/pages/(dashboard)/users/users-page.tsx",
+                    layoutImportPath: null,
+                    placeholderImportPath: null,
+                    guardImportPath: null,
+                    urlPath: "/users",
+                    children: [
+                      {
+                        name: "UserDetailsPage",
+                        pageImportPath:
+                          "@/external/client/pages/(dashboard)/users/[userId]/user-detail-page.tsx",
+                        layoutImportPath: null,
+                        placeholderImportPath: null,
+                        guardImportPath: null,
+                        urlPath: "/users/:userId",
+                        children: [],
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                name: null,
+                pageImportPath: null,
+                layoutImportPath: null,
+                placeholderImportPath: null,
+                guardImportPath: null,
+                urlPath: null,
+                children: [
+                  {
+                    name: "ContactPage",
+                    pageImportPath: "@/external/client/pages/(public)/contact/contact-page.tsx",
+                    layoutImportPath: null,
+                    placeholderImportPath: null,
+                    guardImportPath: null,
+                    urlPath: "/contact",
+                    children: [],
+                  },
+                  {
+                    name: "FeaturesPage",
+                    pageImportPath: "@/external/client/pages/(public)/features/features-page.tsx",
+                    layoutImportPath: null,
+                    placeholderImportPath: null,
+                    guardImportPath: null,
+                    urlPath: "/features",
+                    children: [],
+                  },
+                  {
+                    name: "LandingPage",
+                    pageImportPath: "@/external/client/pages/(public)/landing/landing-page.tsx",
+                    layoutImportPath: null,
+                    placeholderImportPath: null,
+                    guardImportPath: null,
+                    urlPath: "/landing",
+                    children: [],
+                  },
+                ],
+              },
+            ],
+          },
+          htmlHash: 0x654321,
+          envHash: 0x0013fe,
+        },
+      ],
+    },
     {
       type: "update-client-sdk-routes",
       clients: [

@@ -9,6 +9,7 @@ import { relative, resolve, sep } from "node:path";
 import fs from "fs-extra";
 import { camelCase } from "lodash";
 import { rollup } from "rollup";
+import { dts } from "rollup-plugin-dts";
 import nodeResolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import typescript from "@rollup/plugin-typescript";
@@ -200,21 +201,27 @@ function discoverRoutes(rootDir: string, dir: string, pagesDir: string): Project
 export async function parseFiredeckConfig(rootDir: string) {
   assertFiredeckRootDir(rootDir);
 
-  const { configFile, workspaceDir } = getProjectPaths(rootDir);
+  const { configFile, workspaceConfigFile, workspaceConfigTypesFile } = getProjectPaths(rootDir);
 
-  const bundle = await rollup({
-    input: configFile,
-    plugins: [nodeResolve(), commonjs(), typescript()],
-    treeshake: { moduleSideEffects: false },
-    external: ["firedeck"],
-  });
+  const [codeBundle, typesBundle] = await Promise.all([
+    rollup({
+      input: configFile,
+      plugins: [nodeResolve(), commonjs(), typescript()],
+      treeshake: { moduleSideEffects: false },
+    }),
+    rollup({
+      input: configFile,
+      plugins: [typescript(), dts({})],
+      external: ["firedeck"],
+    }),
+  ]);
 
-  const bundledConfigFile = resolve(workspaceDir, "firedeck.config.mjs");
-  await bundle.write({ file: bundledConfigFile, format: "esm" });
-  await bundle.close();
+  await Promise.all([
+    codeBundle.write({ file: workspaceConfigFile, format: "esm" }),
+    typesBundle.write({ file: workspaceConfigTypesFile }),
+  ]);
 
-  const config: FiredeckConfig = await import(bundledConfigFile).then((mod) => mod.default);
-  fs.removeSync(bundledConfigFile);
+  await Promise.all([codeBundle.close(), typesBundle.close()]);
 
-  return config;
+  return await import(workspaceConfigFile).then((mod) => mod.default as FiredeckConfig);
 }

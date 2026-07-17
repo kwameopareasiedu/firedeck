@@ -15,6 +15,8 @@ export function getProjectPaths(rootDir: string) {
     clientModulesDir: resolve(rootDir, "modules/client"),
     serverModulesDir: resolve(rootDir, "modules/server"),
     workspaceDir: resolve(rootDir, ".firedeck"),
+    workspaceConfigFile: resolve(rootDir, ".firedeck/firedeck.config.mjs"),
+    workspaceConfigTypesFile: resolve(rootDir, ".firedeck/firedeck.config.d.mts"),
     runtimeDir: resolve(rootDir, ".firedeck/runtime"),
     runtimeModulesDir: resolve(rootDir, ".firedeck/runtime/modules"),
     clientSdkDir: resolve(rootDir, "modules/sdk/client"),

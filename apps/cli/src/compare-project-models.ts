@@ -10,16 +10,13 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
     source = {
       config: {
         packageManager: {
-          name: PackageManagerName.YARN,
-          version: "1.22.22",
+          name: "none" as never as PackageManagerName,
+          version: "none",
         },
       },
       clients: [],
     };
   }
-
-  if (JSON.stringify(source.config) !== JSON.stringify(target.config))
-    changes.push({ type: "update-config", config: target.config });
 
   const sourceClients = new Map(source.clients.map((client) => [client.name, client]));
 
@@ -92,12 +89,22 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
     }
   }
 
-  if (changes.some((change) => change.type.includes("client"))) {
+  const replacerFn = (_: string, value: unknown) => {
+    return typeof value === "function" ? value.toString() : value;
+  };
+
+  if (JSON.stringify(source.config, replacerFn) !== JSON.stringify(target.config, replacerFn)) {
     changes.push({
-      type: "update-client-sdk-routes",
-      clients: Object.values(target.clients),
+      type: "update-runtime-client-config",
+      config: target.config,
+      clients: target.clients,
     });
+
+    // TODO: Include update-runtime-server-config also
   }
+
+  if (changes.some((change) => change.type.includes("client")))
+    changes.push({ type: "update-client-sdk-routes", clients: Object.values(target.clients) });
 
   return changes;
 }

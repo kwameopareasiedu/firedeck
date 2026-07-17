@@ -52,6 +52,7 @@ export async function runProject(rootDir: string, opts: { log: typeof info; erro
               "remove-runtime-client",
               "rename-runtime-client",
               "update-runtime-client-env",
+              "update-runtime-client-config",
             ] as ProjectMutation["type"][]
           ).includes(change.type),
         );
