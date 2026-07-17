@@ -15,6 +15,7 @@ export async function applyProjectMutations(rootDir: string, mutations: ProjectM
   assertFiredeckRootDir(rootDir);
 
   const {
+    envTypeFile,
     modulesDir,
     runtimeDir,
     runtimeModulesDir,
@@ -42,6 +43,8 @@ export async function applyProjectMutations(rootDir: string, mutations: ProjectM
           fs.writeFileSync(envDest, client.env);
         }
 
+        const envTypeSource = await generateEnvTypesSource(mut.clients);
+        fs.writeFileSync(envTypeFile, envTypeSource);
         break;
       }
       case "update-runtime-configs": {
@@ -353,10 +356,6 @@ export function generateRuntimeClientFileTree(args: { clientName: string }): Fil
 }
 
 async function generateRuntimeClientRoutesSource(routes: ProjectRoute) {
-  function createReplaceTarget(str: string) {
-    return `$$${str}$$`;
-  }
-
   function createDynamicImportStatement(str: string) {
     return createReplaceTarget(`() => import('${str}').then((mod) => mod.default)`);
   }
@@ -450,6 +449,33 @@ async function generateClientSdkRoutesSource(clients: ProjectClient[]) {
   return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
 }
 
+export async function generateEnvTypesSource(clients: ProjectClient[]) {
+  const allClientEnvs = clients
+    .reduce((envs, client) => `${envs}${client.env}\n`, "")
+    .split("\n")
+    .filter((line) => !!line);
+
+  const envMap = allClientEnvs.reduce(
+    (map, line) => {
+      const [key] = line.split("=");
+      const value = line.substring(key.length + 1);
+
+      return { ...map, [createReplaceTarget(`readonly ${key}`)]: value };
+    },
+    {} as Record<string, string>,
+  );
+
+  const finalSource = `
+    interface ImportMetaEnv ${JSON.stringify(envMap).replace(/"?\$\$"?/gm, "")}
+    
+    interface ImportMeta {
+      readonly env: ImportMetaEnv;
+    }
+  `;
+
+  return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
+}
+
 function flattenRoutes(route: ProjectRoute): ProjectRoute[] {
   return [
     { ...route, children: [] },
@@ -457,4 +483,8 @@ function flattenRoutes(route: ProjectRoute): ProjectRoute[] {
       return [...flats, ...flattenRoutes(childRoute)];
     }, [] as ProjectRoute[]),
   ];
+}
+
+function createReplaceTarget(str: string) {
+  return `$$${str}$$`;
 }

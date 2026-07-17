@@ -110,6 +110,7 @@ function generateProjectFileTree(args: {
         "dist",
         "temp",
         ".firebase",
+        "env.d.ts",
         ".env",
         ".env*",
         "!.env.sample",
@@ -134,7 +135,7 @@ function generateProjectFileTree(args: {
           "paths": {
             "@/*": ["./modules/*"]
           },
-          "types": ["vite/client"]
+          "types": ["vite/client", "./env"]
         },
         "include": ["./modules"]
       }`,
@@ -186,6 +187,18 @@ function generateProjectFileTree(args: {
           version: "${args.packageManagerVersion}",
         },
       });`,
+    },
+
+    "env.d.ts": {
+      content: `
+      interface ImportMetaEnv {
+      }
+      
+      interface ImportMeta {
+        readonly env: ImportMetaEnv;
+      }
+
+      `,
     },
 
     "modules/client/main/index.html": {

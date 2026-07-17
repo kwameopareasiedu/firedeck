@@ -225,4 +225,24 @@ VITE_FOO=bar`,
       getPrettierConfig({ filePath: "a.ts" }),
     ),
   );
+
+  const generatedEnvTypesSource = fs.readFileSync(resolve(testDir, "env.d.ts"), {
+    encoding: "utf-8",
+  });
+
+  t.is(
+    generatedEnvTypesSource,
+    await format(
+      `
+      interface ImportMetaEnv {
+        readonly VITE_HELLO: "world";
+        readonly VITE_FOO: "bar";
+      }
+      
+      interface ImportMeta {
+        readonly env: ImportMetaEnv;
+      }`,
+      getPrettierConfig({ filePath: "a.ts" }),
+    ),
+  );
 });

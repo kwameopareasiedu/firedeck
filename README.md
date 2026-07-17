@@ -214,18 +214,24 @@ For env variables in each module, the resulting root `.env` file will look like 
 
 ```dotenv
 # "main" client module env variables. The "VITE_" prefix is required for Vite applications
-MAIN::VITE_API_URL=https://api.example.com
-MAIN::VITE_THEME=dardk
+MAIN__VITE_API_URL=https://api.example.com
+MAIN__VITE_THEME=dardk
 
 # "api" server module env variables
-API::DB_URL=psql://user:pass@localhost:5432/db
-API::SERVICE_KEY=oiroinvowijref0928f2398
+API__DB_URL=psql://user:pass@localhost:5432/db
+API__SERVICE_KEY=oiroinvowijref0928f2398
 ```
 
 > ⚡ **Important Note**
 >
 > _Since client modules get transformed into a Vite application, you need to prefix client modules
 env variables with `VITE_`. This results in a full prefix of `<MODULE_NAME>::VITE_`._
+
+> ⚡ **Important Note**
+>
+> After `firedeck compile` is run, typings are generated for the env file. This way your IDE can
+> provide intellisense for `import.meta.env` with the exact variables in your `.env`, improving your
+> developer experience just a bit more.
 
 ## Firedeck Runtime
 
