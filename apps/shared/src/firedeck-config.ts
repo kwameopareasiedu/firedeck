@@ -1,6 +1,11 @@
 import type { UserConfig } from "vite";
 import { PackageManagerName } from "./package-manager";
 
+type ViteConfig = (args: {
+  mode: "development" | "production";
+  env: Record<string, string>;
+}) => Promise<UserConfig>;
+
 interface FirestoreIndex {
   collectionGroup: string;
   queryScope: "COLLECTION" | "COLLECTION_GROUP";
@@ -21,7 +26,7 @@ export interface FiredeckConfig {
     name: `${PackageManagerName}`;
     version: string;
   };
-  vite?: UserConfig;
+  vite?: ViteConfig;
   firebase?: {
     projects: {
       [alias: string]: FirebaseProject;
