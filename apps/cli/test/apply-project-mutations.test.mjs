@@ -33,7 +33,7 @@ test("apply-project-mutations", async (t) => {
       content: `
 MAIN__VITE_HELLO=world
 MAIN__VITE_FOO=bar
-ADMIN__VITE_HELLO=world
+ADMIN__VITE_HELLO=universe
       `,
       extension: "md",
     },

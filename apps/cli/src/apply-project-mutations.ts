@@ -455,18 +455,36 @@ export async function generateEnvTypesSource(clients: ProjectClient[]) {
     .split("\n")
     .filter((line) => !!line);
 
-  const envMap = allClientEnvs.reduce(
-    (map, line) => {
-      const [key] = line.split("=");
-      const value = line.substring(key.length + 1);
+  const keySet = new Set<string>();
 
-      return { ...map, [createReplaceTarget(`readonly ${key}`)]: value };
-    },
-    {} as Record<string, string>,
-  );
+  const envLines = allClientEnvs.reduce((lines, line) => {
+    const [key] = line.split("=");
+    const value = line.substring(key.length + 1);
+    const entry = `readonly ${key}: "${value}";`;
+
+    if (keySet.has(key)) {
+      const lineIndex = lines.indexOf(lines.find((l) => l.startsWith(`readonly ${key}:`)) ?? "");
+
+      if (lineIndex !== -1) {
+        const duplicateEntry = `readonly ${key}: string;`;
+        lines.splice(lineIndex, 1, "/** Defined in multiple modules */", duplicateEntry);
+      }
+    } else {
+      lines.push(entry);
+    }
+
+    keySet.add(key);
+    return [...lines];
+  }, [] as string[]);
 
   const finalSource = `
-    interface ImportMetaEnv ${JSON.stringify(envMap).replace(/"?\$\$"?/gm, "")}
+    interface ViteTypeOptions {
+      strictImportMetaEnv: unknown
+    }
+
+    interface ImportMetaEnv {
+      ${envLines.join("\n")}
+    }
     
     interface ImportMeta {
       readonly env: ImportMetaEnv;
