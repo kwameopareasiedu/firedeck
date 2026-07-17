@@ -4,6 +4,9 @@ import fs from "fs-extra";
 import { FileTree } from "@/types";
 import chalk from "chalk";
 
+export const ENV_VAR_LINE_MATCH_REGEX = /^\w+__\w+=.+$/;
+export const ENV_VAR_LINE_SPLIT_REGEX = /^\w+__/;
+export const ENV_VAR_KEY_VALUE_SEPARATOR = "__";
 export const NOT_FOUND_DIR_SUFFIX = "404";
 export const NOT_FOUND_URL_PATH = "/*";
 
@@ -75,15 +78,4 @@ export function warn(msg: unknown, ...args: unknown[]) {
 
 export function error(msg: unknown, ...args: unknown[]) {
   console.log(`${chalk.bgRed.black("firedeck")}: ${chalk.red(msg)}`, ...args);
-}
-
-export function generateStringHash(str: string) {
-  let hash = 0;
-
-  for (const char of str) {
-    hash = (hash << 5) - hash + char.charCodeAt(0);
-    hash |= 0;
-  }
-
-  return hash;
 }

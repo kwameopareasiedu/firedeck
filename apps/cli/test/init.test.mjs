@@ -23,6 +23,7 @@ test("init", async (t) => {
 
   execSync("yarn --prefer-offline", { cwd: testDir });
 
+  t.true(fs.existsSync(resolve(testDir, ".env")));
   t.true(fs.existsSync(resolve(testDir, "package.json")));
   t.true(fs.existsSync(resolve(testDir, "firedeck.config.ts")));
   t.true(fs.existsSync(resolve(testDir, "tsconfig.json")));
@@ -33,7 +34,7 @@ test("init", async (t) => {
   t.true(fs.existsSync(resolve(testDir, "modules/client/main/index.css")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/main/root.tsx")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/main/pages/404/not-found-page.tsx")));
-  t.true(fs.existsSync(resolve(testDir, "modules/shared")));
+  t.true(fs.existsSync(resolve(testDir, "modules/shared/components/index.tsx")));
 
   const packageJson = await fs.readJSONSync(resolve(testDir, "package.json"));
   t.is(packageJson.name, "ava-test");

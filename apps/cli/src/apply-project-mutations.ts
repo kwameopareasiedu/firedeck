@@ -7,7 +7,6 @@ import {
   NOT_FOUND_URL_PATH,
   writeFileTree,
 } from "@/utils";
-import { parseFiredeckConfig } from "@/analyze-project";
 import { resolve } from "node:path";
 import { format } from "prettier";
 import { snakeCase, startCase } from "lodash";
@@ -15,7 +14,6 @@ import { snakeCase, startCase } from "lodash";
 export async function applyProjectMutations(rootDir: string, mutations: ProjectMutation[]) {
   assertFiredeckRootDir(rootDir);
 
-  const firedeckConfig = await parseFiredeckConfig(rootDir);
   const {
     modulesDir,
     runtimeDir,
@@ -25,57 +23,29 @@ export async function applyProjectMutations(rootDir: string, mutations: ProjectM
     workspaceConfigTypesFile,
   } = getProjectPaths(rootDir);
 
-  for (const mutation of mutations) {
-    switch (mutation.type) {
+  for (const mut of mutations) {
+    switch (mut.type) {
       case "create-runtime": {
         fs.removeSync(runtimeDir);
         fs.ensureDirSync(runtimeDir);
 
         const runtimeFileTree = generateRuntimeFileTree({
-          packageManagerName: firedeckConfig.packageManager.name,
-          packageManagerVersion: firedeckConfig.packageManager.version,
+          packageManagerName: mut.config.packageManager.name,
+          packageManagerVersion: mut.config.packageManager.version,
         });
         await writeFileTree(runtimeDir, runtimeFileTree);
         break;
       }
-      case "add-runtime-client": {
-        const clientRoot = resolve(runtimeModulesDir, mutation.clientName);
-        const clientFileTree = generateRuntimeClientFileTree({ clientName: mutation.clientName });
-        await writeFileTree(clientRoot, clientFileTree);
+      case "update-runtime-envs": {
+        for (const client of mut.clients) {
+          const envDest = resolve(runtimeModulesDir, client.name, ".env");
+          fs.writeFileSync(envDest, client.env);
+        }
+
         break;
       }
-      case "remove-runtime-client": {
-        const clientRoot = resolve(runtimeModulesDir, mutation.clientName);
-        fs.removeSync(clientRoot);
-        break;
-      }
-      case "rename-runtime-client": {
-        const oldClientRoot = resolve(runtimeModulesDir, mutation.oldClientName);
-        const newClientRoot = resolve(runtimeModulesDir, mutation.newClientName);
-        fs.renameSync(oldClientRoot, newClientRoot);
-        break;
-      }
-      case "update-runtime-client-routes": {
-        const { clientName, clientRoutes } = mutation;
-        const clientRoutesFile = resolve(runtimeModulesDir, clientName, "src/routes.ts");
-        const runtimeClientRoutesSource = await generateRuntimeClientRoutesSource(clientRoutes);
-        fs.writeFileSync(clientRoutesFile, runtimeClientRoutesSource);
-        break;
-      }
-      case "update-runtime-client-html": {
-        const htmlSrc = resolve(modulesDir, "client", mutation.clientName, "index.html");
-        const htmlDest = resolve(runtimeModulesDir, mutation.clientName, "index.html");
-        fs.copyFileSync(htmlSrc, htmlDest);
-        break;
-      }
-      case "update-runtime-client-env": {
-        const envSrc = resolve(modulesDir, "client", mutation.clientName, ".env");
-        const envDest = resolve(runtimeModulesDir, mutation.clientName, ".env");
-        fs.copyFileSync(envSrc, envDest);
-        break;
-      }
-      case "update-runtime-client-config": {
-        for (const client of mutation.clients) {
+      case "update-runtime-configs": {
+        for (const client of mut.clients) {
           const destFile = resolve(runtimeModulesDir, client.name, "firedeck.config.mjs");
           const destTypesFile = resolve(runtimeModulesDir, client.name, "firedeck.config.d.mts");
           fs.copyFileSync(workspaceConfigFile, destFile);
@@ -84,9 +54,39 @@ export async function applyProjectMutations(rootDir: string, mutations: ProjectM
 
         break;
       }
+      case "add-runtime-client": {
+        const clientRoot = resolve(runtimeModulesDir, mut.clientName);
+        const clientFileTree = generateRuntimeClientFileTree({ clientName: mut.clientName });
+        await writeFileTree(clientRoot, clientFileTree);
+        break;
+      }
+      case "remove-runtime-client": {
+        const clientRoot = resolve(runtimeModulesDir, mut.clientName);
+        fs.removeSync(clientRoot);
+        break;
+      }
+      case "rename-runtime-client": {
+        const oldClientRoot = resolve(runtimeModulesDir, mut.oldClientName);
+        const newClientRoot = resolve(runtimeModulesDir, mut.newClientName);
+        fs.renameSync(oldClientRoot, newClientRoot);
+        break;
+      }
+      case "update-runtime-client-routes": {
+        const { clientName, clientRoutes } = mut;
+        const clientRoutesFile = resolve(runtimeModulesDir, clientName, "src/routes.ts");
+        const runtimeClientRoutesSource = await generateRuntimeClientRoutesSource(clientRoutes);
+        fs.writeFileSync(clientRoutesFile, runtimeClientRoutesSource);
+        break;
+      }
+      case "update-runtime-client-html": {
+        const htmlSrc = resolve(modulesDir, "client", mut.clientName, "index.html");
+        const htmlDest = resolve(runtimeModulesDir, mut.clientName, "index.html");
+        fs.copyFileSync(htmlSrc, htmlDest);
+        break;
+      }
       case "update-client-sdk-routes": {
         const sdkRoutesFile = resolve(clientSdkDir, "routes.ts");
-        const routesSource = await generateClientSdkRoutesSource(mutation.clients);
+        const routesSource = await generateClientSdkRoutesSource(mut.clients);
         fs.ensureFileSync(sdkRoutesFile);
         fs.writeFileSync(sdkRoutesFile, routesSource);
         break;

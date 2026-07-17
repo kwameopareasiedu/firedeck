@@ -51,6 +51,11 @@ function generateProjectFileTree(args: {
   packageManagerVersion: string;
 }): FileTree {
   return {
+    ".env": {
+      content: "",
+      extension: "md",
+    },
+
     "package.json": {
       content: `
       {
@@ -181,11 +186,6 @@ function generateProjectFileTree(args: {
           version: "${args.packageManagerVersion}",
         },
       });`,
-    },
-
-    "modules/client/main/.env": {
-      content: "",
-      extension: "md",
     },
 
     "modules/client/main/index.html": {

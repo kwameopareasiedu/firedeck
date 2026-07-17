@@ -187,7 +187,7 @@ const queryClient = new QueryClient({
     },
 });
 
-export default function (appRouter: ReactNode) {
+export default function RootBuilder(appRouter: ReactNode) {
     return (
         <QueryClientProvider client={queryClient}>
             {appRouter}
@@ -196,15 +196,36 @@ export default function (appRouter: ReactNode) {
 }
 ```
 
-#### Environment Variables
+## Environment Variables
 
-Each module client has a `.env` file at their root which specifies the environment variables to use
-for the compiled Vite application.
+Firedeck projects have a central `.env` file at the root, which contain env variables for all
+modules of the application.
+
+Each variable in the `.env` file must be prefixed with the module name and a double underscore
+separator (I.e. `<MODULE_NAME>__`). This allows Firedeck to create individual `.env` files for each
+module at compile time.
+
+As an example, let's assume you have two modules:
+
+- `modules/client/main` (Client module)
+- `modules/server/api` (Server module)
+
+For env variables in each module, the resulting root `.env` file will look like this:
+
+```dotenv
+# "main" client module env variables. The "VITE_" prefix is required for Vite applications
+MAIN::VITE_API_URL=https://api.example.com
+MAIN::VITE_THEME=dardk
+
+# "api" server module env variables
+API::DB_URL=psql://user:pass@localhost:5432/db
+API::SERVICE_KEY=oiroinvowijref0928f2398
+```
 
 > ⚡ **Important Note**
 >
-> _Since client components of modules gets transformed into a Vite application, you need to prefix
-> all variables with `VITE_`_
+> _Since client modules get transformed into a Vite application, you need to prefix client modules
+env variables with `VITE_`. This results in a full prefix of `<MODULE_NAME>::VITE_`._
 
 ## Firedeck Runtime
 
@@ -335,12 +356,20 @@ following structure:
 import {defineConfig} from "firedeck";
 
 export default defineConfig({
-    vite: {},
+    vite: async ({module, mode, env}) => {
+        return {}
+    },
     firebase: {}
 })
 ```
 
-The `vite` config
+### Vite Config
+
+The `vite` field is a promise returning function which is passed the module name, vite server mode
+and an env object file.
+
+The function should return a promise resolving to a [Vite
+`UserConfig` object](https://vite.dev/config/).
 
 
 [//]: # (The server functions defined by the module will be available to the client via the `useApi` hook.)

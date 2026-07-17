@@ -31,8 +31,8 @@ export interface RouterRoute {
 export interface ProjectClient {
   name: string;
   routes: ProjectRoute;
-  htmlHash: number;
-  envHash: number;
+  indexHtml: string;
+  env: string;
 }
 
 export interface ProjectModel {
@@ -41,12 +41,12 @@ export interface ProjectModel {
 }
 
 export type ProjectMutation =
-  | { type: "create-runtime" }
+  | { type: "create-runtime"; config: FiredeckConfig }
+  | { type: "update-runtime-envs"; clients: ProjectClient[]; config: FiredeckConfig }
+  | { type: "update-runtime-configs"; clients: ProjectClient[]; config: FiredeckConfig }
   | { type: "add-runtime-client"; clientName: string }
   | { type: "remove-runtime-client"; clientName: string }
   | { type: "rename-runtime-client"; oldClientName: string; newClientName: string }
   | { type: "update-runtime-client-routes"; clientName: string; clientRoutes: ProjectRoute }
   | { type: "update-runtime-client-html"; clientName: string }
-  | { type: "update-runtime-client-env"; clientName: string }
-  | { type: "update-runtime-client-config"; clients: ProjectClient[]; config: FiredeckConfig }
   | { type: "update-client-sdk-routes"; clients: ProjectClient[] };

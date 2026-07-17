@@ -6,7 +6,7 @@ import { init } from "../temp/init.js";
 import { analyzeProject } from "../temp/analyze-project.js";
 import { compareProjectModels } from "../temp/compare-project-models.js";
 import { applyProjectMutations } from "../temp/apply-project-mutations.js";
-import { writeFileTree, getPrettierConfig } from "../temp/utils.js";
+import { getPrettierConfig, writeFileTree } from "../temp/utils.js";
 import { format } from "prettier";
 
 const __dirname = import.meta.dirname;
@@ -29,6 +29,14 @@ test("apply-project-mutations", async (t) => {
   execSync("yarn --prefer-offline", { cwd: testDir });
 
   const fileTree = {
+    ".env": {
+      content: `
+MAIN__VITE_HELLO=world
+MAIN__VITE_FOO=bar
+ADMIN__VITE_HELLO=world
+      `,
+      extension: "md",
+    },
     "modules/client/main/pages/index-page.tsx": {
       content: `
         export default function IndexPage() {
@@ -99,18 +107,28 @@ test("apply-project-mutations", async (t) => {
   await applyProjectMutations(testDir, mutations);
 
   const runtimeMainDir = resolve(testDir, ".firedeck/runtime/modules/main");
+  t.true(fs.existsSync(resolve(runtimeMainDir, ".env")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "package.json")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "tsconfig.app.json")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "tsconfig.node.json")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "tsconfig.json")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "vite.config.ts")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "firedeck.config.mjs")));
+  t.true(fs.existsSync(resolve(runtimeMainDir, "firedeck.config.d.mts")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "index.html")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "global.d.ts")));
   t.true(fs.existsSync(resolve(runtimeMainDir, ".gitignore")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "src/index.tsx")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "src/index.css")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "src/routes.ts")));
+
+  const envSource = fs.readFileSync(resolve(runtimeMainDir, ".env"), { encoding: "utf-8" });
+
+  t.is(
+    envSource,
+    `VITE_HELLO=world
+VITE_FOO=bar`,
+  );
 
   const routesSource = fs.readFileSync(resolve(runtimeMainDir, "src/routes.ts"), {
     encoding: "utf-8",

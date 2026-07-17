@@ -26,7 +26,6 @@ test("create-module", async (t) => {
 
   await createModule(testDir, { name: "admin", type: "client" });
 
-  t.true(fs.existsSync(resolve(testDir, "modules/client/admin/.env")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/admin/index.html")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/admin/index.css")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/admin/root.tsx")));

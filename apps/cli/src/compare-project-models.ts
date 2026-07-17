@@ -5,7 +5,7 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
   const changes: ProjectMutation[] = [];
 
   if (!source) {
-    changes.push({ type: "create-runtime" });
+    changes.push({ type: "create-runtime", config: target.config });
 
     source = {
       config: {
@@ -19,6 +19,7 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
   }
 
   const sourceClients = new Map(source.clients.map((client) => [client.name, client]));
+  let updateEnvsAndConfigs = false;
 
   for (const destClient of target.clients) {
     const sourceClient = sourceClients.get(destClient.name);
@@ -38,11 +39,9 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
           type: "update-runtime-client-html",
           clientName: destClient.name,
         },
-        {
-          type: "update-runtime-client-env",
-          clientName: destClient.name,
-        },
       );
+
+      updateEnvsAndConfigs = true;
     } else {
       if (sourceClient.name !== destClient.name) {
         changes.push({
@@ -60,16 +59,9 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
         });
       }
 
-      if (sourceClient.htmlHash !== destClient.htmlHash) {
+      if (sourceClient.indexHtml !== destClient.indexHtml) {
         changes.push({
           type: "update-runtime-client-html",
-          clientName: destClient.name,
-        });
-      }
-
-      if (sourceClient.envHash !== destClient.envHash) {
-        changes.push({
-          type: "update-runtime-client-env",
           clientName: destClient.name,
         });
       }
@@ -93,9 +85,18 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
     return typeof value === "function" ? value.toString() : value;
   };
 
-  if (JSON.stringify(source.config, replacerFn) !== JSON.stringify(target.config, replacerFn)) {
+  if (
+    updateEnvsAndConfigs ||
+    JSON.stringify(source.config, replacerFn) !== JSON.stringify(target.config, replacerFn)
+  ) {
     changes.push({
-      type: "update-runtime-client-config",
+      type: "update-runtime-envs",
+      config: target.config,
+      clients: target.clients,
+    });
+
+    changes.push({
+      type: "update-runtime-configs",
       config: target.config,
       clients: target.clients,
     });
@@ -104,7 +105,10 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
   }
 
   if (changes.some((change) => change.type.includes("client")))
-    changes.push({ type: "update-client-sdk-routes", clients: Object.values(target.clients) });
+    changes.push({
+      type: "update-client-sdk-routes",
+      clients: Object.values(target.clients),
+    });
 
   return changes;
 }

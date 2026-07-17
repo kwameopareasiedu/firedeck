@@ -1,6 +1,8 @@
 import {
   assertFiredeckRootDir,
-  generateStringHash,
+  ENV_VAR_KEY_VALUE_SEPARATOR,
+  ENV_VAR_LINE_MATCH_REGEX,
+  ENV_VAR_LINE_SPLIT_REGEX,
   getProjectPaths,
   NOT_FOUND_DIR_SUFFIX,
   NOT_FOUND_URL_PATH,
@@ -64,15 +66,25 @@ function analyzeClientModule(rootDir: string, clientModuleDir: string): ProjectC
   if (!fs.existsSync(htmlPath)) throw `${relative(rootDir, htmlPath)}: file not found`;
   const htmlContent = fs.readFileSync(htmlPath, { encoding: "utf-8" });
 
-  const envPath = resolve(clientModuleDir, ".env");
+  const envPath = resolve(rootDir, ".env");
   if (!fs.existsSync(envPath)) throw `${relative(rootDir, envPath)}: file not found`;
   const envContent = fs.readFileSync(envPath, { encoding: "utf-8" });
+  const moduleEnvVariables = envContent
+    .trim()
+    .split("\n")
+    .filter((line) => {
+      if (!ENV_VAR_LINE_MATCH_REGEX.test(line)) return false;
+
+      const [key] = line.trim().split(ENV_VAR_KEY_VALUE_SEPARATOR);
+      return key.toLowerCase() === moduleName.toLowerCase();
+    })
+    .map((line) => line.split(ENV_VAR_LINE_SPLIT_REGEX)[1]);
 
   return {
     name: moduleName,
     routes: clientRoutes,
-    htmlHash: generateStringHash(htmlContent),
-    envHash: generateStringHash(envContent),
+    indexHtml: htmlContent,
+    env: moduleEnvVariables.join("\n"),
   };
 }
 

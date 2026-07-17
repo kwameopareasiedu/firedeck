@@ -35,11 +35,6 @@ export async function createModule(rootDir: string, opts: { name: string; type: 
 
 function generateClientModuleFileTree(args: { name: string }): FileTree {
   return {
-    [`modules/client/${args.name}/.env`]: {
-      content: "",
-      extension: "md",
-    },
-
     [`modules/client/${args.name}/index.html`]: {
       content: `
         <!doctype html>
