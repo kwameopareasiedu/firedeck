@@ -36,9 +36,13 @@ well-established technologies you already know and love:
 A Firedeck application has the following structure:
 
 ```
+- .firedeck/
 - modules/
   - client/
   - server/
+  - sdk/
+    - client/
+  - shared/
 - .gitignore
 - .pretierrc
 - eslint.config.js
