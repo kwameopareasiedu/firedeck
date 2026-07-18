@@ -115,12 +115,12 @@ At compile-time, Firedeck builds the client module router. With this approach, f
 `<module-name>/pages` directory in a depth-first manner searching for the following file name
 patterns within each directory:
 
-| File Name **Suffix** Pattern | Description                                                                | Required In Directory |
-|------------------------------|----------------------------------------------------------------------------|-----------------------|
-| `*page.tsx`                  | The page component to display for the URL of the directory                 | No                    |
-| `*layout.tsx`                | The layout component to use for the URL tree of the directory path         | No                    |
-| `*placeholder.tsx`           | The component to display while the page component is being fetched         | No                    |
-| `*before.ts`                 | The the function to evaluate **before** rendering the route page component | No                    |
+| File Name Suffix Pattern | Description                                                                | Required In Directory |
+|--------------------------|----------------------------------------------------------------------------|-----------------------|
+| `*page.tsx`              | The page component to display for the URL of the directory                 | No                    |
+| `*layout.tsx`            | The layout component to use for the URL tree of the directory path         | No                    |
+| `*placeholder.tsx`       | The component to display while the page component is being fetched         | No                    |
+| `*before.ts`             | The the function to evaluate **before** rendering the route page component | No                    |
 
 ##### Points To Note
 
@@ -128,12 +128,9 @@ patterns within each directory:
   in [data mode](https://reactrouter.com/start/data/routing).
 
 
-- Firedeck uses a suffix-based file name convention, which avoids the annoying `page.tsx` or
-  `layout.tsx` duplication.
-
-
-- You can give descriptive names to your page file (E.g. `user.page.tsx`, `settings-page.tsx`)
-  allowing you to easily navigate through them in your editor.
+- Firedeck uses a **suffix-based** file name convention, which avoids the annoying `page.tsx` or
+  `layout.tsx` duplication. This allows you can give descriptive names to your page file (E.g.
+  `user.page.tsx`, `settings-page.tsx`) enabling easy navigation in your editor.
 
 
 - You can also co-locate other component files in the same directory without issue.
@@ -147,6 +144,7 @@ patterns within each directory:
     return <div>Hello World</div>;
   }
   ```
+  
 
 - If defined, `*before.ts` must **default export** a single (async) function which can fetch data
   before the page is rendered or even redirect to another page if a condition is not met.

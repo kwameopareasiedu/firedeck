@@ -226,7 +226,7 @@ VITE_FOO=bar`,
     ),
   );
 
-  const generatedEnvTypesSource = fs.readFileSync(resolve(testDir, "env.d.ts"), {
+  const generatedEnvTypesSource = fs.readFileSync(resolve(testDir, ".firedeck/env.d.ts"), {
     encoding: "utf-8",
   });
 
@@ -234,6 +234,10 @@ VITE_FOO=bar`,
     generatedEnvTypesSource,
     await format(
       `
+      interface ViteTypeOptions {
+        strictImportMetaEnv: unknown;
+      }
+
       interface ImportMetaEnv {
         readonly VITE_HELLO: "world";
         readonly VITE_FOO: "bar";

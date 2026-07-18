@@ -135,7 +135,7 @@ function generateProjectFileTree(args: {
           "paths": {
             "@/*": ["./modules/*"]
           },
-          "types": ["vite/client", "./env"]
+          "types": ["vite/client", "./.firedeck/env"]
         },
         "include": ["./modules"]
       }`,
@@ -189,8 +189,12 @@ function generateProjectFileTree(args: {
       });`,
     },
 
-    "env.d.ts": {
+    ".firedeck/env.d.ts": {
       content: `
+      interface ViteTypeOptions {
+        strictImportMetaEnv: unknown;
+      }
+
       interface ImportMetaEnv {
       }
       

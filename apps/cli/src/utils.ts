@@ -14,11 +14,11 @@ export function getProjectPaths(rootDir: string) {
   return {
     rootDir: rootDir,
     configFile: resolve(rootDir, "firedeck.config.ts"),
-    envTypeFile: resolve(rootDir, "env.d.ts"),
     modulesDir: resolve(rootDir, "modules"),
     clientModulesDir: resolve(rootDir, "modules/client"),
     serverModulesDir: resolve(rootDir, "modules/server"),
     workspaceDir: resolve(rootDir, ".firedeck"),
+    workspaceEnvTypesFile: resolve(rootDir, ".firedeck/env.d.ts"),
     workspaceConfigFile: resolve(rootDir, ".firedeck/firedeck.config.mjs"),
     workspaceConfigTypesFile: resolve(rootDir, ".firedeck/firedeck.config.d.mts"),
     runtimeDir: resolve(rootDir, ".firedeck/runtime"),

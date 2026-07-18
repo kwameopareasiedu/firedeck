@@ -15,12 +15,12 @@ export async function applyProjectMutations(rootDir: string, mutations: ProjectM
   assertFiredeckRootDir(rootDir);
 
   const {
-    envTypeFile,
     modulesDir,
     runtimeDir,
     runtimeModulesDir,
     clientSdkDir,
     workspaceConfigFile,
+    workspaceEnvTypesFile,
     workspaceConfigTypesFile,
   } = getProjectPaths(rootDir);
 
@@ -43,8 +43,8 @@ export async function applyProjectMutations(rootDir: string, mutations: ProjectM
           fs.writeFileSync(envDest, client.env);
         }
 
-        const envTypeSource = await generateEnvTypesSource(mut.clients);
-        fs.writeFileSync(envTypeFile, envTypeSource);
+        const envTypesSource = await generateEnvTypesSource(mut.clients);
+        fs.writeFileSync(workspaceEnvTypesFile, envTypesSource);
         break;
       }
       case "update-runtime-configs": {
@@ -460,7 +460,7 @@ export async function generateEnvTypesSource(clients: ProjectClient[]) {
   const envLines = allClientEnvs.reduce((lines, line) => {
     const [key] = line.split("=");
     const value = line.substring(key.length + 1);
-    const entry = `readonly ${key}: "${value}";`;
+    const entry = `readonly ${key}: "${value}";`.replace(/""/g, '"');
 
     if (keySet.has(key)) {
       const lineIndex = lines.indexOf(lines.find((l) => l.startsWith(`readonly ${key}:`)) ?? "");
