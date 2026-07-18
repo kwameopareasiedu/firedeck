@@ -135,21 +135,20 @@ patterns within each directory:
     documentation for more in-depth information._
 >
 >
-> - The generated client module router is a [data mode](https://reactrouter.com/start/data/routing)
-    **React Router** instance.
+> - _The generated client module router is a [data mode](https://reactrouter.com/start/data/routing)
+    **React Router** instance._
 >
 >
-> - Firedeck uses a **suffix-based** file name convention, which avoids the annoying `page.tsx` or
+> - _Firedeck uses a **suffix-based** file name convention, which avoids the annoying `page.tsx` or
     `layout.tsx` file duplication. This allows you can give descriptive names to your page files (
-    E.g.
-    `user.page.tsx`, `settings-page.tsx`), enabling easy navigation in your editor.
+    E.g. `user.page.tsx`, `settings-page.tsx`), enabling easy navigation in your editor_.
 >
 >
-> - You can also co-locate other component files in the same directory without issue.
+> - _You can also co-locate other component files in the same directory without issue_.
 >
 >
-> - If defined, `*page.tsx`, `*layout.tsx` and `*placeholder.tsx` files must **default export** a
-    single plain React component. E.g:
+> - _If defined, `*page.tsx`, `*layout.tsx` and `*placeholder.tsx` files must **default export** a
+    single plain React component. E.g_:
 >
 >   ```typescript jsx
 >   export default function ComponentName() {
@@ -158,8 +157,8 @@ patterns within each directory:
 >   ```
 >
 >
-> - If defined, `*before.ts` must **default export** a single (async) function which can fetch data
-    before the page is rendered or even redirect to another page if a condition is not met.
+> - _If defined, `*before.ts` must **default export** a single (async) function which can fetch data
+    before the page is rendered or even redirect to another page if a condition is not met_.
 >
 >   ```typescript jsx
 >   // import { redirect } from "react-router";
