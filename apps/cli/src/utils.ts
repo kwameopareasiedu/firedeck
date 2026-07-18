@@ -72,15 +72,15 @@ export function parseErrorMessage(err: unknown) {
 }
 
 export function info(msg: string, ...args: unknown[]) {
-  console.log(`${chalk.bgGreen.black("firedeck")}: ${chalk.green(msg)}`, ...args);
+  console.log(`${chalk.green.bold("firedeck")}: ${chalk.green(msg)}`, ...args);
 }
 
 export function warn(msg: unknown, ...args: unknown[]) {
-  console.log(`${chalk.bgYellow.black("firedeck")}: ${chalk.yellow(msg)}`, ...args);
+  console.log(`${chalk.yellow.bold("firedeck")}: ${chalk.yellow(msg)}`, ...args);
 }
 
 export function error(msg: unknown, ...args: unknown[]) {
-  console.log(`${chalk.bgRed.black("firedeck")}: ${chalk.red(msg)}`, ...args);
+  console.log(`${chalk.red.bold("firedeck")}: ${chalk.red(msg)}`, ...args);
 }
 
 export function generateStringHash(str: string) {
@@ -91,5 +91,5 @@ export function generateStringHash(str: string) {
     hash |= 0;
   }
 
-  return hash;
+  return Math.abs(hash);
 }

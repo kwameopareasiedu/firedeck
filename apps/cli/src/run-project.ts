@@ -28,7 +28,7 @@ export async function runProject(rootDir: string, opts: { log: typeof info; erro
     }
   }
 
-  const cmd = `${packageManager.commands.runScript} dev`;
+  const cmd = `${packageManager.commands.run} dev`;
   const cmdName = cmd.split(" ")[0];
   const cmdOpts = cmd.split(" ").slice(1);
   let runtimeDevProc = spawn(cmdName, cmdOpts, { cwd: runtimeDir, stdio: "inherit" });

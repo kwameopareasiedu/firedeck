@@ -1,16 +1,15 @@
-import { assertFiredeckRootDir, error, getProjectPaths, info } from "@/utils";
+import { assertFiredeckRootDir, getProjectPaths, info } from "@/utils";
 import { parseFiredeckConfig } from "@/analyze-project";
 import { packageManagers } from "shared/package-manager";
 import { relative, resolve } from "node:path";
 import fs from "fs-extra";
 import { compileProject } from "@/compile-project";
-import { exec } from "node:child_process";
+import { spawn } from "node:child_process";
 
-export async function buildProject(
-  rootDir: string,
-  opts: { log: typeof info; error: typeof error },
-) {
+export async function buildProject(rootDir: string) {
   assertFiredeckRootDir(rootDir);
+
+  const [projectModel] = await compileProject(rootDir);
 
   const { runtimeDir } = getProjectPaths(rootDir);
   const firedeckConfig = await parseFiredeckConfig(rootDir);
@@ -26,22 +25,19 @@ export async function buildProject(
     }
   }
 
-  const [projectModel] = await compileProject(rootDir);
-
-  const runtimeBuildProc = exec(`${packageManager.commands.runScript} build`, { cwd: runtimeDir });
-  runtimeBuildProc.stdout?.on("data", console.log);
-  runtimeBuildProc.stderr?.on("error", console.error);
-  runtimeBuildProc.on("error", opts.error);
-  runtimeBuildProc.on("close", (exitCode) => {
-    if (exitCode !== 0) {
-      opts.error("build failed");
-    } else {
-      const msg = projectModel.clients.reduce((msg, client) => {
-        const clientDist = `${runtimeDir}/modules/${client.name}/dist`;
-        return msg + `${client.name}: ${relative(rootDir, clientDist)}\n`;
-      }, "");
-
-      opts.log("build complete\n" + msg);
-    }
+  return new Promise((resolve, reject) => {
+    spawn(packageManager.commands.run, ["build"], { cwd: runtimeDir, stdio: "inherit" })
+      .on("error", (err) => reject(err))
+      .on("exit", (exitCode) => {
+        if (exitCode === 0) {
+          for (const client of projectModel.clients) {
+            const clientDist = `${runtimeDir}/modules/${client.name}/dist`;
+            info(`built client module (${client.name}): ${relative(rootDir, clientDist)}`);
+          }
+          resolve(null);
+        } else {
+          reject(new Error("build failed"));
+        }
+      });
   });
 }

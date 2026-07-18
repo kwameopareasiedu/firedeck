@@ -1,7 +1,7 @@
 interface PackageManager {
   name: string;
   commands: {
-    runScript: string;
+    run: string;
     checkVersion: string;
   };
   postInitSteps: string[];
@@ -17,7 +17,7 @@ export const packageManagers: Record<PackageManagerName, PackageManager> = {
   [PackageManagerName.YARN]: {
     name: "Yarn",
     commands: {
-      runScript: "yarn",
+      run: "yarn",
       checkVersion: "yarn -v",
     },
     postInitSteps: ["yarn install", "yarn dev"],
@@ -26,7 +26,7 @@ export const packageManagers: Record<PackageManagerName, PackageManager> = {
   [PackageManagerName.NPM]: {
     name: "NPM",
     commands: {
-      runScript: "npm run",
+      run: "npm run",
       checkVersion: "npm -v",
     },
     postInitSteps: ["npm install", "npm run dev"],

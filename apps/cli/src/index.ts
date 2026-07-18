@@ -11,6 +11,7 @@ import { createModule } from "@/create-module";
 import { compileProject } from "@/compile-project";
 import { runProject } from "@/run-project";
 import { buildProject } from "@/build-project";
+import { deployProject } from "@/deploy-project";
 
 const packageInfo = JSON.parse(
   fs.readFileSync(resolve(__dirname, "../package.json"), { encoding: "utf-8" }),
@@ -134,7 +135,21 @@ cli
   .description("Builds all modules for deployment")
   .action(async () => {
     try {
-      await buildProject(process.cwd(), { log: info, error: console.error });
+      await buildProject(process.cwd());
+    } catch (err) {
+      error(parseErrorMessage(err));
+      process.exit(-1);
+    }
+  });
+
+cli
+  .command("deploy")
+  .description("Deploys built modules to their respective Firebase components")
+  .option("--alias <alias>", "firebase project alias to deploy to")
+  .option("--no-build", "skip project build")
+  .action(async (opts) => {
+    try {
+      await deployProject(process.cwd(), { alias: opts.alias, build: opts.build });
     } catch (err) {
       error(parseErrorMessage(err));
       process.exit(-1);
