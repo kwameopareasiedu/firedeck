@@ -9,16 +9,27 @@ working runtime that can be built and deployed to Firebase.
 ## Features
 
 - Skeleton project boilerplate
-- Managed [Turbo](https://turborepo.dev) runtime consisting of Vite and Firebase applications
-- Directory based routing, similar to [Next.js app router](https://nextjs.org/docs/app), implemented
-  with [React Router](https://reactrouter.com)
+- Managed **Turbo** runtime consisting of Vite and Firebase applications
+- Directory based routing, implemented with **React Router**
 - Automatic generation of client SDK to access firebase apps from the frontends
 - Simple environment variables setup
 - One config file to rule them all
 
-> ⚡ **Important Note**
->
-> _Firedeck depends on `firebase-tools`, so make sure you have it installed globally_
+## Technologies
+
+Firedeck **is not** a runtime or a framework. Instead, it **is a** compiler that utilizes
+well-established technologies you already know and love:
+
+- [Turbo](https://turborepo.dev) handles runtime monorepo orchestration
+- [Vite](https://vite.dev)+[React](https://react.dev) handles frontend application bundling
+- [React Router](https://reactrouter.com) handles frontend routing
+- [Firebase](https://firebase.google.com) handles API and trigger functions
+
+[//]: # (> ⚡ **Important Note**)
+
+[//]: # (>)
+
+[//]: # (> _Firedeck depends on `firebase-tools`, so make sure you have it installed globally_)
 
 ## Project Structure
 
@@ -69,7 +80,6 @@ Client modules live under `modules/client` and have the following directory stru
 ```
 <module-name>/  
   - pages/        #(Contains component files which make up the compiled React+Vite application)
-  - .env          #(The env file for the compiled React+Vite application. Env variables must be prefixed with 'VITE_')
   - index.html    #(The entry point into the React+Vite application)
   - index.css     #(The stylesheet of the React+Vite, configured to use Tailwind 4)
   - root.tsx      #(The root builder of the React+Vite application. More on this below)
@@ -85,7 +95,7 @@ This is illustrated in the following client module directory:
 ```
 <module-name>/
   - pages/
-    - (dashboard)/
+    - (dashboard)/                        Route Group (Not part of URL)
       - dashboard-layout.tsx
       - dashboard-page.tsx                URL: "/"
       - dashboard-before.ts
@@ -94,7 +104,7 @@ This is illustrated in the following client module directory:
         - users-placeholder.tsx
         - [userId]/
           - user-details-page.tsx         URL: "/users/:userId"
-    - (public)/
+    - (public)/                           Route Group (Not part of URL)
       - landing
         - landing-page.tsx                URL: "/landing"
       - contact
@@ -105,11 +115,6 @@ This is illustrated in the following client module directory:
   - index.html
   - root.tsx
 ```
-
-> ⚡ **Important Note**
->
-> _Client module routing is heavily inspired by [Next.js' App Router](https://nextjs.org/docs/app).
-> I highly recommend going through its documentation for more in-depth information._
 
 At compile-time, Firedeck builds the client module router. With this approach, firedeck examines the
 `<module-name>/pages` directory in a depth-first manner searching for the following file name
@@ -122,41 +127,49 @@ patterns within each directory:
 | `*placeholder.tsx`       | The component to display while the page component is being fetched         | No                    |
 | `*before.ts`             | The the function to evaluate **before** rendering the route page component | No                    |
 
-##### Points To Note
-
-- The client module router is a [React Router](https://reactrouter.com/)
-  in [data mode](https://reactrouter.com/start/data/routing).
-
-
-- Firedeck uses a **suffix-based** file name convention, which avoids the annoying `page.tsx` or
-  `layout.tsx` duplication. This allows you can give descriptive names to your page file (E.g.
-  `user.page.tsx`, `settings-page.tsx`) enabling easy navigation in your editor.
-
-
-- You can also co-locate other component files in the same directory without issue.
-
-
-- If defined, `*page.tsx`, `*layout.tsx` and `*placeholder.tsx` files must **default export** a
-  single plain React component. E.g:
-
-  ```typescript jsx
-  export default function MyAwesomePage() {
-    return <div>Hello World</div>;
-  }
-  ```
-  
-
-- If defined, `*before.ts` must **default export** a single (async) function which can fetch data
-  before the page is rendered or even redirect to another page if a condition is not met.
-
-  ```typescript jsx
-  // import { redirect } from "react-router";
-
-  export default function () {
-    return true; // Allow access
-    // return redirect("redirect-path"); // Redirect to another page
-  }
-  ```
+[//]: # (@formatter:off)
+> ⚡ **Important Note**
+>
+> - _Client module routing is heavily inspired
+    by [Next.js' App Router](https://nextjs.org/docs/app). I highly recommend going through its
+    documentation for more in-depth information._
+>
+>
+> - The generated client module router is a [data mode](https://reactrouter.com/start/data/routing)
+    **React Router** instance.
+>
+>
+> - Firedeck uses a **suffix-based** file name convention, which avoids the annoying `page.tsx` or
+    `layout.tsx` file duplication. This allows you can give descriptive names to your page files (
+    E.g.
+    `user.page.tsx`, `settings-page.tsx`), enabling easy navigation in your editor.
+>
+>
+> - You can also co-locate other component files in the same directory without issue.
+>
+>
+> - If defined, `*page.tsx`, `*layout.tsx` and `*placeholder.tsx` files must **default export** a
+    single plain React component. E.g:
+>
+>   ```typescript jsx
+>   export default function ComponentName() {
+>     return <div>Hello World</div>;
+>   }
+>   ```
+>
+>
+> - If defined, `*before.ts` must **default export** a single (async) function which can fetch data
+    before the page is rendered or even redirect to another page if a condition is not met.
+>
+>   ```typescript jsx
+>   // import { redirect } from "react-router";
+> 
+>   export default function () {
+>     return true; // Allow access
+>     // return redirect("redirect-path"); // Redirect to another page
+>   }
+>   ```
+[//]: # (@formatter:on)
 
 #### Tailwindcss Configuration
 
@@ -222,14 +235,14 @@ API__SERVICE_KEY=oiroinvowijref0928f2398
 
 > ⚡ **Important Note**
 >
-> _Since client modules get transformed into a Vite application, you need to prefix client modules
-env variables with `VITE_`. This results in a full prefix of `<MODULE_NAME>__VITE_`._
-
-> ⚡ **Important Note**
+> - _Since client modules get transformed into a Vite application, you need to prefix client modules
+    env variables with `VITE_`. This results in a full prefix of `<MODULE_NAME>__VITE_`._
 >
-> _After `firedeck compile` is run, typings are generated for the env file. This way your IDE can
-> provide intellisense for `import.meta.env` with the exact variables in your `.env`, improving your
-> developer experience a little bit more._
+>
+> - _After `firedeck compile` is run, typings are generated for the env file. This way your IDE can
+    > provide intellisense for `import.meta.env` with the exact variables in your `.env`, improving
+    your
+    > developer experience a little bit more._
 
 ## Firedeck Runtime
 
@@ -307,31 +320,32 @@ export function IndexPage() {
 }
 ```
 
+[//]: # (@formatter:off)
 > ⚡ **Important Note**
 >
-> _Route enums are derived from the module name, so `main` module would yield `enum MainRoute {}`,
-> likewise, `admin` module would yield `enum AdminRoute {}`_
-
-> ⚡ **Important Note**
+> - _Route enums are derived from the module name, so `main` module would yield `enum MainRoute {}`,
+    > likewise, `admin` module would yield `enum AdminRoute {}`_
 >
-> _Route enum members are derived from page file names. Thus, the folder structure above would yield
+>
+> -  _Route enum members are derived from page file names. Thus, the folder structure above would yield
 the route enums:_
 >
-> ```typescript
-> export enum MainRoute {
->   INDEX_PAGE = "/",
->   ABOUT_PAGE = "/about",
-> }
-> 
-> export enum AdminRoute {
->   INDEX_PAGE = "/",
->   SETTINGS_PAGE = "/settings",
-> }
-> ```
-
-> ⚡ **Important Note**
+>   ```typescript
+>   export enum MainRoute {
+>     INDEX_PAGE = "/",
+>     ABOUT_PAGE = "/about",
+>   }
+>   
+>   export enum AdminRoute {
+>     INDEX_PAGE = "/",
+>     SETTINGS_PAGE = "/settings",
+>   }
+>   ```
 >
-> _Navigating to a route in a different module will display a 404 (Not found) page._
+>
+> - _Navigating to a route in a different module will display a 404 (Not found) page._
+
+[//]: # (@formatter:on)
 
 ## Firedeck.config.ts
 
