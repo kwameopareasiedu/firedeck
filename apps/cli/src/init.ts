@@ -81,7 +81,7 @@ function generateProjectFileTree(args: {
           "@vitejs/plugin-react": "^6.0.3",
           "eslint": "^10.7.0",
           "eslint-plugin-react": "^7.37.5",
-          "firedeck": "^0.1.7",
+          "firedeck": "^0.1.8",
           "fs-extra": "^11.3.6",
           "globals": "^17.7.0",
           "prettier": "3.9.4",
@@ -185,6 +185,16 @@ function generateProjectFileTree(args: {
         packageManager: {
           name: "${args.packageManagerName}",
           version: "${args.packageManagerVersion}",
+        },
+        firebase: {
+          projects: {
+            default: {
+              id: "demo-firedeck",
+              targets: {
+                hosting: "auto",
+              },
+            },
+          },
         },
       });`,
     },

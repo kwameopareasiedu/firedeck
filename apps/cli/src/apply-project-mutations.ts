@@ -2,6 +2,7 @@ import fs from "fs-extra";
 import { FileTree, ProjectClient, ProjectMutation, ProjectRoute, RouterRoute } from "@/types";
 import {
   assertFiredeckRootDir,
+  generateStringHash,
   getPrettierConfig,
   getProjectPaths,
   NOT_FOUND_URL_PATH,
@@ -10,15 +11,18 @@ import {
 import { resolve } from "node:path";
 import { format } from "prettier";
 import { snakeCase, startCase } from "lodash";
+import { FiredeckConfig } from "shared/firedeck-config";
 
 export async function applyProjectMutations(rootDir: string, mutations: ProjectMutation[]) {
   assertFiredeckRootDir(rootDir);
 
   const {
     modulesDir,
+    clientSdkDir,
     runtimeDir,
     runtimeModulesDir,
-    clientSdkDir,
+    runtimeFirebaseRcFile,
+    runtimeFirebaseJsonFile,
     workspaceConfigFile,
     workspaceEnvTypesFile,
     workspaceConfigTypesFile,
@@ -54,6 +58,16 @@ export async function applyProjectMutations(rootDir: string, mutations: ProjectM
           fs.copyFileSync(workspaceConfigFile, destFile);
           fs.copyFileSync(workspaceConfigTypesFile, destTypesFile);
         }
+
+        const firebaseRcSource = await generateFirebaseRcSource(mut.config, mut.clients);
+        fs.writeFileSync(runtimeFirebaseRcFile, firebaseRcSource);
+
+        const firebaseJsonSource = await generateFirebaseJsonSource(
+          mut.config,
+          mut.clients,
+          runtimeModulesDir,
+        );
+        fs.writeFileSync(runtimeFirebaseJsonFile, firebaseJsonSource);
 
         break;
       }
@@ -158,7 +172,7 @@ function generateRuntimeFileTree(args: {
   };
 }
 
-export function generateRuntimeClientFileTree(args: { clientName: string }): FileTree {
+function generateRuntimeClientFileTree(args: { clientName: string }): FileTree {
   return {
     "package.json": {
       content: `
@@ -449,7 +463,7 @@ async function generateClientSdkRoutesSource(clients: ProjectClient[]) {
   return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
 }
 
-export async function generateEnvTypesSource(clients: ProjectClient[]) {
+async function generateEnvTypesSource(clients: ProjectClient[]) {
   const allClientEnvs = clients
     .reduce((envs, client) => `${envs}${client.env}\n`, "")
     .split("\n")
@@ -492,6 +506,86 @@ export async function generateEnvTypesSource(clients: ProjectClient[]) {
   `;
 
   return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
+}
+
+async function generateFirebaseRcSource(config: FiredeckConfig, clients: ProjectClient[]) {
+  const projectConfig = config.firebase?.projects
+    ? Object.keys(config.firebase.projects).reduce(
+        (projectConfig, alias) => {
+          return { ...projectConfig, [alias]: config.firebase!.projects[alias].id };
+        },
+        {} as Record<string, string>,
+      )
+    : {};
+
+  const targetConfig = config.firebase?.projects
+    ? Object.keys(config.firebase.projects).reduce(
+        (targetConfig, alias) => {
+          const firebaseProjectId = config.firebase!.projects[alias].id;
+          const aliasHostingConfig = config.firebase!.projects[alias].targets?.hosting;
+
+          const hostingTargetConfig = clients.reduce(
+            (hostingTargetConfig, client) => {
+              const autoHostingSiteNames = [
+                `${firebaseProjectId}-${client.name}-${generateStringHash(firebaseProjectId + client.name)}`,
+              ];
+
+              const hostingSiteNames =
+                !aliasHostingConfig || aliasHostingConfig === "auto"
+                  ? autoHostingSiteNames
+                  : aliasHostingConfig[client.name];
+
+              return { ...hostingTargetConfig, [client.name]: hostingSiteNames };
+            },
+            {} as Record<string, string[]>,
+          );
+
+          return {
+            ...targetConfig,
+            [firebaseProjectId]: { hosting: hostingTargetConfig },
+          };
+        },
+        {} as Record<string, Record<string, Record<string, string[]>>>,
+      )
+    : {};
+
+  const finalSource = JSON.stringify({ project: projectConfig, targets: targetConfig }, null, 2);
+
+  return format(finalSource, getPrettierConfig({ filePath: "a.json" }));
+}
+
+async function generateFirebaseJsonSource(
+  config: FiredeckConfig,
+  clients: ProjectClient[],
+  runtimeModulesDir: string,
+) {
+  const hostingConfig = clients.map((client) => {
+    return {
+      target: client.name,
+      public: resolve(runtimeModulesDir, client.name, "dist"),
+      rewrites: [{ source: "**", destination: "/index.html" }],
+    };
+  });
+
+  const finalSource = JSON.stringify(
+    {
+      hosting: hostingConfig,
+      emulators: {
+        auth: { port: 9099 },
+        functions: { port: 5001 },
+        firestore: { port: 8080 },
+        hosting: { port: 5000 },
+        storage: { port: 9199 },
+        pubsub: { port: 8085 },
+        ui: { enabled: true },
+        singleProjectMode: true,
+      },
+    },
+    null,
+    2,
+  );
+
+  return format(finalSource, getPrettierConfig({ filePath: "a.json" }));
 }
 
 function flattenRoutes(route: ProjectRoute): ProjectRoute[] {

@@ -22,6 +22,8 @@ export function getProjectPaths(rootDir: string) {
     workspaceConfigFile: resolve(rootDir, ".firedeck/firedeck.config.mjs"),
     workspaceConfigTypesFile: resolve(rootDir, ".firedeck/firedeck.config.d.mts"),
     runtimeDir: resolve(rootDir, ".firedeck/runtime"),
+    runtimeFirebaseRcFile: resolve(rootDir, ".firedeck/runtime/.firebaserc"),
+    runtimeFirebaseJsonFile: resolve(rootDir, ".firedeck/runtime/firebase.json"),
     runtimeModulesDir: resolve(rootDir, ".firedeck/runtime/modules"),
     clientSdkDir: resolve(rootDir, "modules/sdk/client"),
   };
@@ -79,4 +81,15 @@ export function warn(msg: unknown, ...args: unknown[]) {
 
 export function error(msg: unknown, ...args: unknown[]) {
   console.log(`${chalk.bgRed.black("firedeck")}: ${chalk.red(msg)}`, ...args);
+}
+
+export function generateStringHash(str: string) {
+  let hash = 0;
+
+  for (const char of str) {
+    hash = (hash << 5) - hash + char.charCodeAt(0);
+    hash |= 0;
+  }
+
+  return hash;
 }

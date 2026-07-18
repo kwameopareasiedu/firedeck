@@ -106,6 +106,10 @@ ADMIN__VITE_HELLO=universe
   const mutations = compareProjectModels(null, model);
   await applyProjectMutations(testDir, mutations);
 
+  const runtimeDir = resolve(testDir, ".firedeck/runtime");
+  t.true(fs.existsSync(resolve(runtimeDir, ".firebaserc")));
+  t.true(fs.existsSync(resolve(runtimeDir, "firebase.json")));
+
   const runtimeMainDir = resolve(testDir, ".firedeck/runtime/modules/main");
   t.true(fs.existsSync(resolve(runtimeMainDir, ".env")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "package.json")));
