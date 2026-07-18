@@ -16,9 +16,20 @@ interface FirestoreIndex {
 interface FirebaseProject {
   id: string;
   targets?: {
-    hosting?: {
-      [identifier: string]: string[];
-    };
+    hosting?: "auto" | { [identifier: string]: string[] };
+  };
+}
+
+interface FirebaseConfig {
+  projects: {
+    [alias: string]: FirebaseProject;
+  };
+  firestore?: {
+    indexes?: FirestoreIndex[];
+    rules: string;
+  };
+  storage?: {
+    rules: string;
   };
 }
 
@@ -28,16 +39,5 @@ export interface FiredeckConfig {
     version: string;
   };
   vite?: ViteConfig;
-  firebase?: {
-    projects: {
-      [alias: string]: FirebaseProject;
-    };
-    firestore?: {
-      indexes?: FirestoreIndex[];
-      rules: string;
-    };
-    storage?: {
-      rules: string;
-    };
-  };
+  firebase?: FirebaseConfig;
 }

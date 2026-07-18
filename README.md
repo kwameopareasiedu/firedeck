@@ -77,6 +77,17 @@ Firedeck offers different module types described in the table below:
 | Client      | Frontend related code which compiles to a React+Vite application and deploys to Firebase hosting      |
 | Server      | API related code which compiles to a Firebase functions application and deploys to Firebase functions |
 
+> ⚡ **Important Note**
+>
+> - _You can create a new client module by running `firedeck module --client <module-name>`_.
+>
+>
+> - _You can create a new server module by running `firedeck module --server <module-name>`_.
+>
+>
+> - _Even though client and server modules live in different directories, each module name should be
+    unique since they end up in one directory after compilation_.
+
 ### Client Modules
 
 As mentioned already, client modules represent a frontend component within your application and are
@@ -368,18 +379,68 @@ export default defineConfig({
         return {}
     },
     firebase: {}
-})
+});
 ```
 
 ### Vite Config
 
 The `vite` field is a promise returning function which is passed the module name, vite server mode
-and an env object file.
-
-The function should return a promise resolving to a [Vite
-`UserConfig` object](https://vite.dev/config/).
+and an env object file and should return a [Vite `UserConfig` object](https://vite.dev/config/).
 
 ### Firebase Config
+
+The `firebase` field defines the configuration which resolves to the following Firebase
+configuration files:
+
+- `.firebaserc`
+- `firebase.json`
+- `firestore.indexes.json`
+- `firestore.rules`
+- `storage.rules`
+
+Below is the firedeck config interface, showcasing all the firebase configuration options:
+
+```typescript
+import {UserConfig} from "vite";
+
+interface FiredeckConfig {
+    vite: (args: {
+        module: string,
+        mode: "development" | "production",
+        env: Record<string, string>
+    }) => Promise<UserConfig>;
+
+    firebase: {
+        projects: {
+            [firebaseProjectAlias: string]: { // Alias is a name you define to represent this firebase project 
+                id: "<firebase-project-id>";
+                targets: {
+                    hosting:
+                        | "auto" // Indicates that Firedeck should setup the hosting targets automatically
+                        | { [identifier: string]: string[] }; // Each identifier should map to a list of hosting sites configured in the Firebase console
+                };
+            };
+        };
+
+        firestore: {
+            indexes: { // Indexes should be setup from error messages in GCP
+                collectionGroup: string;
+                queryScope: "COLLECTION" | "COLLECTION_GROUP";
+                fields: {
+                    fieldPath: string;
+                    order?: "ASCENDING" | "DESCENDING";
+                }[];
+            }[];
+
+            rules: string;
+        };
+
+        storage: {
+            rules: string
+        };
+    }
+};
+```
 
 [//]: # (TODO)
 
