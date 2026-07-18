@@ -4,8 +4,8 @@ import fs from "fs-extra";
 import { FileTree } from "@/types";
 import chalk from "chalk";
 
-export const ENV_VAR_LINE_MATCH_REGEX = /^\w+__\w+=.+$/;
-export const ENV_VAR_LINE_SPLIT_REGEX = /^\w+__/;
+export const ENV_VAR_LINE_MATCH_REGEX = /^.+?__\w+=.+$/;
+export const ENV_VAR_LINE_SPLIT_REGEX = /^.+?__/;
 export const ENV_VAR_KEY_VALUE_SEPARATOR = "__";
 export const NOT_FOUND_DIR_SUFFIX = "404";
 export const NOT_FOUND_URL_PATH = "/*";
