@@ -49,8 +49,11 @@ A Firedeck application has the following structure:
 
 | Path                 | Description                               |
 |----------------------|-------------------------------------------|
+| `.firedeck`          | Firedeck workspace directory              |
 | `modules/client`     | Client [modules](#Modules) directory      |
 | `modules/server`     | Server [modules](#Modules) directory      |
+| `modules/sdk/client` | Directory for auto-generated client SDK   |
+| `modules/shared`     | Directory for shared code between modules |
 | `.gitignore`         | Ignore file list for Git                  |
 | `.prettierrc`        | Configuration file for Prettier formatter |
 | `eslint.config.js`   | Configuration file for ESlint linter      |
@@ -238,10 +241,9 @@ API__SERVICE_KEY=oiroinvowijref0928f2398
     env variables with `VITE_`. This results in a full prefix of `<MODULE_NAME>__VITE_`._
 >
 >
-> - _After `firedeck compile` is run, typings are generated for the env file. This way your IDE can
-    > provide intellisense for `import.meta.env` with the exact variables in your `.env`, improving
-    your
-    > developer experience a little bit more._
+> - _After `firedeck compile`, `firedeck run` or `firedeck buid` is invoked, typings are generated
+    for the env file. This way your IDE can provide intellisense for `import.meta.env` with the
+    exact variables in your `.env`, improving your developer experience a little bit more._
 
 ## Firedeck Runtime
 
