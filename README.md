@@ -340,11 +340,11 @@ export function IndexPage() {
 > ⚡ **Important Note**
 >
 > - _Route enums are derived from the module name, so `main` module would yield `enum MainRoute {}`,
-    > likewise, `admin` module would yield `enum AdminRoute {}`_
+    likewise, `admin` module would yield `enum AdminRoute {}`_
 >
 >
-> -  _Route enum members are derived from page file names. Thus, the folder structure above would yield
-the route enums:_
+> - _Route enum members are derived from page file names. Thus, the folder structure above would yield
+    the route enums:_
 >
 >   ```typescript
 >   export enum MainRoute {
