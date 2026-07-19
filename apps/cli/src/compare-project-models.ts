@@ -15,11 +15,11 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
         },
       },
       clients: [],
+      backends: [],
     };
   }
 
   const sourceClients = new Map(source.clients.map((client) => [client.name, client]));
-  let updateEnvsAndConfigs = false;
 
   for (const destClient of target.clients) {
     const sourceClient = sourceClients.get(destClient.name);
@@ -38,33 +38,38 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
         {
           type: "update-runtime-client-html",
           clientName: destClient.name,
+          html: destClient.indexHtml,
+        },
+        {
+          type: "update-runtime-client-env",
+          clientName: destClient.name,
+          env: destClient.env,
         },
       );
-
-      updateEnvsAndConfigs = true;
-    } else {
-      if (sourceClient.name !== destClient.name) {
-        changes.push({
-          type: "rename-runtime-client",
-          oldClientName: sourceClient.name,
-          newClientName: destClient.name,
-        });
-      }
-
-      if (JSON.stringify(sourceClient.routes) !== JSON.stringify(destClient.routes)) {
-        changes.push({
-          type: "update-runtime-client-routes",
-          clientName: destClient.name,
-          clientRoutes: destClient.routes,
-        });
-      }
-
-      if (sourceClient.indexHtml !== destClient.indexHtml) {
-        changes.push({
-          type: "update-runtime-client-html",
-          clientName: destClient.name,
-        });
-      }
+    } else if (sourceClient.name !== destClient.name) {
+      changes.push({
+        type: "rename-runtime-client",
+        oldClientName: sourceClient.name,
+        newClientName: destClient.name,
+      });
+    } else if (JSON.stringify(sourceClient.routes) !== JSON.stringify(destClient.routes)) {
+      changes.push({
+        type: "update-runtime-client-routes",
+        clientName: destClient.name,
+        clientRoutes: destClient.routes,
+      });
+    } else if (sourceClient.indexHtml !== destClient.indexHtml) {
+      changes.push({
+        type: "update-runtime-client-html",
+        clientName: destClient.name,
+        html: destClient.indexHtml,
+      });
+    } else if (sourceClient.env !== destClient.env) {
+      changes.push({
+        type: "update-runtime-client-env",
+        clientName: destClient.name,
+        env: destClient.env,
+      });
     }
   }
 
@@ -81,34 +86,116 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
     }
   }
 
-  const replacerFn = (_: string, value: unknown) => {
-    return typeof value === "function" ? value.toString() : value;
-  };
+  const sourceBackends = new Map(source.backends.map((backend) => [backend.name, backend]));
 
-  if (
-    updateEnvsAndConfigs ||
-    JSON.stringify(source.config, replacerFn) !== JSON.stringify(target.config, replacerFn)
-  ) {
-    changes.push({
-      type: "update-runtime-envs",
-      config: target.config,
-      clients: target.clients,
-    });
+  for (const destBackend of target.backends) {
+    const sourceBackend = sourceBackends.get(destBackend.name);
 
-    changes.push({
-      type: "update-runtime-configs",
-      config: target.config,
-      clients: target.clients,
-    });
-
-    // TODO: Include update-runtime-server-config also
+    if (!sourceBackend) {
+      changes.push(
+        {
+          type: "add-runtime-backend",
+          backendName: destBackend.name,
+        },
+        {
+          type: "update-runtime-backend-env",
+          backendName: destBackend.name,
+          env: destBackend.env,
+        },
+      );
+    } else if (sourceBackend.name !== destBackend.name) {
+      changes.push({
+        type: "rename-runtime-backend",
+        oldBackendName: sourceBackend.name,
+        newBackendName: destBackend.name,
+      });
+    } else if (sourceBackend.env !== destBackend.env) {
+      changes.push({
+        type: "update-runtime-backend-env",
+        backendName: destBackend.name,
+        env: destBackend.env,
+      });
+    }
   }
 
-  if (changes.some((change) => change.type.includes("client")))
-    changes.push({
-      type: "update-client-sdk-routes",
-      clients: Object.values(target.clients),
+  const destBackends = new Map(target.backends.map((backend) => [backend.name, backend]));
+
+  for (const sourceBackend of source.backends) {
+    const destBackend = destBackends.get(sourceBackend.name);
+
+    if (!destBackend) {
+      changes.push({
+        type: "remove-runtime-backend",
+        backendName: sourceBackend.name,
+      });
+    }
+  }
+
+  const firedeckConfigChanged =
+    JSON.stringify(source.config, jsonReplacer) !== JSON.stringify(target.config, jsonReplacer);
+
+  const updateRuntimeFirebaseConfig =
+    firedeckConfigChanged ||
+    changes.some((change) => {
+      return (
+        [
+          "add-runtime-client",
+          "rename-runtime-client",
+          "remove-runtime-client",
+          "add-runtime-backend",
+          "rename-runtime-backend",
+          "remove-runtime-backend",
+        ] as ProjectMutation["type"][]
+      ).includes(change.type);
     });
 
+  if (updateRuntimeFirebaseConfig) {
+    changes.push({
+      type: "update-runtime-firebase-config",
+      config: target.config,
+      clients: target.clients,
+      backends: target.backends,
+    });
+  }
+
+  const updateClientSdkRoutes = changes.some((change) => {
+    return (
+      [
+        "add-runtime-client",
+        "update-runtime-client-routes",
+        "rename-runtime-client",
+        "remove-runtime-client",
+      ] as ProjectMutation["type"][]
+    ).includes(change.type);
+  });
+
+  if (updateClientSdkRoutes) {
+    changes.push({
+      type: "update-client-sdk-routes",
+      clients: target.clients,
+    });
+  }
+
+  const updateClientSdkApi = changes.some((change) => {
+    return (
+      [
+        "add-runtime-backend",
+        "rename-runtime-backend",
+        "remove-runtime-backend",
+      ] as ProjectMutation["type"][]
+    ).includes(change.type);
+  });
+
+  if (updateClientSdkApi) {
+    changes.push({
+      type: "update-client-sdk-api",
+      backends: target.backends,
+    });
+  }
+
   return changes;
+}
+
+function jsonReplacer(_: string, value: unknown) {
+  return typeof value === "function" ? value.toString() : value;
 }

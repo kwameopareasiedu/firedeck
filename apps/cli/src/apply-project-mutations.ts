@@ -1,5 +1,5 @@
 import fs from "fs-extra";
-import { FileTree, ProjectClient, ProjectMutation, ProjectRoute, RouterRoute } from "@/types";
+import { FileTree, ClientModule, ProjectMutation, ClientModuleRoute, RouterRoute } from "@/types";
 import {
   assertFiredeckRootDir,
   generateStringHash,
@@ -369,13 +369,13 @@ function generateRuntimeClientFileTree(args: { clientName: string }): FileTree {
   };
 }
 
-async function generateRuntimeClientRoutesSource(routes: ProjectRoute) {
+async function generateRuntimeClientRoutesSource(routes: ClientModuleRoute) {
   function createDynamicImportStatement(str: string) {
     return createReplaceTarget(`() => import('${str}').then((mod) => mod.default)`);
   }
 
   function generateReactRouterRoute(
-    route: ProjectRoute,
+    route: ClientModuleRoute,
     parentPlaceholderName?: string | null,
   ): RouterRoute {
     const elementName = route.pageName || route.layoutName || undefined;
@@ -431,7 +431,7 @@ async function generateRuntimeClientRoutesSource(routes: ProjectRoute) {
   return format(routerSource, getPrettierConfig({ filePath: "a.tsx" }));
 }
 
-async function generateClientSdkRoutesSource(clients: ProjectClient[]) {
+async function generateClientSdkRoutesSource(clients: ClientModule[]) {
   const routerSource = clients.reduce((source, client) => {
     const routeEnumSource = flattenRoutes(client.routes).reduce((source, route) => {
       if (!route.pageName || !route.urlPath || route.urlPath === NOT_FOUND_URL_PATH) return source;
@@ -463,7 +463,7 @@ async function generateClientSdkRoutesSource(clients: ProjectClient[]) {
   return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
 }
 
-async function generateEnvTypesSource(clients: ProjectClient[]) {
+async function generateEnvTypesSource(clients: ClientModule[]) {
   const allClientEnvs = clients
     .reduce((envs, client) => `${envs}${client.env}\n`, "")
     .split("\n")
@@ -508,7 +508,7 @@ async function generateEnvTypesSource(clients: ProjectClient[]) {
   return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
 }
 
-async function generateFirebaseRcSource(config: FiredeckConfig, clients: ProjectClient[]) {
+async function generateFirebaseRcSource(config: FiredeckConfig, clients: ClientModule[]) {
   const projectConfig = config.firebase?.projects
     ? Object.keys(config.firebase.projects).reduce(
         (projectConfig, alias) => {
@@ -556,7 +556,7 @@ async function generateFirebaseRcSource(config: FiredeckConfig, clients: Project
 
 async function generateFirebaseJsonSource(
   config: FiredeckConfig,
-  clients: ProjectClient[],
+  clients: ClientModule[],
   runtimeModulesDir: string,
 ) {
   const hostingConfig = clients.map((client) => {
@@ -588,12 +588,12 @@ async function generateFirebaseJsonSource(
   return format(finalSource, getPrettierConfig({ filePath: "a.json" }));
 }
 
-function flattenRoutes(route: ProjectRoute): ProjectRoute[] {
+function flattenRoutes(route: ClientModuleRoute): ClientModuleRoute[] {
   return [
     { ...route, children: [] },
     ...route.children.reduce((flats, childRoute) => {
       return [...flats, ...flattenRoutes(childRoute)];
-    }, [] as ProjectRoute[]),
+    }, [] as ClientModuleRoute[]),
   ];
 }
 

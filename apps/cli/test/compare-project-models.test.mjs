@@ -17,7 +17,7 @@ test("compare-project-models", async (t) => {
           children: [
             {
               name: "IndexPage",
-              pageImportPath: "@/client/main//pages/index-page.tsx",
+              pageImportPath: "@/client/main/pages/index-page.tsx",
               layoutImportPath: null,
               placeholderImportPath: null,
               guardImportPath: null,
@@ -27,14 +27,14 @@ test("compare-project-models", async (t) => {
             {
               name: "DashboardGroup",
               pageImportPath: null,
-              layoutImportPath: "@/client/main//pages/(dashboard)/dashboard-layout.tsx",
+              layoutImportPath: "@/client/main/pages/(dashboard)/dashboard-layout.tsx",
               urlPath: null,
               placeholderImportPath: null,
               guardImportPath: null,
               children: [
                 {
                   name: "UsersPage",
-                  pageImportPath: "@/client/main//pages/(dashboard)/users/users-page.tsx",
+                  pageImportPath: "@/client/main/pages/(dashboard)/users/users-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -43,7 +43,7 @@ test("compare-project-models", async (t) => {
                     {
                       name: "UserDetailsPage",
                       pageImportPath:
-                        "@/client/main//pages/(dashboard)/users/[userId]/user-details-page.tsx",
+                        "@/client/main/pages/(dashboard)/users/[userId]/user-details-page.tsx",
                       layoutImportPath: null,
                       placeholderImportPath: null,
                       guardImportPath: null,
@@ -64,7 +64,7 @@ test("compare-project-models", async (t) => {
               children: [
                 {
                   name: "ContactPage",
-                  pageImportPath: "@/client/main//pages/(public)/contact/contact-page.tsx",
+                  pageImportPath: "@/client/main/pages/(public)/contact/contact-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -73,7 +73,7 @@ test("compare-project-models", async (t) => {
                 },
                 {
                   name: "FeaturesPage",
-                  pageImportPath: "@/client/main//pages/(public)/features/features-page.tsx",
+                  pageImportPath: "@/client/main/pages/(public)/features/features-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -82,7 +82,7 @@ test("compare-project-models", async (t) => {
                 },
                 {
                   name: "LandingPage",
-                  pageImportPath: "@/client/main//pages/(public)/landing/landing-page.tsx",
+                  pageImportPath: "@/client/main/pages/(public)/landing/landing-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -94,6 +94,16 @@ test("compare-project-models", async (t) => {
           ],
         },
         indexHtml: "<main>Main</main>",
+        env: "",
+      },
+    ],
+    backends: [
+      {
+        name: "api",
+        functions: [
+          { name: "hello", importPath: "@/backend/api/functions/hello.ts" },
+          { name: "getUserData", importPath: "@/backend/api/functions/get-user-data.ts" },
+        ],
         env: "",
       },
     ],
@@ -114,7 +124,7 @@ test("compare-project-models", async (t) => {
           children: [
             {
               name: "IndexPage",
-              pageImportPath: "@/client/main//pages/index-page.tsx",
+              pageImportPath: "@/client/main/pages/index-page.tsx",
               layoutImportPath: null,
               placeholderImportPath: null,
               guardImportPath: null,
@@ -124,14 +134,14 @@ test("compare-project-models", async (t) => {
             {
               name: "DashboardGroup",
               pageImportPath: null,
-              layoutImportPath: "@/client/main//pages/(dashboard)/dashboard-layout.tsx",
+              layoutImportPath: "@/client/main/pages/(dashboard)/dashboard-layout.tsx",
               placeholderImportPath: null,
               guardImportPath: null,
               urlPath: null,
               children: [
                 {
                   name: "UsersPage",
-                  pageImportPath: "@/client/main//pages/(dashboard)/users/users-page.tsx",
+                  pageImportPath: "@/client/main/pages/(dashboard)/users/users-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -140,7 +150,7 @@ test("compare-project-models", async (t) => {
                     {
                       name: "UserDetailsPage",
                       pageImportPath:
-                        "@/client/main//pages/(dashboard)/users/[userId]/user-details-page.tsx",
+                        "@/client/main/pages/(dashboard)/users/[userId]/user-details-page.tsx",
                       layoutImportPath: null,
                       placeholderImportPath: null,
                       guardImportPath: null,
@@ -161,7 +171,7 @@ test("compare-project-models", async (t) => {
               children: [
                 {
                   name: "FeaturesPage",
-                  pageImportPath: "@/client/main//pages/(public)/features/features-page.tsx",
+                  pageImportPath: "@/client/main/pages/(public)/features/features-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -170,7 +180,7 @@ test("compare-project-models", async (t) => {
                 },
                 {
                   name: "LandingPage",
-                  pageImportPath: "@/client/main//pages/(public)/landing/landing-page.tsx",
+                  pageImportPath: "@/client/main/pages/(public)/landing/landing-page.tsx",
                   layoutImportPath: null,
                   placeholderImportPath: null,
                   guardImportPath: null,
@@ -185,11 +195,39 @@ test("compare-project-models", async (t) => {
         env: "",
       },
     ],
+    backends: [
+      {
+        name: "api",
+        functions: [
+          { name: "hello", importPath: "@/backend/api/functions/hello.ts" },
+          { name: "getUserData", importPath: "@/backend/api/functions/get-user-data.ts" },
+        ],
+        env: "",
+      },
+    ],
   };
 
   const p3 = {
     config: { vite: async () => ({}) },
     clients: [],
+    backends: [
+      {
+        name: "api",
+        functions: [
+          { name: "foo", importPath: "@/backend/api/functions/foo.ts" },
+          { name: "getUserData", importPath: "@/backend/api/functions/get-user-data.ts" },
+        ],
+        env: "",
+      },
+      {
+        name: "admin",
+        functions: [
+          { name: "getUsers", importPath: "@/backend/admin/functions/get-users.ts" },
+          { name: "createUser", importPath: "@/backend/admin/functions/create-user.ts" },
+        ],
+        env: "",
+      },
+    ],
   };
 
   const p4 = {
@@ -300,6 +338,7 @@ test("compare-project-models", async (t) => {
         env: "VITE_WEATHER=sunny",
       },
     ],
+    backends: [],
   };
 
   const p1p2Changes = compareProjectModels(p1, p2);
@@ -307,20 +346,32 @@ test("compare-project-models", async (t) => {
   const p1p4Changes = compareProjectModels(p1, p4);
   const nullP4Changes = compareProjectModels(null, p4);
 
+  // console.dir(p1p4Changes, { depth: null });
+
   t.deepEqual(p1p2Changes, [
     {
       type: "update-runtime-client-routes",
       clientName: p2.clients[0].name,
       clientRoutes: p2.clients[0].routes,
     },
-    { type: "update-client-sdk-routes", clients: p2.clients },
+    {
+      type: "update-client-sdk-routes",
+      clients: p2.clients,
+    },
   ]);
 
   t.deepEqual(p1p3Changes, [
     { type: "remove-runtime-client", clientName: p1.clients[0].name },
-    { type: "update-runtime-envs", config: p3.config, clients: p3.clients },
-    { type: "update-runtime-configs", config: p3.config, clients: p3.clients },
+    { type: "add-runtime-backend", backendName: "admin" },
+    { type: "update-runtime-backend-env", backendName: "admin", env: "" },
+    {
+      type: "update-runtime-firebase-config",
+      config: p3.config,
+      clients: p3.clients,
+      backends: p3.backends,
+    },
     { type: "update-client-sdk-routes", clients: p3.clients },
+    { type: "update-client-sdk-api", backends: p3.backends },
   ]);
 
   t.deepEqual(p1p4Changes, [
@@ -330,18 +381,34 @@ test("compare-project-models", async (t) => {
       clientName: p4.clients[0].name,
       clientRoutes: p4.clients[0].routes,
     },
-    { type: "update-runtime-client-html", clientName: p4.clients[0].name },
+    {
+      type: "update-runtime-client-html",
+      clientName: p4.clients[0].name,
+      html: p4.clients[0].indexHtml,
+    },
+    { type: "update-runtime-client-env", clientName: p4.clients[0].name, env: p4.clients[0].env },
     { type: "add-runtime-client", clientName: p4.clients[1].name },
     {
       type: "update-runtime-client-routes",
       clientName: p4.clients[1].name,
       clientRoutes: p4.clients[1].routes,
     },
-    { type: "update-runtime-client-html", clientName: p4.clients[1].name },
+    {
+      type: "update-runtime-client-html",
+      clientName: p4.clients[1].name,
+      html: p4.clients[1].indexHtml,
+    },
+    { type: "update-runtime-client-env", clientName: p4.clients[1].name, env: p4.clients[1].env },
     { type: "remove-runtime-client", clientName: p1.clients[0].name },
-    { type: "update-runtime-envs", config: p4.config, clients: p4.clients },
-    { type: "update-runtime-configs", config: p4.config, clients: p4.clients },
+    { type: "remove-runtime-backend", backendName: p1.backends[0].name },
+    {
+      type: "update-runtime-firebase-config",
+      config: p4.config,
+      clients: p4.clients,
+      backends: p4.backends,
+    },
     { type: "update-client-sdk-routes", clients: p4.clients },
+    { type: "update-client-sdk-api", backends: p4.backends },
   ]);
 
   t.deepEqual(nullP4Changes, [
@@ -352,16 +419,30 @@ test("compare-project-models", async (t) => {
       clientName: p4.clients[0].name,
       clientRoutes: p4.clients[0].routes,
     },
-    { type: "update-runtime-client-html", clientName: p4.clients[0].name },
+    {
+      type: "update-runtime-client-html",
+      clientName: p4.clients[0].name,
+      html: p4.clients[0].indexHtml,
+    },
+    { type: "update-runtime-client-env", clientName: p4.clients[0].name, env: p4.clients[0].env },
     { type: "add-runtime-client", clientName: p4.clients[1].name },
     {
       type: "update-runtime-client-routes",
       clientName: p4.clients[1].name,
       clientRoutes: p4.clients[1].routes,
     },
-    { type: "update-runtime-client-html", clientName: p4.clients[1].name },
-    { type: "update-runtime-envs", config: p4.config, clients: p4.clients },
-    { type: "update-runtime-configs", config: p4.config, clients: p4.clients },
+    {
+      type: "update-runtime-client-html",
+      clientName: p4.clients[1].name,
+      html: p4.clients[1].indexHtml,
+    },
+    { type: "update-runtime-client-env", clientName: p4.clients[1].name, env: p4.clients[1].env },
+    {
+      type: "update-runtime-firebase-config",
+      config: p4.config,
+      clients: p4.clients,
+      backends: p4.backends,
+    },
     { type: "update-client-sdk-routes", clients: p4.clients },
   ]);
 });

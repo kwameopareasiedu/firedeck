@@ -77,6 +77,22 @@ ADMIN__VITE_HELLO=world
         return <p>Hello World</p>;
       }`,
     },
+    "modules/backend/api/functions/hello.ts": {
+      content: `
+      import {onCall} from "firebase-functions/v2/https";
+      
+      export default onCall(async function(req) {
+        return "Hello";
+      });`,
+    },
+    "modules/backend/api/functions/get-user-data.ts": {
+      content: `
+      import {onCall} from "firebase-functions/v2/https";
+      
+      export default onCall(async function(req) {
+        return { name: "Kwame", occupation: "10x Dev" };
+      });`,
+    },
   };
 
   await writeFileTree(testDir, mainModuleFileTree);
@@ -230,5 +246,21 @@ ADMIN__VITE_HELLO=world
     ),
     env: `VITE_HELLO=world
 VITE_FOO=bar`,
+  });
+
+  t.is(projectModel.backends.length, 1);
+
+  t.deepEqual(projectModel.backends[0], {
+    name: "api",
+    functions: [
+      {
+        name: "getUserData",
+        importPath: "@/backend/api/functions/get-user-data.ts",
+      },
+      {
+        name: "hello",
+        importPath: "@/backend/api/functions/hello.ts",
+      },
+    ],
   });
 });

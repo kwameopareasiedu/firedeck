@@ -16,12 +16,18 @@ import nodeResolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import typescript from "@rollup/plugin-typescript";
 import { FiredeckConfig } from "shared/firedeck-config";
-import { ProjectClient, ProjectModel, ProjectRoute } from "@/types";
+import {
+  ClientModule,
+  ProjectModel,
+  ClientModuleRoute,
+  BackendModule,
+  BackendModuleFunction,
+} from "@/types";
 
 export async function analyzeProject(rootDir: string): Promise<ProjectModel> {
   assertFiredeckRootDir(rootDir);
 
-  const { clientModulesDir, serverModulesDir } = getProjectPaths(rootDir);
+  const { clientModulesDir, backendModulesDir } = getProjectPaths(rootDir);
 
   const clientModuleDirs = fs.existsSync(clientModulesDir)
     ? fs
@@ -30,31 +36,34 @@ export async function analyzeProject(rootDir: string): Promise<ProjectModel> {
         .filter((moduleDir) => fs.lstatSync(moduleDir).isDirectory())
     : [];
 
-  const serverModuleDirs = fs.existsSync(serverModulesDir)
+  const backendModuleDirs = fs.existsSync(backendModulesDir)
     ? fs
-        .readdirSync(serverModulesDir, { encoding: "utf-8" })
-        .map((moduleName) => resolve(serverModulesDir, moduleName))
+        .readdirSync(backendModulesDir, { encoding: "utf-8" })
+        .map((moduleName) => resolve(backendModulesDir, moduleName))
         .filter((moduleDir) => fs.lstatSync(moduleDir).isDirectory())
     : [];
 
-  if (clientModuleDirs.length === 0 && serverModuleDirs.length === 0)
+  if (clientModuleDirs.length === 0 && backendModuleDirs.length === 0)
     throw "no modules found in project";
 
-  const projectClients: ProjectClient[] = clientModuleDirs.map((clientModulesDir) =>
+  const projectClients = clientModuleDirs.map((clientModulesDir) =>
     analyzeClientModule(rootDir, clientModulesDir),
   );
 
-  // TODO: Analyze server modules
+  const projectBackends = backendModuleDirs.map((backendModuleDir) =>
+    analyzeBackendModule(rootDir, backendModuleDir),
+  );
 
   const firedeckConfig = await parseFiredeckConfig(rootDir);
 
   return {
     config: firedeckConfig,
     clients: projectClients,
+    backends: projectBackends,
   };
 }
 
-function analyzeClientModule(rootDir: string, clientModuleDir: string): ProjectClient {
+function analyzeClientModule(rootDir: string, clientModuleDir: string): ClientModule {
   const moduleName = clientModuleDir.split(sep).slice(-1)[0];
 
   const pagesDir = resolve(clientModuleDir, "pages");
@@ -66,29 +75,41 @@ function analyzeClientModule(rootDir: string, clientModuleDir: string): ProjectC
   if (!fs.existsSync(htmlPath)) throw `${relative(rootDir, htmlPath)}: file not found`;
   const htmlContent = fs.readFileSync(htmlPath, { encoding: "utf-8" });
 
-  const envPath = resolve(rootDir, ".env");
-  if (!fs.existsSync(envPath)) throw `${relative(rootDir, envPath)}: file not found`;
-  const envContent = fs.readFileSync(envPath, { encoding: "utf-8" });
-  const moduleEnvVariables = envContent
-    .trim()
-    .split("\n")
-    .filter((line) => {
-      if (!ENV_VAR_LINE_MATCH_REGEX.test(line)) return false;
-
-      const [key] = line.trim().split(ENV_VAR_KEY_VALUE_SEPARATOR);
-      return key.toLowerCase() === moduleName.toLowerCase();
-    })
-    .map((line) => line.split(ENV_VAR_LINE_SPLIT_REGEX)[1]);
-
   return {
     name: moduleName,
     routes: clientRoutes,
     indexHtml: htmlContent,
-    env: moduleEnvVariables.join("\n"),
+    env: getModuleEnv(rootDir, moduleName),
   };
 }
 
-function discoverRoutes(rootDir: string, dir: string, pagesDir: string): ProjectRoute {
+function analyzeBackendModule(rootDir: string, backendModuleDir: string): BackendModule {
+  const { modulesDir } = getProjectPaths(rootDir);
+
+  const moduleName = backendModuleDir.split(sep).slice(-1)[0];
+
+  const functionsDir = resolve(backendModuleDir, "functions");
+  if (!fs.existsSync(functionsDir)) throw `${relative(rootDir, functionsDir)}: directory not found`;
+
+  const functionFiles = fs
+    .readdirSync(functionsDir, { encoding: "utf-8" })
+    .map((name) => resolve(functionsDir, name));
+
+  const moduleFunctions = functionFiles.map((filepath) => {
+    const name = camelCase(getPathFileName(filepath));
+    const importPath = `@/${relative(modulesDir, filepath)}`;
+
+    return { name, importPath } satisfies BackendModuleFunction as BackendModuleFunction;
+  });
+
+  return {
+    name: moduleName,
+    functions: moduleFunctions,
+    env: getModuleEnv(rootDir, moduleName),
+  };
+}
+
+function discoverRoutes(rootDir: string, dir: string, pagesDir: string): ClientModuleRoute {
   const { modulesDir } = getProjectPaths(rootDir);
 
   const relativeDir = relative(rootDir, dir);
@@ -100,7 +121,7 @@ function discoverRoutes(rootDir: string, dir: string, pagesDir: string): Project
   const getNameAndImportPath = (itemPath?: string): [null, null] | [string, string] => {
     if (!itemPath) return [null, null];
 
-    const rawItemName = itemPath.split(sep).slice(-1)[0].split(".")[0];
+    const rawItemName = getPathFileName(itemPath);
     const itemName = rawItemName[0].toUpperCase() + camelCase(rawItemName).slice(1);
     if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(itemName))
       throw `${relative(modulesDir, itemPath)}: filename cannot be resolved to valid variable name: "${itemName}"`;
@@ -236,4 +257,30 @@ export async function parseFiredeckConfig(rootDir: string) {
   await Promise.all([codeBundle.close(), typesBundle.close()]);
 
   return await import(workspaceConfigFile).then((mod) => mod.default as FiredeckConfig);
+}
+
+function getModuleEnv(rootDir: string, moduleName: string) {
+  const envPath = resolve(rootDir, ".env");
+  if (!fs.existsSync(envPath)) throw `${relative(rootDir, envPath)}: file not found`;
+
+  const envContent = fs.readFileSync(envPath, { encoding: "utf-8" });
+  const moduleEnvVariables = envContent
+    .trim()
+    .split("\n")
+    .filter((line) => {
+      if (!ENV_VAR_LINE_MATCH_REGEX.test(line)) return false;
+
+      const [key] = line.trim().split(ENV_VAR_KEY_VALUE_SEPARATOR);
+      return key.toLowerCase() === moduleName.toLowerCase();
+    })
+    .map((line) => line.split(ENV_VAR_LINE_SPLIT_REGEX)[1]);
+
+  return moduleEnvVariables.join("\n");
+}
+
+function getPathFileName(path: string) {
+  const lastSegment = path.split(sep).slice(-1)[0];
+
+  if (!lastSegment.includes(".")) return lastSegment;
+  return lastSegment.substring(0, lastSegment.lastIndexOf("."));
 }

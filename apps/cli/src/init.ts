@@ -69,6 +69,10 @@ function generateProjectFileTree(args: {
           "dev": "firedeck run",
           "build": "firedeck build"
         },
+        "dependencies": {
+          "firebase-admin": "^14.2.0",
+          "firebase-functions": "^7.3.0"
+        },
         "devDependencies": {
           "@eslint/js": "^10.0.1",
           "@rollup/plugin-commonjs": "^29.0.3",

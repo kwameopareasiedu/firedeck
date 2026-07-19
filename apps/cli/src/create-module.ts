@@ -7,7 +7,7 @@ import { startCase } from "lodash";
 export async function createModule(rootDir: string, opts: { name: string; type: ModuleType }) {
   assertFiredeckRootDir(rootDir);
 
-  const { clientModulesDir, serverModulesDir } = getProjectPaths(rootDir);
+  const { clientModulesDir, backendModulesDir } = getProjectPaths(rootDir);
 
   switch (opts.type) {
     case "client": {
@@ -20,14 +20,14 @@ export async function createModule(rootDir: string, opts: { name: string; type: 
       await writeFileTree(rootDir, clientModuleFileTree);
       return moduleDir;
     }
-    case "server": {
-      const moduleDir = resolve(serverModulesDir, opts.name);
+    case "backend": {
+      const moduleDir = resolve(backendModulesDir, opts.name);
 
       if (fs.existsSync(moduleDir) && fs.readdirSync(moduleDir).length !== 0)
         throw `${relative(rootDir, moduleDir)}: directory is not empty`;
 
-      // TODO: Create server module
-
+      const backendModuleFileTree = generateBackendModuleFileTree({ name: opts.name });
+      await writeFileTree(rootDir, backendModuleFileTree);
       return moduleDir;
     }
   }
@@ -143,6 +143,21 @@ function generateClientModuleFileTree(args: { name: string }): FileTree {
             </div>
           );
         }`,
+    },
+  };
+}
+
+function generateBackendModuleFileTree(args: { name: string }): FileTree {
+  return {
+    [`modules/backend/${args.name}/functions/hello.ts`]: {
+      content: `
+        import { onCall } from "firebase-functions/v2/https";
+      
+        export default onCall(
+          async function(req) {
+            return "Hello";
+          }
+        )`,
     },
   };
 }

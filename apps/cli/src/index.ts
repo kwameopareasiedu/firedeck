@@ -82,15 +82,15 @@ cli
 cli
   .command("module <moduleName>")
   .option("--client", "create a client module")
-  .option("--server", "create a server module")
+  .option("--backend", "create a backend module")
   .description("Adds a new module to a Firedeck project")
   .action(async (moduleName, opts) => {
     try {
-      if (!opts.client && !opts.server) throw "either --client or --server option required";
-      if (opts.client && opts.server)
-        throw "--client and --server cannot be specified at the same time";
+      if (!opts.client && !opts.backend) throw "either --client or --backend option required";
+      if (opts.client && opts.backend)
+        throw "--client and --backend cannot be specified at the same time";
 
-      const moduleType = opts.client ? "client" : opts.server ? "server" : undefined;
+      const moduleType = opts.client ? "client" : opts.backend ? "backend" : undefined;
       if (!moduleType) throw `invalid module type: ${moduleType}`;
 
       await createModule(process.cwd(), { name: moduleName, type: moduleType });

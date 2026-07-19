@@ -38,8 +38,8 @@ A Firedeck application has the following structure:
 ```
 - .firedeck/
 - modules/
+  - backend/
   - client/
-  - server/
   - sdk/
     - client/
   - shared/
@@ -54,8 +54,8 @@ A Firedeck application has the following structure:
 | Path                 | Description                               |
 |----------------------|-------------------------------------------|
 | `.firedeck`          | Firedeck workspace directory              |
+| `modules/backend`    | Backend [modules](#Modules) directory     |
 | `modules/client`     | Client [modules](#Modules) directory      |
-| `modules/server`     | Server [modules](#Modules) directory      |
 | `modules/sdk/client` | Directory for auto-generated client SDK   |
 | `modules/shared`     | Directory for shared code between modules |
 | `.gitignore`         | Ignore file list for Git                  |
@@ -72,21 +72,21 @@ parts of your application structure.
 
 Firedeck offers different module types described in the table below:
 
-| Module Type | Description                                                                                           |
-|-------------|-------------------------------------------------------------------------------------------------------|
-| Client      | Frontend related code which compiles to a React+Vite application and deploys to Firebase hosting      |
-| Server      | API related code which compiles to a Firebase functions application and deploys to Firebase functions |
+| Module Type | Description                                                                                               |
+|-------------|-----------------------------------------------------------------------------------------------------------|
+| Client      | Frontend related code which compiles to a React+Vite application and deploys to Firebase hosting          |
+| Backend     | Backend related code which compiles to a Firebase functions application and deploys to Firebase functions |
 
 > ⚡ **Important Note**
 >
 > - _You can create a new client module by running `firedeck module --client <module-name>`_.
 >
 >
-> - _You can create a new server module by running `firedeck module --server <module-name>`_.
+> - _You can create a new backend module by running `firedeck module --backend <module-name>`_.
 >
 >
-> - _Even though client and server modules live in different directories, each module name should be
-    unique since they end up in one directory after compilation_.
+> - _Even though client and backend modules live in different directories, each module name should
+    be unique since they end up in one directory after compilation_.
 
 ### Client Modules
 
@@ -224,6 +224,43 @@ export default function RootBuilder(appRouter: ReactNode) {
 }
 ```
 
+### Backend Modules
+
+Backend modules represent a backend component within your application and are compiled to standalone
+Firebase function applications.
+
+Backend modules live under `modules/backend` and have the following directory structure:
+
+```
+<module-name>/  
+  - functions/        #(Contains function files which make up the compiled Firebase functions application)
+```
+
+#### Backend Module Function
+
+[Firebase cloud functions](https://firebase.google.com/docs/functions) allows you to write backend
+functions that are triggered in response to HTTPS requests, background events or cron schedules.
+
+Your backend module function files must **default export** a functions-compatible handler.
+
+As an example, the handler below is called in response to an HTTPS call from the frontend firebase
+SDK and returns `"Hello"` string as a response.
+
+```typescript
+import {onCall} from "firebase-functions/v2/https"; // HTTPS request handler
+// import { onDocumentUpdatedWithAuthContext } from "firebase-functions/v2/firestore"; // Firestore document update handler
+// import { onObjectFinalized } from "firebase-functions/v2/storage"; // Storage object uploaded handler
+
+export default onCall(async function (req) {
+    return "Hello";
+});
+```
+
+> ⚡ **Important Note**
+>
+> - _Since a default export is used in the backend module function file, the generated name is based
+    on the filename. E.g. a file named `get-user-data.ts` would yield a name of `getUserData`_
+
 ## Environment Variables
 
 Firedeck projects have a central `.env` file at the root, which contain env variables for all
@@ -236,7 +273,7 @@ module at compile time.
 As an example, let's assume you have two modules:
 
 - `modules/client/main` (Client module)
-- `modules/server/api` (Server module)
+- `modules/backend/api` (Backend module)
 
 For env variables in each module, the resulting root `.env` file will look like this:
 
@@ -245,7 +282,7 @@ For env variables in each module, the resulting root `.env` file will look like 
 MAIN__VITE_API_URL=https://api.example.com
 MAIN__VITE_THEME=dardk
 
-# "api" server module env variables
+# "api" backend module env variables
 API__DB_URL=psql://user:pass@localhost:5432/db
 API__SERVICE_KEY=oiroinvowijref0928f2398
 ```
@@ -267,7 +304,7 @@ When `firedeck compile`, `firedeck run` or `firedeck buid` is invoked, Firedeck 
 
 The runtime is a [Turbo](https://turborepo.dev/) monorepo which lives at `.firedeck/runtime` and
 contains [Vite](https://vite.dev/) applications for each client module, and a single
-[Firebase cloud functions app](https://firebase.google.com/docs/functions) for all server modules.
+[Firebase cloud functions app](https://firebase.google.com/docs/functions) for all backend modules.
 
 This monorepo application is completely managed by Firedeck so you don't need to worry about it.
 
@@ -281,8 +318,8 @@ and intellisense work out of the box and can also be commited to version control
 
 > ⚡ **Important Note**
 >
-> _Code in `modules/sdk/client` is managed by the Firedeck compiler. Any manual changes would be
-> overwritten._
+> - _Code in `modules/sdk/client` is managed by the Firedeck compiler. Any manual changes would be
+    overwritten._
 
 The client SDK contains the following files:
 
@@ -384,8 +421,8 @@ export default defineConfig({
 
 ### Vite Config
 
-The `vite` field is a promise returning function which is passed the module name, vite server mode
-and an env object file and should return a [Vite `UserConfig` object](https://vite.dev/config/).
+The `vite` field is a promise returning function which is passed the module name, vite mode and an
+env object file and should return a [Vite `UserConfig` object](https://vite.dev/config/).
 
 ### Firebase Config
 
@@ -441,124 +478,3 @@ interface FiredeckConfig {
     }
 };
 ```
-
-[//]: # (TODO)
-
-[//]: # (The server functions defined by the module will be available to the client via the `useApi` hook.)
-
-[//]: # (This hook is)
-
-[//]: # (regenerated in the generated bridge whenever the server files are modified. _For reference, this is)
-
-[//]: # (similar to how)
-
-[//]: # ([tRPC]&#40;https://trpc.io/&#41; works_.)
-
-[//]: # ()
-
-[//]: # (When deployed, the client would be hosted on firebase hosting while the server is deployed to)
-
-[//]: # (firebase functions.)
-
-[//]: # ()
-
-[//]: # (The `config.json` allows module customization. It's properties are defined below:)
-
-[//]: # ()
-
-[//]: # (| Property | Description | Default Value | Required |)
-
-[//]: # (|----------|-------------|---------------|----------|)
-
-[//]: # (|          |             |               |          |)
-
-[//]: # ()
-
-[//]: # (## Runtime)
-
-[//]: # ()
-
-[//]: # (During development, Firedeck emits a Turbo monorepo project to `.firedeck/runtime`. This monorepo is)
-
-[//]: # (built from the)
-
-[//]: # (analysis of the `modules` directory which contains the user code.)
-
-[//]: # ()
-
-[//]: # (Each module in the `modules` directory maps to the following:)
-
-[//]: # ()
-
-[//]: # (- A standalone Vite application which serves the `client` component)
-
-[//]: # (- A standalone functions directory which hosts the `server` component, configured in the)
-
-[//]: # (  `.firebaserc` and)
-
-[//]: # (  `firebase.json` config files.)
-
-[//]: # ()
-
-[//]: # (When the `dev` command is run, the user code is statically analyzed to create necessary data)
-
-[//]: # (structures &#40;JSON)
-
-[//]: # (serializable&#41; to create the above-mentioned applications.)
-
-[//]: # ()
-
-[//]: # (After this two process run concurrently to watch the user code for any changes and regenerate the)
-
-[//]: # (application files)
-
-[//]: # (where necessary and also to run the generated applications.)
-
-[//]: # ()
-
-[//]: # (The flow is summed up in the diagram below:)
-
-[//]: # ()
-
-[//]: # (```)
-
-[//]: # (                     Run dev)
-
-[//]: # (                        ↓)
-
-[//]: # (                  Static analyis)
-
-[//]: # (                        ↓)
-
-[//]: # (              Generate monorepo files)
-
-[//]: # (                        ↓)
-
-[//]: # (               ―――――――――――――――――――)
-
-[//]: # (              ↓                   ↓)
-
-[//]: # (       Watch user modules    Run monorepo)
-
-[//]: # (        for changes and      application)
-
-[//]: # (        update monorepo  )
-
-[//]: # (             files)
-
-[//]: # (```)
-
-[//]: # ()
-
-[//]: # (## CLI)
-
-[//]: # ()
-
-[//]: # (| Command              | Description                                                         |)
-
-[//]: # (|----------------------|---------------------------------------------------------------------|)
-
-[//]: # (| `init`               | Initializes the project folder structure and copies templates files |)
-
-[//]: # (| `module create NAME` | Creates a new module                                                |)
-
