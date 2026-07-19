@@ -326,22 +326,24 @@ When `firedeck compile`, `firedeck run` or `firedeck buid` is invoked, Firedeck 
 
 The runtime is a [Turbo](https://turborepo.dev/) monorepo which lives at `.firedeck/runtime` and
 contains [Vite](https://vite.dev/) applications for each client module, and a single
-[Firebase cloud functions app](https://firebase.google.com/docs/functions) for all backend modules.
+[Firebase cloud functions apps](https://firebase.google.com/docs/functions) for each backend module.
 
-This monorepo application is completely managed by Firedeck so you don't need to worry about it.
+> ⚡ **Important Note**
+>
+> - _The runtime application is managed by the Firedeck compiler. Any manual changes will be
+    overwritten._
 
 ## Client SDK
 
 Firedeck also generates a client SDK source files based on the modules. This package provides
 utilities which connect the frontend and backend module component.
 
-The package lives at `modules/sdk/client`. Because it is part of the user code, IDE auto-complete
+The client SDK lives at `modules/sdk/client`. Because it is part of the user code, IDE auto-complete
 and intellisense work out of the box and can also be commited to version control if you so wish.
 
 > ⚡ **Important Note**
 >
-> - _Code in `modules/sdk/client` is managed by the Firedeck compiler. Any manual changes would be
-    overwritten._
+> - _The client SDK is managed by the Firedeck compiler. Any manual changes will be overwritten._
 
 The client SDK contains the following files:
 
