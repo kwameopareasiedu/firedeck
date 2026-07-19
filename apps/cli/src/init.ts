@@ -87,7 +87,7 @@ function generateProjectFileTree(args: {
           "eslint-plugin-react": "^7.37.5",
           "firebase": "^12.16.0",
           "firebase-functions-test": "^3.5.0",
-          "firedeck": "^0.1.8",
+          "firedeck": "^0.1.9",
           "fs-extra": "^11.3.6",
           "globals": "^17.7.0",
           "kill-port": "^2.0.1",
@@ -191,16 +191,6 @@ function generateProjectFileTree(args: {
         packageManager: {
           name: "${args.packageManagerName}",
           version: "${args.packageManagerVersion}",
-        },
-        firebase: {
-          projects: {
-            default: {
-              id: "demo-firedeck",
-              targets: {
-                hosting: "auto",
-              },
-            },
-          },
         },
       });`,
     },
