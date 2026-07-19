@@ -33,7 +33,7 @@ test("apply-project-mutations", async (t) => {
       content: `
 MAIN__VITE_HELLO=world
 MAIN__VITE_FOO=bar
-ADMIN__VITE_HELLO=universe
+API__DB_URL=postgres://user:pass@localhost:5173/db
       `,
       extension: "md",
     },
@@ -89,6 +89,24 @@ ADMIN__VITE_HELLO=universe
         }
       `,
     },
+    "modules/backend/api/functions/get-users.ts": {
+      content: `
+        import {onCall} from "firebase-functions/v2/https";
+        
+        export default onCall(async function getUser(req) {
+          return [];
+        });
+      `,
+    },
+    "modules/backend/api/functions/create-user.ts": {
+      content: `
+        import {onCall} from "firebase-functions/v2/https";
+        
+        export default onCall(async function createUser(req) {
+          return true;
+        });
+      `,
+    },
   };
 
   await writeFileTree(testDir, fileTree);
@@ -101,6 +119,10 @@ ADMIN__VITE_HELLO=universe
   t.true(fs.existsSync(resolve(pagesDir, "(dashboard)/dashboard-layout.tsx")));
   t.true(fs.existsSync(resolve(pagesDir, "(dashboard)/users/users-page.tsx")));
   t.true(fs.existsSync(resolve(pagesDir, "(dashboard)/users/[userId]/user-details-page.tsx")));
+
+  const functionsDir = resolve(testDir, "modules/backend/api/functions");
+  t.true(fs.existsSync(resolve(functionsDir, "get-users.ts")));
+  t.true(fs.existsSync(resolve(functionsDir, "create-user.ts")));
 
   const model = await analyzeProject(testDir);
   const mutations = compareProjectModels(null, model);
@@ -121,18 +143,33 @@ ADMIN__VITE_HELLO=universe
   t.true(fs.existsSync(resolve(runtimeMainDir, "firedeck.config.d.mts")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "index.html")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "global.d.ts")));
-  t.true(fs.existsSync(resolve(runtimeMainDir, ".gitignore")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "src/index.tsx")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "src/index.css")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "src/routes.ts")));
 
-  const envSource = fs.readFileSync(resolve(runtimeMainDir, ".env"), { encoding: "utf-8" });
+  const runtimeMainEnvSource = fs.readFileSync(resolve(runtimeMainDir, ".env"), {
+    encoding: "utf-8",
+  });
 
   t.is(
-    envSource,
+    runtimeMainEnvSource,
     `VITE_HELLO=world
 VITE_FOO=bar`,
   );
+
+  const runtimeApiDir = resolve(testDir, ".firedeck/runtime/modules/api");
+  t.true(fs.existsSync(resolve(runtimeApiDir, ".env")));
+  t.true(fs.existsSync(resolve(runtimeApiDir, "package.json")));
+  t.true(fs.existsSync(resolve(runtimeApiDir, "tsconfig.json")));
+  t.true(fs.existsSync(resolve(runtimeApiDir, "rollup.config.mjs")));
+  t.true(fs.existsSync(resolve(runtimeApiDir, "src/index.ts")));
+  t.true(fs.existsSync(resolve(runtimeApiDir, "src/functions.ts")));
+
+  const runtimeAiEnvSource = fs.readFileSync(resolve(runtimeApiDir, ".env"), {
+    encoding: "utf-8",
+  });
+
+  t.is(runtimeAiEnvSource, "DB_URL=postgres://user:pass@localhost:5173/db");
 
   const routesSource = fs.readFileSync(resolve(runtimeMainDir, "src/routes.ts"), {
     encoding: "utf-8",
@@ -198,6 +235,21 @@ VITE_FOO=bar`,
     ),
   );
 
+  const functionsSource = fs.readFileSync(resolve(runtimeApiDir, "src/functions.ts"), {
+    encoding: "utf-8",
+  });
+
+  t.is(
+    functionsSource,
+    await format(
+      `import createUser from "@/backend/api/functions/create-user.ts";
+      import getUsers from "@/backend/api/functions/get-users.ts";
+      
+      export { createUser, getUsers };`,
+      getPrettierConfig({ filePath: "a.ts" }),
+    ),
+  );
+
   const clientSdkDir = resolve(testDir, "modules/sdk/client");
   t.true(fs.existsSync(resolve(clientSdkDir, "routes.ts")));
 
@@ -230,12 +282,12 @@ VITE_FOO=bar`,
     ),
   );
 
-  const generatedEnvTypesSource = fs.readFileSync(resolve(testDir, ".firedeck/env.d.ts"), {
+  const workspaceEnvTypesSource = fs.readFileSync(resolve(testDir, ".firedeck/env.d.ts"), {
     encoding: "utf-8",
   });
 
   t.is(
-    generatedEnvTypesSource,
+    workspaceEnvTypesSource,
     await format(
       `
       interface ViteTypeOptions {

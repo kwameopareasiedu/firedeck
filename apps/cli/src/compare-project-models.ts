@@ -46,30 +46,38 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
           env: destClient.env,
         },
       );
-    } else if (sourceClient.name !== destClient.name) {
-      changes.push({
-        type: "rename-runtime-client",
-        oldClientName: sourceClient.name,
-        newClientName: destClient.name,
-      });
-    } else if (JSON.stringify(sourceClient.routes) !== JSON.stringify(destClient.routes)) {
-      changes.push({
-        type: "update-runtime-client-routes",
-        clientName: destClient.name,
-        clientRoutes: destClient.routes,
-      });
-    } else if (sourceClient.indexHtml !== destClient.indexHtml) {
-      changes.push({
-        type: "update-runtime-client-html",
-        clientName: destClient.name,
-        html: destClient.indexHtml,
-      });
-    } else if (sourceClient.env !== destClient.env) {
-      changes.push({
-        type: "update-runtime-client-env",
-        clientName: destClient.name,
-        env: destClient.env,
-      });
+    } else {
+      if (sourceClient.name !== destClient.name) {
+        changes.push({
+          type: "rename-runtime-client",
+          oldClientName: sourceClient.name,
+          newClientName: destClient.name,
+        });
+      }
+
+      if (JSON.stringify(sourceClient.routes) !== JSON.stringify(destClient.routes)) {
+        changes.push({
+          type: "update-runtime-client-routes",
+          clientName: destClient.name,
+          clientRoutes: destClient.routes,
+        });
+      }
+
+      if (sourceClient.indexHtml !== destClient.indexHtml) {
+        changes.push({
+          type: "update-runtime-client-html",
+          clientName: destClient.name,
+          html: destClient.indexHtml,
+        });
+      }
+
+      if (sourceClient.env !== destClient.env) {
+        changes.push({
+          type: "update-runtime-client-env",
+          clientName: destClient.name,
+          env: destClient.env,
+        });
+      }
     }
   }
 
@@ -98,23 +106,40 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
           backendName: destBackend.name,
         },
         {
+          type: "update-runtime-backend-functions",
+          backendName: destBackend.name,
+          backendFunctions: destBackend.functions,
+        },
+        {
           type: "update-runtime-backend-env",
           backendName: destBackend.name,
           env: destBackend.env,
         },
       );
-    } else if (sourceBackend.name !== destBackend.name) {
-      changes.push({
-        type: "rename-runtime-backend",
-        oldBackendName: sourceBackend.name,
-        newBackendName: destBackend.name,
-      });
-    } else if (sourceBackend.env !== destBackend.env) {
-      changes.push({
-        type: "update-runtime-backend-env",
-        backendName: destBackend.name,
-        env: destBackend.env,
-      });
+    } else {
+      if (sourceBackend.name !== destBackend.name) {
+        changes.push({
+          type: "rename-runtime-backend",
+          oldBackendName: sourceBackend.name,
+          newBackendName: destBackend.name,
+        });
+      }
+
+      if (JSON.stringify(sourceBackend.functions) !== JSON.stringify(destBackend.functions)) {
+        changes.push({
+          type: "update-runtime-backend-functions",
+          backendName: destBackend.name,
+          backendFunctions: destBackend.functions,
+        });
+      }
+
+      if (sourceBackend.env !== destBackend.env) {
+        changes.push({
+          type: "update-runtime-backend-env",
+          backendName: destBackend.name,
+          env: destBackend.env,
+        });
+      }
     }
   }
 
@@ -131,11 +156,32 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
     }
   }
 
-  const firedeckConfigChanged =
+  const updateWorkspaceEnvTypes = changes.some((change) => {
+    return (
+      ["update-runtime-client-env", "update-runtime-backend-env"] as ProjectMutation["type"][]
+    ).includes(change.type);
+  });
+
+  if (updateWorkspaceEnvTypes) {
+    changes.push({
+      type: "update-workspace-env-types",
+      clients: target.clients,
+    });
+  }
+
+  const updateRuntimeFiredeckConfig =
     JSON.stringify(source.config, jsonReplacer) !== JSON.stringify(target.config, jsonReplacer);
 
+  if (updateRuntimeFiredeckConfig) {
+    changes.push({
+      type: "update-runtime-firedeck-config",
+      config: target.config,
+      clients: target.clients,
+    });
+  }
+
   const updateRuntimeFirebaseConfig =
-    firedeckConfigChanged ||
+    updateRuntimeFiredeckConfig ||
     changes.some((change) => {
       return (
         [
@@ -180,6 +226,7 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
     return (
       [
         "add-runtime-backend",
+        "update-runtime-backend-functions",
         "rename-runtime-backend",
         "remove-runtime-backend",
       ] as ProjectMutation["type"][]

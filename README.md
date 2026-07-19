@@ -256,10 +256,27 @@ export default onCall(async function (req) {
 });
 ```
 
+[//]: # (@formatter:off)
 > ⚡ **Important Note**
 >
 > - _Since a default export is used in the backend module function file, the generated name is based
     on the filename. E.g. a file named `get-user-data.ts` would yield a name of `getUserData`_
+>
+>
+> - _All functions in a backend module are compiled to one firebase execution unit_.
+> 
+>     - _As an example, if your backend module contains 5 functions, the compiled function will 
+>       contain all 5 functions, even though only one is called by Firebase to handle an event._
+>   
+>     - _This means if one of your functions imports a very heavy dependency, it will affect the 
+>       cold start times of every other function in that module._
+>   
+>     - _So it's always a good idea to separate functions with heavy dependencies into their own 
+>       backend modules to avoid this issue._
+> 
+> - _All functions in a backend module are compiled to one firebase execution unit_.
+
+[//]: # (@formatter:on)
 
 ## Environment Variables
 

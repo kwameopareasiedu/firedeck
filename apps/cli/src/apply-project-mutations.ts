@@ -1,5 +1,12 @@
 import fs from "fs-extra";
-import { FileTree, ClientModule, ProjectMutation, ClientModuleRoute, RouterRoute } from "@/types";
+import {
+  BackendModuleFunction,
+  ClientModule,
+  ClientModuleRoute,
+  FileTree,
+  ProjectMutation,
+  RouterRoute,
+} from "@/types";
 import {
   assertFiredeckRootDir,
   generateStringHash,
@@ -17,7 +24,6 @@ export async function applyProjectMutations(rootDir: string, mutations: ProjectM
   assertFiredeckRootDir(rootDir);
 
   const {
-    modulesDir,
     clientSdkDir,
     runtimeDir,
     runtimeModulesDir,
@@ -30,28 +36,24 @@ export async function applyProjectMutations(rootDir: string, mutations: ProjectM
 
   for (const mut of mutations) {
     switch (mut.type) {
+      case "update-workspace-env-types": {
+        const envTypesSource = await generateWorkspaceEnvTypesSource(mut.clients);
+        fs.writeFileSync(workspaceEnvTypesFile, envTypesSource);
+
+        break;
+      }
       case "create-runtime": {
         fs.removeSync(runtimeDir);
         fs.ensureDirSync(runtimeDir);
 
-        const runtimeFileTree = generateRuntimeFileTree({
-          packageManagerName: mut.config.packageManager.name,
-          packageManagerVersion: mut.config.packageManager.version,
-        });
+        const runtimeFileTree = generateRuntimeFileTree(
+          mut.config.packageManager.name,
+          mut.config.packageManager.version,
+        );
         await writeFileTree(runtimeDir, runtimeFileTree);
         break;
       }
-      case "update-runtime-envs": {
-        for (const client of mut.clients) {
-          const envDest = resolve(runtimeModulesDir, client.name, ".env");
-          fs.writeFileSync(envDest, client.env);
-        }
-
-        const envTypesSource = await generateEnvTypesSource(mut.clients);
-        fs.writeFileSync(workspaceEnvTypesFile, envTypesSource);
-        break;
-      }
-      case "update-runtime-configs": {
+      case "update-runtime-firedeck-config": {
         for (const client of mut.clients) {
           const destFile = resolve(runtimeModulesDir, client.name, "firedeck.config.mjs");
           const destTypesFile = resolve(runtimeModulesDir, client.name, "firedeck.config.d.mts");
@@ -59,27 +61,21 @@ export async function applyProjectMutations(rootDir: string, mutations: ProjectM
           fs.copyFileSync(workspaceConfigTypesFile, destTypesFile);
         }
 
+        break;
+      }
+      case "update-runtime-firebase-config": {
         const firebaseRcSource = await generateFirebaseRcSource(mut.config, mut.clients);
         fs.writeFileSync(runtimeFirebaseRcFile, firebaseRcSource);
 
-        const firebaseJsonSource = await generateFirebaseJsonSource(
-          mut.config,
-          mut.clients,
-          runtimeModulesDir,
-        );
+        const firebaseJsonSource = await generateFirebaseJsonSource(mut.clients, runtimeModulesDir);
         fs.writeFileSync(runtimeFirebaseJsonFile, firebaseJsonSource);
 
         break;
       }
       case "add-runtime-client": {
         const clientRoot = resolve(runtimeModulesDir, mut.clientName);
-        const clientFileTree = generateRuntimeClientFileTree({ clientName: mut.clientName });
+        const clientFileTree = generateRuntimeClientFileTree(mut.clientName);
         await writeFileTree(clientRoot, clientFileTree);
-        break;
-      }
-      case "remove-runtime-client": {
-        const clientRoot = resolve(runtimeModulesDir, mut.clientName);
-        fs.removeSync(clientRoot);
         break;
       }
       case "rename-runtime-client": {
@@ -89,16 +85,55 @@ export async function applyProjectMutations(rootDir: string, mutations: ProjectM
         break;
       }
       case "update-runtime-client-routes": {
-        const { clientName, clientRoutes } = mut;
-        const clientRoutesFile = resolve(runtimeModulesDir, clientName, "src/routes.ts");
-        const runtimeClientRoutesSource = await generateRuntimeClientRoutesSource(clientRoutes);
+        const clientRoutesFile = resolve(runtimeModulesDir, mut.clientName, "src/routes.ts");
+        const runtimeClientRoutesSource = await generateRuntimeClientRoutesSource(mut.clientRoutes);
         fs.writeFileSync(clientRoutesFile, runtimeClientRoutesSource);
         break;
       }
       case "update-runtime-client-html": {
-        const htmlSrc = resolve(modulesDir, "client", mut.clientName, "index.html");
         const htmlDest = resolve(runtimeModulesDir, mut.clientName, "index.html");
-        fs.copyFileSync(htmlSrc, htmlDest);
+        fs.writeFileSync(htmlDest, mut.html);
+        break;
+      }
+      case "update-runtime-client-env": {
+        const envDest = resolve(runtimeModulesDir, mut.clientName, ".env");
+        fs.writeFileSync(envDest, mut.env);
+
+        break;
+      }
+      case "remove-runtime-client": {
+        const clientRoot = resolve(runtimeModulesDir, mut.clientName);
+        fs.removeSync(clientRoot);
+        break;
+      }
+      case "add-runtime-backend": {
+        const backendRoot = resolve(runtimeModulesDir, mut.backendName);
+        const backendFileTree = generateRuntimeBackendFileTree(mut.backendName);
+        await writeFileTree(backendRoot, backendFileTree);
+        break;
+      }
+      case "rename-runtime-backend": {
+        const oldBackendRoot = resolve(runtimeModulesDir, mut.oldBackendName);
+        const newBackendRoot = resolve(runtimeModulesDir, mut.newBackendName);
+        fs.renameSync(oldBackendRoot, newBackendRoot);
+        break;
+      }
+      case "update-runtime-backend-functions": {
+        const { backendName, backendFunctions } = mut;
+        const backendFunctionsFile = resolve(runtimeModulesDir, backendName, "src/functions.ts");
+        const runtimeBackendFunctionsSource =
+          await generateRuntimeBackendFunctionsSource(backendFunctions);
+        fs.writeFileSync(backendFunctionsFile, runtimeBackendFunctionsSource);
+        break;
+      }
+      case "update-runtime-backend-env": {
+        const envDest = resolve(runtimeModulesDir, mut.backendName, ".env");
+        fs.writeFileSync(envDest, mut.env);
+        break;
+      }
+      case "remove-runtime-backend": {
+        const backendRoot = resolve(runtimeModulesDir, mut.backendName);
+        fs.removeSync(backendRoot);
         break;
       }
       case "update-client-sdk-routes": {
@@ -108,14 +143,62 @@ export async function applyProjectMutations(rootDir: string, mutations: ProjectM
         fs.writeFileSync(sdkRoutesFile, routesSource);
         break;
       }
+      case "update-client-sdk-api":
+        // TODO: Update client SDK API
+        break;
     }
   }
 }
 
-function generateRuntimeFileTree(args: {
-  packageManagerName: string;
-  packageManagerVersion: string;
-}): FileTree {
+async function generateWorkspaceEnvTypesSource(clients: ClientModule[]) {
+  const allClientEnvs = clients
+    .reduce((envs, client) => `${envs}${client.env}\n`, "")
+    .split("\n")
+    .filter((line) => !!line);
+
+  const keySet = new Set<string>();
+
+  const envLines = allClientEnvs.reduce((lines, line) => {
+    const [key] = line.split("=");
+    const value = line.substring(key.length + 1);
+    const entry = `readonly ${key}: "${value}";`.replace(/""/g, '"');
+
+    if (keySet.has(key)) {
+      const lineIndex = lines.indexOf(lines.find((l) => l.startsWith(`readonly ${key}:`)) ?? "");
+
+      if (lineIndex !== -1) {
+        const duplicateEntry = `readonly ${key}: string;`;
+        lines.splice(lineIndex, 1, "/** Defined in multiple modules */", duplicateEntry);
+      }
+    } else {
+      lines.push(entry);
+    }
+
+    keySet.add(key);
+    return [...lines];
+  }, [] as string[]);
+
+  const finalSource = `
+    interface ViteTypeOptions {
+      strictImportMetaEnv: unknown
+    }
+
+    interface ImportMetaEnv {
+      ${envLines.join("\n")}
+    }
+    
+    interface ImportMeta {
+      readonly env: ImportMetaEnv;
+    }
+  `;
+
+  return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
+}
+
+function generateRuntimeFileTree(
+  packageManagerName: string,
+  packageManagerVersion: string,
+): FileTree {
   return {
     "package.json": {
       content: `
@@ -124,7 +207,7 @@ function generateRuntimeFileTree(args: {
         "version": "0.0.0",
         "private": true,
         "type": "module",
-        "packageManager": "${args.packageManagerName}@${args.packageManagerVersion}",
+        "packageManager": "${packageManagerName}@${packageManagerVersion}",
         "workspaces": [
           "modules/*"
         ],
@@ -172,12 +255,12 @@ function generateRuntimeFileTree(args: {
   };
 }
 
-function generateRuntimeClientFileTree(args: { clientName: string }): FileTree {
+function generateRuntimeClientFileTree(clientName: string): FileTree {
   return {
     "package.json": {
       content: `
       {
-        "name": "${args.clientName}",
+        "name": "${clientName}",
         "private": true,
         "version": "0.0.0",
         "type": "module",
@@ -204,7 +287,7 @@ function generateRuntimeClientFileTree(args: { clientName: string }): FileTree {
         
         const configOverride = firedeckConfig.vite 
           ? await firedeckConfig.vite({ 
-              module: "${args.clientName}",
+              module: "${clientName}",
               mode: mode as never,
               env
             })
@@ -293,34 +376,6 @@ function generateRuntimeClientFileTree(args: { clientName: string }): FileTree {
       content: 'declare module "*.css";',
     },
 
-    ".gitignore": {
-      content: [
-        "# Logs",
-        "logs",
-        "*.log",
-        "npm-debug.log*",
-        "yarn-debug.log*",
-        "yarn-error.log*",
-        "pnpm-debug.log*",
-        "lerna-debug.log*",
-        "node_modules",
-        "dist",
-        "dist-ssr",
-        "*.local",
-        "# Editor directories and files",
-        ".vscode/*",
-        "!.vscode/extensions.json",
-        ".idea",
-        ".DS_Store",
-        "*.suo",
-        "*.ntvs*",
-        "*.njsproj",
-        "*.sln",
-        "*.sw?",
-      ].join("\n"),
-      extension: "md",
-    },
-
     "index.html": {
       content: `
       <!doctype html>
@@ -329,7 +384,7 @@ function generateRuntimeClientFileTree(args: { clientName: string }): FileTree {
           <meta charset="UTF-8" />
           <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>${args.clientName}</title>
+          <title>${startCase(clientName)}</title>
         </head>
         <body>
           <div id="root"></div>
@@ -350,7 +405,7 @@ function generateRuntimeClientFileTree(args: { clientName: string }): FileTree {
       import React from "react";
       import { createRoot } from "react-dom/client";
       import { RouterProvider, createBrowserRouter } from "react-router";
-      import buildRoot from "@/client/${args.clientName}/root.tsx";
+      import buildRoot from "@/client/${clientName}/root.tsx";
       import routes from "./routes.ts";
       
       const router = createBrowserRouter(routes);
@@ -360,10 +415,14 @@ function generateRuntimeClientFileTree(args: { clientName: string }): FileTree {
       );`,
     },
 
+    "src/routes.ts": {
+      content: "",
+    },
+
     "src/index.css": {
       content: `
       @import "tailwindcss";
-      @import "../../../../../modules/client/${args.clientName}/index.css";
+      @import "../../../../../modules/client/${clientName}/index.css";
       `,
     },
   };
@@ -431,6 +490,117 @@ async function generateRuntimeClientRoutesSource(routes: ClientModuleRoute) {
   return format(routerSource, getPrettierConfig({ filePath: "a.tsx" }));
 }
 
+function generateRuntimeBackendFileTree(backendName: string): FileTree {
+  return {
+    "package.json": {
+      content: `
+      {
+        "name": "${backendName}",
+        "version": "0.0.0",
+        "main": "lib/index.js",
+        "private": true,
+        "scripts": {
+          "build": "../../../../node_modules/.bin/rollup -c",
+          "dev": "../../../../node_modules/.bin/rollup -c -w --no-watch.clearScreen",
+        }
+      }`,
+    },
+
+    "tsconfig.json": {
+      content: `
+      {
+        "compilerOptions": {
+          "target": "ES2020",
+          "useDefineForClassFields": true,
+          "lib": ["ES2020", "DOM", "DOM.Iterable"],
+          "module": "ESNext",
+          "skipLibCheck": true,
+          "moduleResolution": "bundler",
+          "allowImportingTsExtensions": true,
+          "isolatedModules": true,
+          "moduleDetection": "force",
+          "noEmit": true,
+          "strict": true,
+          "noUnusedParameters": true,
+          "noFallthroughCasesInSwitch": true,
+          "rootDir": "../../../../",
+          "paths": {
+            "@/*": ["../../../../modules/*"],
+          }
+        },
+        "include": ["./src", "../../../../modules"]
+      }`,
+    },
+
+    "rollup.config.mjs": {
+      content: `
+      import { defineConfig } from "rollup";
+      import { dts } from "rollup-plugin-dts";
+      import nodeResolve from "@rollup/plugin-node-resolve";
+      import commonjs from "@rollup/plugin-commonjs";
+      import typescript from "@rollup/plugin-typescript";
+      import { typescriptPaths } from "rollup-plugin-typescript-paths";
+      import fs from "fs-extra";
+      
+      const packageInfo = JSON.parse(
+        fs.readFileSync("../../../../package.json", { encoding: "utf-8" })
+      );
+
+      const external = [
+        ...Object.keys(packageInfo.dependencies),
+        ...Object.keys(packageInfo.devDependencies),
+      ].map((dep) => new RegExp(\`^\${dep}.+\`));
+      
+      export default defineConfig([
+        {
+          input: "src/index.ts",
+          output: { format: "commonjs", file: "lib/index.js" },
+          plugins: [nodeResolve(), commonjs(), typescript(), typescriptPaths()],
+          treeshake: { moduleSideEffects: false },
+          external: external,
+        },
+        {
+          input: "src/index.ts",
+          output: { format: "commonjs", file: "lib/index.d.ts" },
+          plugins: [typescript(), dts()],
+          treeshake: { moduleSideEffects: false },
+          external: external,
+        },
+      ]);`,
+    },
+
+    "src/index.ts": {
+      content: `
+      import { initializeApp } from "firebase-admin/app";
+      initializeApp();
+      
+      export * from "./functions.ts";`,
+    },
+
+    "src/functions.ts": {
+      content: "",
+    },
+  };
+}
+
+async function generateRuntimeBackendFunctionsSource(functions: BackendModuleFunction[]) {
+  const functionsImportSource = functions
+    .map((fn) => `import ${fn.name} from "${fn.importPath}";`)
+    .join("\n");
+
+  const functionsExportSource = functions.map((fn) => `${fn.name},`).join("\n");
+
+  const finalSource = `
+    ${functionsImportSource};
+    
+    export {
+      ${functionsExportSource}
+    };
+  `;
+
+  return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
+}
+
 async function generateClientSdkRoutesSource(clients: ClientModule[]) {
   const routerSource = clients.reduce((source, client) => {
     const routeEnumSource = flattenRoutes(client.routes).reduce((source, route) => {
@@ -459,51 +629,6 @@ async function generateClientSdkRoutesSource(clients: ClientModule[]) {
      
      ${routerSource}
     `;
-
-  return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
-}
-
-async function generateEnvTypesSource(clients: ClientModule[]) {
-  const allClientEnvs = clients
-    .reduce((envs, client) => `${envs}${client.env}\n`, "")
-    .split("\n")
-    .filter((line) => !!line);
-
-  const keySet = new Set<string>();
-
-  const envLines = allClientEnvs.reduce((lines, line) => {
-    const [key] = line.split("=");
-    const value = line.substring(key.length + 1);
-    const entry = `readonly ${key}: "${value}";`.replace(/""/g, '"');
-
-    if (keySet.has(key)) {
-      const lineIndex = lines.indexOf(lines.find((l) => l.startsWith(`readonly ${key}:`)) ?? "");
-
-      if (lineIndex !== -1) {
-        const duplicateEntry = `readonly ${key}: string;`;
-        lines.splice(lineIndex, 1, "/** Defined in multiple modules */", duplicateEntry);
-      }
-    } else {
-      lines.push(entry);
-    }
-
-    keySet.add(key);
-    return [...lines];
-  }, [] as string[]);
-
-  const finalSource = `
-    interface ViteTypeOptions {
-      strictImportMetaEnv: unknown
-    }
-
-    interface ImportMetaEnv {
-      ${envLines.join("\n")}
-    }
-    
-    interface ImportMeta {
-      readonly env: ImportMetaEnv;
-    }
-  `;
 
   return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
 }
@@ -554,11 +679,7 @@ async function generateFirebaseRcSource(config: FiredeckConfig, clients: ClientM
   return format(finalSource, getPrettierConfig({ filePath: "a.json" }));
 }
 
-async function generateFirebaseJsonSource(
-  config: FiredeckConfig,
-  clients: ClientModule[],
-  runtimeModulesDir: string,
-) {
+async function generateFirebaseJsonSource(clients: ClientModule[], runtimeModulesDir: string) {
   const hostingConfig = clients.map((client) => {
     return {
       target: client.name,

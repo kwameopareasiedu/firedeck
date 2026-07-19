@@ -262,5 +262,6 @@ VITE_FOO=bar`,
         importPath: "@/backend/api/functions/hello.ts",
       },
     ],
+    env: "",
   });
 });

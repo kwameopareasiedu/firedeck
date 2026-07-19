@@ -92,8 +92,9 @@ function analyzeBackendModule(rootDir: string, backendModuleDir: string): Backen
   if (!fs.existsSync(functionsDir)) throw `${relative(rootDir, functionsDir)}: directory not found`;
 
   const functionFiles = fs
-    .readdirSync(functionsDir, { encoding: "utf-8" })
-    .map((name) => resolve(functionsDir, name));
+    .readdirSync(functionsDir, { encoding: "utf-8", recursive: true })
+    .map((name) => resolve(functionsDir, name))
+    .filter((filepath) => fs.lstatSync(filepath).isFile() && filepath.endsWith(".ts"));
 
   const moduleFunctions = functionFiles.map((filepath) => {
     const name = camelCase(getPathFileName(filepath));
