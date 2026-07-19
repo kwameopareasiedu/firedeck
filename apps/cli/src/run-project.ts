@@ -9,14 +9,14 @@ import { parseFiredeckConfig } from "@/analyze-project";
 import { packageManagers } from "shared/package-manager";
 import { ProjectMutation } from "@/types";
 
-export async function runProject(rootDir: string, opts: { log: typeof info; error: typeof error }) {
+export async function runProject(rootDir: string, explain?: boolean) {
   assertFiredeckRootDir(rootDir);
 
   const { configFile, modulesDir, runtimeDir } = getProjectPaths(rootDir);
   const firedeckConfig = await parseFiredeckConfig(rootDir);
   const packageManager = packageManagers[firedeckConfig.packageManager.name];
 
-  let [projectModel] = await compileProject(rootDir, null);
+  let [currentProjectModel] = await compileProject(rootDir, null, explain);
 
   for (const lockFileName of packageManager.lockFiles) {
     const lockFilePath = resolve(rootDir, lockFileName);
@@ -41,9 +41,13 @@ export async function runProject(rootDir: string, opts: { log: typeof info; erro
 
     changeDebounceTimer = setTimeout(async () => {
       try {
-        opts.log(`${eventName}: ${relative(modulesDir, path)}`);
-        const [updatedProjectModel, projectMutations] = await compileProject(rootDir, projectModel);
-        projectModel = updatedProjectModel;
+        info(`${eventName}: ${relative(modulesDir, path)}`);
+        const [newProjectModel, projectMutations] = await compileProject(
+          rootDir,
+          currentProjectModel,
+          explain,
+        );
+        currentProjectModel = newProjectModel;
 
         const restartRuntimeDevProc = projectMutations.some((change) => {
           return (
@@ -74,7 +78,7 @@ export async function runProject(rootDir: string, opts: { log: typeof info; erro
           runtimeDevProc = spawn(cmdName, cmdOpts, { cwd: runtimeDir, stdio: "inherit" });
         }
       } catch (err) {
-        opts.error(err);
+        error(err);
       }
     }, 500);
   };
@@ -84,8 +88,8 @@ export async function runProject(rootDir: string, opts: { log: typeof info; erro
       persistent: true,
       awaitWriteFinish: { stabilityThreshold: 500 },
     })
-    .on("ready", () => opts.log("watching modules"))
-    .on("error", (err) => opts.error(`error: ${err}`))
+    .on("ready", () => info("watching modules"))
+    .on("error", (err) => error(`error: ${err}`))
     .on("add", async (path) => await handleChange(path, "new-file"))
     .on("addDir", async (path) => await handleChange(path, "new-dir"))
     .on("change", async (path) => await handleChange(path, "change"))
@@ -97,7 +101,7 @@ export async function runProject(rootDir: string, opts: { log: typeof info; erro
   process.on("SIGINT", async () => {
     if (!stopping) {
       stopping = true;
-      opts.log("SIGINT received; terminating runtime");
+      info("SIGINT received; terminating runtime");
       kill(runtimeDevProc.pid!);
       await fileWatcher.close();
       await new Promise((resolve) => setTimeout(resolve, 1250));
@@ -106,8 +110,8 @@ export async function runProject(rootDir: string, opts: { log: typeof info; erro
         kill(runtimeDevProc.pid!, "SIGKILL");
         await new Promise((resolve) => setTimeout(resolve, 1250));
       }
-    } else opts.log("runtime terminating");
+    } else info("runtime terminating");
   });
 
-  opts.log("runtime started");
+  info("runtime started");
 }

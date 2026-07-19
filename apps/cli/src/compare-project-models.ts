@@ -162,23 +162,8 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
     ).includes(change.type);
   });
 
-  if (updateWorkspaceEnvTypes) {
-    changes.push({
-      type: "update-workspace-env-types",
-      clients: target.clients,
-    });
-  }
-
   const updateRuntimeFiredeckConfig =
     JSON.stringify(source.config, jsonReplacer) !== JSON.stringify(target.config, jsonReplacer);
-
-  if (updateRuntimeFiredeckConfig) {
-    changes.push({
-      type: "update-runtime-firedeck-config",
-      config: target.config,
-      clients: target.clients,
-    });
-  }
 
   const updateRuntimeFirebaseConfig =
     updateRuntimeFiredeckConfig ||
@@ -195,15 +180,6 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
       ).includes(change.type);
     });
 
-  if (updateRuntimeFirebaseConfig) {
-    changes.push({
-      type: "update-runtime-firebase-config",
-      config: target.config,
-      clients: target.clients,
-      backends: target.backends,
-    });
-  }
-
   const updateClientSdkRoutes = changes.some((change) => {
     return (
       [
@@ -215,13 +191,6 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
     ).includes(change.type);
   });
 
-  if (updateClientSdkRoutes) {
-    changes.push({
-      type: "update-client-sdk-routes",
-      clients: target.clients,
-    });
-  }
-
   const updateClientSdkApi = changes.some((change) => {
     return (
       [
@@ -232,6 +201,37 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
       ] as ProjectMutation["type"][]
     ).includes(change.type);
   });
+
+  if (updateRuntimeFiredeckConfig) {
+    changes.push({
+      type: "update-runtime-firedeck-config",
+      config: target.config,
+      clients: target.clients,
+    });
+  }
+
+  if (updateWorkspaceEnvTypes) {
+    changes.push({
+      type: "update-workspace-env-types",
+      clients: target.clients,
+    });
+  }
+
+  if (updateRuntimeFirebaseConfig) {
+    changes.push({
+      type: "update-runtime-firebase-config",
+      config: target.config,
+      clients: target.clients,
+      backends: target.backends,
+    });
+  }
+
+  if (updateClientSdkRoutes) {
+    changes.push({
+      type: "update-client-sdk-routes",
+      clients: target.clients,
+    });
+  }
 
   if (updateClientSdkApi) {
     changes.push({

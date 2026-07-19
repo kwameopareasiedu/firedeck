@@ -27,6 +27,7 @@ import {
 export async function analyzeProject(rootDir: string): Promise<ProjectModel> {
   assertFiredeckRootDir(rootDir);
 
+  const firedeckConfig = await parseFiredeckConfig(rootDir);
   const { clientModulesDir, backendModulesDir } = getProjectPaths(rootDir);
 
   const clientModuleDirs = fs.existsSync(clientModulesDir)
@@ -53,8 +54,6 @@ export async function analyzeProject(rootDir: string): Promise<ProjectModel> {
   const projectBackends = backendModuleDirs.map((backendModuleDir) =>
     analyzeBackendModule(rootDir, backendModuleDir),
   );
-
-  const firedeckConfig = await parseFiredeckConfig(rootDir);
 
   return {
     config: firedeckConfig,

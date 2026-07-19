@@ -6,10 +6,10 @@ import fs from "fs-extra";
 import { compileProject } from "@/compile-project";
 import { spawn } from "node:child_process";
 
-export async function buildProject(rootDir: string) {
+export async function buildProject(rootDir: string, explain?: boolean) {
   assertFiredeckRootDir(rootDir);
 
-  const [projectModel] = await compileProject(rootDir);
+  const [projectModel] = await compileProject(rootDir, null, explain);
 
   const { runtimeDir } = getProjectPaths(rootDir);
   const firedeckConfig = await parseFiredeckConfig(rootDir);

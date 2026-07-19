@@ -105,9 +105,10 @@ cli
 cli
   .command("compile")
   .description("Compiles the Firedeck runtime")
-  .action(async () => {
+  .option("--explain", "log the mutations applied on the project")
+  .action(async (opts) => {
     try {
-      await compileProject(process.cwd());
+      await compileProject(process.cwd(), null, opts.explain);
 
       info("Project compiled");
       info("Runtime: .firedeck/runtime");
@@ -121,9 +122,10 @@ cli
 cli
   .command("run")
   .description("Starts the Firedeck runtime")
-  .action(async () => {
+  .option("--explain", "log the mutations applied on the project")
+  .action(async (opts) => {
     try {
-      await runProject(process.cwd(), { log: info, error: console.error });
+      await runProject(process.cwd(), opts.explain);
     } catch (err) {
       error(parseErrorMessage(err));
       process.exit(-1);
@@ -133,9 +135,10 @@ cli
 cli
   .command("build")
   .description("Builds all modules for deployment")
-  .action(async () => {
+  .option("--explain", "log the mutations applied on the project")
+  .action(async (opts) => {
     try {
-      await buildProject(process.cwd());
+      await buildProject(process.cwd(), opts.explain);
     } catch (err) {
       error(parseErrorMessage(err));
       process.exit(-1);

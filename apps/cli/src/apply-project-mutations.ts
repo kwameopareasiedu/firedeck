@@ -13,6 +13,7 @@ import {
   generateStringHash,
   getPrettierConfig,
   getProjectPaths,
+  info,
   NOT_FOUND_URL_PATH,
   writeFileTree,
 } from "@/utils";
@@ -21,8 +22,22 @@ import { format } from "prettier";
 import { snakeCase, startCase } from "lodash";
 import { FiredeckConfig } from "shared/firedeck-config";
 
-export async function applyProjectMutations(rootDir: string, mutations: ProjectMutation[]) {
+export async function applyProjectMutations(
+  rootDir: string,
+  mutations: ProjectMutation[],
+  explain?: boolean,
+) {
   assertFiredeckRootDir(rootDir);
+
+  if (explain) {
+    info(`Pending Mutations (${mutations.length})`);
+
+    for (let i = 0; i < mutations.length; i++) {
+      info(`${(i + 1).toString().padStart(2, " ")}. ${mutations[i].type}`);
+    }
+
+    info("");
+  }
 
   const {
     clientSdkDir,
@@ -220,7 +235,7 @@ function generateRuntimeFileTree(
         "scripts": {
           "dev": "../../node_modules/.bin/turbo dev emulate",
           "build": "../../node_modules/.bin/turbo build",
-          "emulate": "../../node_modules/.bin/kill-port 4000 8080 8085 && firebase emulators:start --project demo-firedeck --import ../../temp/firebase-emulator --export-on-exit"
+          "emulate": "../../node_modules/.bin/kill-port 4000 8080 8085 && firebase emulators:start --project demo-firedeck --import ../../.temp/firebase-emulator --export-on-exit"
         }
       }`,
     },
@@ -284,7 +299,7 @@ function generateRuntimeClientFileTree(clientName: string): FileTree {
       import react from "@vitejs/plugin-react";
       import tailwindcss from "@tailwindcss/vite";
       import { resolve } from "node:path";
-      import firedeckConfig from "./firedeck.config.mjs";
+      import firedeckConfig from "../../../firedeck.config.mjs";
 
       const __dirname = import.meta.dirname;
 

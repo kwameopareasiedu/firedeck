@@ -43,7 +43,7 @@ function generateClientModuleFileTree(args: { name: string }): FileTree {
             <meta charset="UTF-8" />
             <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-            <title>${args.name}</title>
+            <title>${startCase(args.name)}</title>
           </head>
           <body>
             <div id="root"></div>
