@@ -45,17 +45,22 @@ export async function runProject(rootDir: string, opts: { log: typeof info; erro
         const [updatedProjectModel, projectMutations] = await compileProject(rootDir, projectModel);
         projectModel = updatedProjectModel;
 
-        const restartRuntimeDevProc = projectMutations.some((change) =>
-          (
+        const restartRuntimeDevProc = projectMutations.some((change) => {
+          return (
             [
               "add-runtime-client",
-              "remove-runtime-client",
               "rename-runtime-client",
               "update-runtime-client-env",
-              "update-runtime-client-config",
+              "remove-runtime-client",
+              "add-runtime-backend",
+              "rename-runtime-backend",
+              "update-runtime-backend-env",
+              "remove-runtime-backend",
+              "update-runtime-firedeck-config",
+              "update-runtime-firebase-config",
             ] as ProjectMutation["type"][]
-          ).includes(change.type),
-        );
+          ).includes(change.type);
+        });
 
         if (restartRuntimeDevProc) {
           kill(runtimeDevProc.pid!);

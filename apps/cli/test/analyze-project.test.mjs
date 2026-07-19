@@ -33,7 +33,6 @@ MAIN__VITE_HELLO=world
 MAIN__VITE_FOO=bar
 ADMIN__VITE_HELLO=world
       `,
-      extension: "md",
     },
     "modules/client/main/pages/index-page.tsx": {
       content: `

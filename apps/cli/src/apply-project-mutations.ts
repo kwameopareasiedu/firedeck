@@ -1,5 +1,6 @@
 import fs from "fs-extra";
 import {
+  BackendModule,
   BackendModuleFunction,
   ClientModule,
   ClientModuleRoute,
@@ -15,7 +16,7 @@ import {
   NOT_FOUND_URL_PATH,
   writeFileTree,
 } from "@/utils";
-import { resolve } from "node:path";
+import { relative, resolve } from "node:path";
 import { format } from "prettier";
 import { snakeCase, startCase } from "lodash";
 import { FiredeckConfig } from "shared/firedeck-config";
@@ -67,7 +68,12 @@ export async function applyProjectMutations(rootDir: string, mutations: ProjectM
         const firebaseRcSource = await generateFirebaseRcSource(mut.config, mut.clients);
         fs.writeFileSync(runtimeFirebaseRcFile, firebaseRcSource);
 
-        const firebaseJsonSource = await generateFirebaseJsonSource(mut.clients, runtimeModulesDir);
+        const firebaseJsonSource = await generateFirebaseJsonSource(
+          mut.clients,
+          mut.backends,
+          runtimeDir,
+          runtimeModulesDir,
+        );
         fs.writeFileSync(runtimeFirebaseJsonFile, firebaseJsonSource);
 
         break;
@@ -212,8 +218,9 @@ function generateRuntimeFileTree(
           "modules/*"
         ],
         "scripts": {
-          "dev": "../../node_modules/.bin/turbo dev",
-          "build": "../../node_modules/.bin/turbo build"
+          "dev": "../../node_modules/.bin/turbo dev emulate",
+          "build": "../../node_modules/.bin/turbo build",
+          "emulate": "../../node_modules/.bin/kill-port 4000 8080 8085 && firebase emulators:start --project demo-firedeck --import ../../temp/firebase-emulator --export-on-exit"
         }
       }`,
     },
@@ -250,7 +257,6 @@ function generateRuntimeFileTree(
         "*.log",
         "firebase-export-*",
       ].join("\n"),
-      extension: "md",
     },
   };
 }
@@ -502,6 +508,9 @@ function generateRuntimeBackendFileTree(backendName: string): FileTree {
         "scripts": {
           "build": "../../../../node_modules/.bin/rollup -c",
           "dev": "../../../../node_modules/.bin/rollup -c -w --no-watch.clearScreen",
+        },
+        "engines": {
+          "node": "22"
         }
       }`,
     },
@@ -679,17 +688,31 @@ async function generateFirebaseRcSource(config: FiredeckConfig, clients: ClientM
   return format(finalSource, getPrettierConfig({ filePath: "a.json" }));
 }
 
-async function generateFirebaseJsonSource(clients: ClientModule[], runtimeModulesDir: string) {
+async function generateFirebaseJsonSource(
+  clients: ClientModule[],
+  backends: BackendModule[],
+  runtimeDir: string,
+  runtimeModulesDir: string,
+) {
   const hostingConfig = clients.map((client) => {
     return {
       target: client.name,
-      public: resolve(runtimeModulesDir, client.name, "dist"),
+      public: relative(runtimeDir, resolve(runtimeModulesDir, client.name, "dist")),
       rewrites: [{ source: "**", destination: "/index.html" }],
+    };
+  });
+
+  const functionsConfig = backends.map((backend) => {
+    return {
+      source: relative(runtimeDir, resolve(runtimeModulesDir, backend.name)),
+      codebase: backend.name,
+      ignore: ["src", "node_modules", ".env.sample", "rollup.config.mjs", "tsconfig.json", "*.log"],
     };
   });
 
   const finalSource = JSON.stringify(
     {
+      functions: functionsConfig,
       hosting: hostingConfig,
       emulators: {
         auth: { port: 9099 },

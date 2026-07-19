@@ -35,7 +35,6 @@ MAIN__VITE_HELLO=world
 MAIN__VITE_FOO=bar
 API__DB_URL=postgres://user:pass@localhost:5173/db
       `,
-      extension: "md",
     },
     "modules/client/main/pages/index-page.tsx": {
       content: `
@@ -244,8 +243,9 @@ VITE_FOO=bar`,
     await format(
       `import createUser from "@/backend/api/functions/create-user.ts";
       import getUsers from "@/backend/api/functions/get-users.ts";
+      import hello from "@/backend/api/functions/hello.ts";
       
-      export { createUser, getUsers };`,
+      export { createUser, getUsers, hello };`,
       getPrettierConfig({ filePath: "a.ts" }),
     ),
   );

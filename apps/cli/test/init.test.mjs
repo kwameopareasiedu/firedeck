@@ -30,11 +30,13 @@ test("init", async (t) => {
   t.true(fs.existsSync(resolve(testDir, ".prettierrc")));
   t.true(fs.existsSync(resolve(testDir, ".gitignore")));
   t.true(fs.existsSync(resolve(testDir, ".firedeck/env.d.ts")));
+  t.true(fs.existsSync(resolve(testDir, ".temp/firebase-emulator/.gitignore")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/main")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/main/index.html")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/main/index.css")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/main/root.tsx")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/main/pages/404/not-found-page.tsx")));
+  t.true(fs.existsSync(resolve(testDir, "modules/backend/api/functions/hello.ts")));
   t.true(fs.existsSync(resolve(testDir, "modules/shared/components/index.tsx")));
 
   const packageJson = await fs.readJSONSync(resolve(testDir, "package.json"));

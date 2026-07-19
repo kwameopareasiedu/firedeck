@@ -55,10 +55,12 @@ export async function writeFileTree(rootDir: string, tree: FileTree) {
     const absPath = resolve(rootDir, relativePath);
     const output = tree[relativePath];
     const outputExt = output.extension || extname(absPath);
-    const formattedContent = await format(
-      output.content,
-      getPrettierConfig({ filePath: `a.${outputExt}`.replaceAll("..", ".") }),
-    );
+    const formattedContent = !outputExt
+      ? output.content
+      : await format(
+          output.content,
+          getPrettierConfig({ filePath: `a.${outputExt}`.replaceAll("..", ".") }),
+        );
 
     fs.ensureFileSync(absPath);
     fs.writeFileSync(absPath, Buffer.from(formattedContent, "utf-8"));

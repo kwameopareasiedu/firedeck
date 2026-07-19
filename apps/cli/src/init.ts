@@ -53,7 +53,6 @@ function generateProjectFileTree(args: {
   return {
     ".env": {
       content: "",
-      extension: "md",
     },
 
     "package.json": {
@@ -89,6 +88,7 @@ function generateProjectFileTree(args: {
           "firedeck": "^0.1.8",
           "fs-extra": "^11.3.6",
           "globals": "^17.7.0",
+          "kill-port": "^2.0.1",
           "prettier": "3.9.4",
           "react": "^19.2.7",
           "react-dom": "^19.2.7",
@@ -120,7 +120,6 @@ function generateProjectFileTree(args: {
         ".env*",
         "!.env.sample",
       ].join("\n"),
-      extension: "md",
     },
 
     "tsconfig.json": {
@@ -215,9 +214,11 @@ function generateProjectFileTree(args: {
       
       interface ImportMeta {
         readonly env: ImportMetaEnv;
-      }
+      }`,
+    },
 
-      `,
+    ".temp/firebase-emulator/.gitignore": {
+      content: "*\n!.gitignore",
     },
 
     "modules/client/main/index.html": {
@@ -328,6 +329,15 @@ function generateProjectFileTree(args: {
           </div>
         );
       }`,
+    },
+
+    "modules/backend/api/functions/hello.ts": {
+      content: `
+      import {onCall} from "firebase-functions/v2/https";
+      
+      export default onCall<{ greeting: string }>(async function(req){
+        return "Hello " + req.data.greeting;
+      });`,
     },
 
     "modules/shared/components/index.tsx": {
