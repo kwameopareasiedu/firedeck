@@ -241,11 +241,11 @@ VITE_FOO=bar`,
   t.is(
     functionsSource,
     await format(
-      `import createUser from "@/backend/api/functions/create-user.ts";
-      import getUsers from "@/backend/api/functions/get-users.ts";
-      import hello from "@/backend/api/functions/hello.ts";
+      `import apiCreateUser from "@/backend/api/functions/create-user.ts";
+      import apiGetUsers from "@/backend/api/functions/get-users.ts";
+      import apiHello from "@/backend/api/functions/hello.ts";
       
-      export { createUser, getUsers, hello };`,
+      export { apiCreateUser, apiGetUsers, apiHello };`,
       getPrettierConfig({ filePath: "a.ts" }),
     ),
   );

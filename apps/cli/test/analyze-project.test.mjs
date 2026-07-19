@@ -253,11 +253,11 @@ VITE_FOO=bar`,
     name: "api",
     functions: [
       {
-        name: "getUserData",
+        name: "apiGetUserData",
         importPath: "@/backend/api/functions/get-user-data.ts",
       },
       {
-        name: "hello",
+        name: "apiHello",
         importPath: "@/backend/api/functions/hello.ts",
       },
     ],

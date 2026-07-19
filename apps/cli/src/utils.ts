@@ -13,6 +13,7 @@ export const NOT_FOUND_URL_PATH = "/*";
 export function getProjectPaths(rootDir: string) {
   return {
     rootDir: rootDir,
+    envFile: resolve(rootDir, ".env"),
     configFile: resolve(rootDir, "firedeck.config.ts"),
     modulesDir: resolve(rootDir, "modules"),
     clientModulesDir: resolve(rootDir, "modules/client"),

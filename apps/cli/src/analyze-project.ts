@@ -17,11 +17,11 @@ import commonjs from "@rollup/plugin-commonjs";
 import typescript from "@rollup/plugin-typescript";
 import { FiredeckConfig } from "shared/firedeck-config";
 import {
-  ClientModule,
-  ProjectModel,
-  ClientModuleRoute,
   BackendModule,
   BackendModuleFunction,
+  ClientModule,
+  ClientModuleRoute,
+  ProjectModel,
 } from "@/types";
 
 export async function analyzeProject(rootDir: string): Promise<ProjectModel> {
@@ -64,6 +64,8 @@ export async function analyzeProject(rootDir: string): Promise<ProjectModel> {
 }
 
 function analyzeClientModule(rootDir: string, clientModuleDir: string): ClientModule {
+  const { envFile } = getProjectPaths(rootDir);
+
   const moduleName = clientModuleDir.split(sep).slice(-1)[0];
 
   const pagesDir = resolve(clientModuleDir, "pages");
@@ -79,12 +81,12 @@ function analyzeClientModule(rootDir: string, clientModuleDir: string): ClientMo
     name: moduleName,
     routes: clientRoutes,
     indexHtml: htmlContent,
-    env: getModuleEnv(rootDir, moduleName),
+    env: getModuleEnv(rootDir, envFile, moduleName),
   };
 }
 
 function analyzeBackendModule(rootDir: string, backendModuleDir: string): BackendModule {
-  const { modulesDir } = getProjectPaths(rootDir);
+  const { envFile, modulesDir } = getProjectPaths(rootDir);
 
   const moduleName = backendModuleDir.split(sep).slice(-1)[0];
 
@@ -97,7 +99,7 @@ function analyzeBackendModule(rootDir: string, backendModuleDir: string): Backen
     .filter((filepath) => fs.lstatSync(filepath).isFile() && filepath.endsWith(".ts"));
 
   const moduleFunctions = functionFiles.map((filepath) => {
-    const name = camelCase(getPathFileName(filepath));
+    const name = camelCase(`${moduleName}_${getPathFileName(filepath)}`);
     const importPath = `@/${relative(modulesDir, filepath)}`;
 
     return { name, importPath } satisfies BackendModuleFunction as BackendModuleFunction;
@@ -106,7 +108,7 @@ function analyzeBackendModule(rootDir: string, backendModuleDir: string): Backen
   return {
     name: moduleName,
     functions: moduleFunctions,
-    env: getModuleEnv(rootDir, moduleName),
+    env: getModuleEnv(rootDir, envFile, moduleName),
   };
 }
 
@@ -260,11 +262,10 @@ export async function parseFiredeckConfig(rootDir: string) {
   return await import(workspaceConfigFile).then((mod) => mod.default as FiredeckConfig);
 }
 
-function getModuleEnv(rootDir: string, moduleName: string) {
-  const envPath = resolve(rootDir, ".env");
-  if (!fs.existsSync(envPath)) throw `${relative(rootDir, envPath)}: file not found`;
+function getModuleEnv(rootDir: string, envFile: string, moduleName: string) {
+  if (!fs.existsSync(envFile)) throw `${relative(rootDir, envFile)}: file not found`;
 
-  const envContent = fs.readFileSync(envPath, { encoding: "utf-8" });
+  const envContent = fs.readFileSync(envFile, { encoding: "utf-8" });
   const moduleEnvVariables = envContent
     .trim()
     .split("\n")
