@@ -1,6 +1,10 @@
 import { ProjectModel, ProjectMutation } from "@/types";
 import { PackageManagerName } from "shared/package-manager";
 
+/**
+ * Compares two `ProjectModel` objects and generates list of `ProjectMutation` items to
+ * convert the first into the second
+ */
 export function compareProjectModels(source: ProjectModel | null, target: ProjectModel) {
   const changes: ProjectMutation[] = [];
 
@@ -21,6 +25,7 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
 
   const sourceClients = new Map(source.clients.map((client) => [client.name, client]));
 
+  // Check for new and modified clients
   for (const destClient of target.clients) {
     const sourceClient = sourceClients.get(destClient.name);
 
@@ -83,6 +88,7 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
 
   const destClients = new Map(target.clients.map((client) => [client.name, client]));
 
+  // Check for deleted clients
   for (const sourceClient of source.clients) {
     const destClient = destClients.get(sourceClient.name);
 
@@ -96,6 +102,7 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
 
   const sourceBackends = new Map(source.backends.map((backend) => [backend.name, backend]));
 
+  // Check for new and modified backends
   for (const destBackend of target.backends) {
     const sourceBackend = sourceBackends.get(destBackend.name);
 
@@ -145,6 +152,7 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
 
   const destBackends = new Map(target.backends.map((backend) => [backend.name, backend]));
 
+  // Check for deleted backends
   for (const sourceBackend of source.backends) {
     const destBackend = destBackends.get(sourceBackend.name);
 

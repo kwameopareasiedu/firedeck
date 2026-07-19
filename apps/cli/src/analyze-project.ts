@@ -24,6 +24,7 @@ import {
   ProjectModel,
 } from "@/types";
 
+/** Analyzes a Firedeck project and generates a `ProjectModel` object from it */
 export async function analyzeProject(rootDir: string): Promise<ProjectModel> {
   assertFiredeckRootDir(rootDir);
 
@@ -62,9 +63,8 @@ export async function analyzeProject(rootDir: string): Promise<ProjectModel> {
   };
 }
 
+/** Analyzes a client module directory, and builds a `ClientModule` object for it  */
 function analyzeClientModule(rootDir: string, clientModuleDir: string): ClientModule {
-  const { envFile } = getProjectPaths(rootDir);
-
   const moduleName = clientModuleDir.split(sep).slice(-1)[0];
 
   const pagesDir = resolve(clientModuleDir, "pages");
@@ -80,12 +80,13 @@ function analyzeClientModule(rootDir: string, clientModuleDir: string): ClientMo
     name: moduleName,
     routes: clientRoutes,
     indexHtml: htmlContent,
-    env: getModuleEnv(rootDir, envFile, moduleName),
+    env: getModuleEnv(rootDir, moduleName),
   };
 }
 
+/** Analyzes a backend module directory, and builds a `BackendModule` object for it  */
 function analyzeBackendModule(rootDir: string, backendModuleDir: string): BackendModule {
-  const { envFile, modulesDir } = getProjectPaths(rootDir);
+  const { modulesDir } = getProjectPaths(rootDir);
 
   const moduleName = backendModuleDir.split(sep).slice(-1)[0];
 
@@ -107,10 +108,16 @@ function analyzeBackendModule(rootDir: string, backendModuleDir: string): Backen
   return {
     name: moduleName,
     functions: moduleFunctions,
-    env: getModuleEnv(rootDir, envFile, moduleName),
+    env: getModuleEnv(rootDir, moduleName),
   };
 }
 
+/**
+ * Recursively traverses the given `dir` directory path, building a nested `ClientModuleRoute`
+ * object.
+ *
+ * This object is later used to create the nested route object for React Router.
+ */
 function discoverRoutes(rootDir: string, dir: string, pagesDir: string): ClientModuleRoute {
   const { modulesDir } = getProjectPaths(rootDir);
 
@@ -233,6 +240,7 @@ function discoverRoutes(rootDir: string, dir: string, pagesDir: string): ClientM
   };
 }
 
+/** Transpiles and executes the root `firedeck.config.ts`, returning the configuration object */
 export async function parseFiredeckConfig(rootDir: string) {
   assertFiredeckRootDir(rootDir);
 
@@ -261,7 +269,10 @@ export async function parseFiredeckConfig(rootDir: string) {
   return await import(workspaceConfigFile).then((mod) => mod.default as FiredeckConfig);
 }
 
-function getModuleEnv(rootDir: string, envFile: string, moduleName: string) {
+/** Parses the root env file and returns the env string containing keys for a given module */
+function getModuleEnv(rootDir: string, moduleName: string) {
+  const { envFile } = getProjectPaths(rootDir);
+
   if (!fs.existsSync(envFile)) throw `${relative(rootDir, envFile)}: file not found`;
 
   const envContent = fs.readFileSync(envFile, { encoding: "utf-8" });
@@ -279,6 +290,10 @@ function getModuleEnv(rootDir: string, envFile: string, moduleName: string) {
   return moduleEnvVariables.join("\n");
 }
 
+/**
+ * Returns the file name for a given file path, properly parsing files names with multiple
+ * periods in them (E.g. `index.page.tsx` => `index.page`)
+ */
 function getPathFileName(path: string) {
   const lastSegment = path.split(sep).slice(-1)[0];
 

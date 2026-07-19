@@ -22,6 +22,7 @@ import { format } from "prettier";
 import { snakeCase, startCase } from "lodash";
 import { FiredeckConfig } from "shared/firedeck-config";
 
+/** Applies a list of `ProjectMutation` items to the project file system */
 export async function applyProjectMutations(
   rootDir: string,
   mutations: ProjectMutation[],

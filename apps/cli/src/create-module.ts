@@ -4,6 +4,7 @@ import fs from "fs-extra";
 import { assertFiredeckRootDir, getProjectPaths, writeFileTree } from "@/utils";
 import { startCase } from "lodash";
 
+/** Creates a client/backend module within a Firedeck project, if it doesn't exist */
 export async function createModule(rootDir: string, opts: { name: string; type: ModuleType }) {
   assertFiredeckRootDir(rootDir);
 

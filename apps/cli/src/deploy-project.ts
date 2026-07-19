@@ -4,6 +4,7 @@ import { execSync } from "node:child_process";
 import { buildProject } from "@/build-project";
 import fs from "fs-extra";
 
+/** Builds and deploys a Firedeck project to Firebase using the global `firebase` command */
 export async function deployProject(rootDir: string, opts: { alias?: string; build?: boolean }) {
   assertFiredeckRootDir(rootDir);
 

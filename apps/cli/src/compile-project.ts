@@ -4,6 +4,7 @@ import { compareProjectModels } from "@/compare-project-models";
 import { applyProjectMutations } from "@/apply-project-mutations";
 import { ProjectModel } from "@/types";
 
+/** Compiles a Firedeck project */
 export async function compileProject(
   rootDir: string,
   model?: ProjectModel | null,

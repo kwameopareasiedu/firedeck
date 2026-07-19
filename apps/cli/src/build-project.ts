@@ -6,6 +6,7 @@ import fs from "fs-extra";
 import { compileProject } from "@/compile-project";
 import { spawn } from "node:child_process";
 
+/** Builds a Firedeck project for deployment to Firebase */
 export async function buildProject(rootDir: string, explain?: boolean) {
   assertFiredeckRootDir(rootDir);
 

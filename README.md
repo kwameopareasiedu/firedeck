@@ -6,6 +6,21 @@ React SPAs.
 Firedeck allows you to write modules which are your application logic, and it compiles them into a
 working runtime that can be built and deployed to Firebase.
 
+[//]: # (@formatter:off)
+> ⚡ **Important Note**
+>
+> - _Firedeck **is not** a runtime or a framework_
+>
+> - _Instead, it **is a** compiler that utilizes well-established technologies you already know and
+    love to give you a complete Firebase development environment._
+>
+> - _These are:_
+>   - [Turbo](https://turborepo.dev) handles runtime monorepo orchestration
+>   - [Vite](https://vite.dev)+[React](https://react.dev) handles frontend application bundling
+>   - [React Router](https://reactrouter.com) handles frontend routing
+>   - [Firebase](https://firebase.google.com) handles API and trigger functions
+[//]: # (@formatter:on)
+
 ## Features
 
 - Skeleton project boilerplate
@@ -14,16 +29,6 @@ working runtime that can be built and deployed to Firebase.
 - Automatic generation of client SDK to access firebase apps from the frontends
 - Simple environment variables setup
 - One config file to rule them all
-
-## Technologies
-
-Firedeck **is not** a runtime or a framework. Instead, it **is a** compiler that utilizes
-well-established technologies you already know and love:
-
-- [Turbo](https://turborepo.dev) handles runtime monorepo orchestration
-- [Vite](https://vite.dev)+[React](https://react.dev) handles frontend application bundling
-- [React Router](https://reactrouter.com) handles frontend routing
-- [Firebase](https://firebase.google.com) handles API and trigger functions
 
 [//]: # (> ⚡ **Important Note**)
 

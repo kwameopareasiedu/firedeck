@@ -9,6 +9,7 @@ import { parseFiredeckConfig } from "@/analyze-project";
 import { packageManagers } from "shared/package-manager";
 import { ProjectMutation } from "@/types";
 
+/** Starts a file watcher service and orchestrator thread to run a Firedeck project */
 export async function runProject(rootDir: string, explain?: boolean) {
   assertFiredeckRootDir(rootDir);
 

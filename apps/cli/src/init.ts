@@ -5,6 +5,7 @@ import { execSync } from "node:child_process";
 import { writeFileTree } from "@/utils";
 import { FileTree } from "@/types";
 
+/** Initializes a new Firedeck project */
 export async function init(
   rootDir: string,
   opts: {
@@ -84,6 +85,7 @@ function generateProjectFileTree(args: {
           "@vitejs/plugin-react": "^6.0.3",
           "eslint": "^10.7.0",
           "eslint-plugin-react": "^7.37.5",
+          "firebase": "^12.16.0",
           "firebase-functions-test": "^3.5.0",
           "firedeck": "^0.1.8",
           "fs-extra": "^11.3.6",
