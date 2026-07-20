@@ -14,35 +14,31 @@ export interface FirestoreIndex {
   fields: { fieldPath: string; order?: "ASCENDING" | "DESCENDING" }[];
 }
 
-export type ClientModuleFirebaseConfigBuilder = ConfigBuilder<
-  { moduleName: string },
-  { hostingSiteName: string }
->;
+export interface FirebaseHostingConfig {
+  siteId: string;
+}
 
-export type BackendModuleFirebaseConfigBuilder = ConfigBuilder<
-  { moduleName: string },
-  { webAppName: string }
->;
+export interface FirebaseAppConfig {
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  storageBucket: string;
+  messagingSenderId: string;
+  appId: string;
+  measurementId: string;
+}
 
 export interface FirebaseProjectConfig {
   projectId: string;
-  modules?: {
-    client?: ClientModuleFirebaseConfigBuilder;
-    backend?: BackendModuleFirebaseConfigBuilder;
-  };
-  firestore?: {
-    indexes?: FirestoreIndex[];
-    rules?: string;
-  };
-  storage?: {
-    rules?: string;
-  };
+  projectAlias: string;
+  apps: (args: { moduleName: string }) => FirebaseAppConfig;
+  hosting: (args: { moduleName: string }) => FirebaseHostingConfig;
+  firestore?: { indexes?: FirestoreIndex[]; rules?: string };
+  storage?: { rules?: string };
 }
 
 export interface FirebaseConfig {
-  projects: {
-    [alias: string]: FirebaseProjectConfig;
-  };
+  projects: FirebaseProjectConfig[];
 }
 
 export interface FiredeckConfig {
