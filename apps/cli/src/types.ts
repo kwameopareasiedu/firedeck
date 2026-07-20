@@ -57,7 +57,6 @@ export type ProjectMutation =
   | { type: "update-workspace-env-types"; clients: ClientModule[] }
   // Runtime mutations
   | { type: "create-runtime"; config: FiredeckConfig }
-  | { type: "update-runtime-firedeck-config"; config: FiredeckConfig; clients: ClientModule[] }
   | {
       type: "update-runtime-firebase-config";
       config: FiredeckConfig;
@@ -83,4 +82,4 @@ export type ProjectMutation =
   | { type: "remove-runtime-backend"; backendName: string }
   // Client SDK mutations
   | { type: "update-client-sdk-routes"; clients: ClientModule[] }
-  | { type: "update-client-sdk-api"; backends: BackendModule[] };
+  | { type: "update-client-sdk-api"; clients: ClientModule[]; backends: BackendModule[] };

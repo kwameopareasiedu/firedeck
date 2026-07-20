@@ -379,7 +379,6 @@ test("compare-project-models", async (t) => {
       env: p3.backends[1].env,
     },
     { type: "update-workspace-env-types", clients: p3.clients },
-    { type: "update-runtime-firedeck-config", config: p3.config, clients: p3.clients },
     {
       type: "update-runtime-firebase-config",
       config: p3.config,
@@ -387,7 +386,7 @@ test("compare-project-models", async (t) => {
       backends: p3.backends,
     },
     { type: "update-client-sdk-routes", clients: p3.clients },
-    { type: "update-client-sdk-api", backends: p3.backends },
+    { type: "update-client-sdk-api", clients: p3.clients, backends: p3.backends },
   ]);
 
   t.deepEqual(p1p4Changes, [
@@ -418,7 +417,6 @@ test("compare-project-models", async (t) => {
     { type: "remove-runtime-client", clientName: p1.clients[0].name },
     { type: "remove-runtime-backend", backendName: p1.backends[0].name },
     { type: "update-workspace-env-types", clients: p4.clients },
-    { type: "update-runtime-firedeck-config", config: p4.config, clients: p4.clients },
     {
       type: "update-runtime-firebase-config",
       config: p4.config,
@@ -426,7 +424,7 @@ test("compare-project-models", async (t) => {
       backends: p4.backends,
     },
     { type: "update-client-sdk-routes", clients: p4.clients },
-    { type: "update-client-sdk-api", backends: p4.backends },
+    { type: "update-client-sdk-api", clients: p4.clients, backends: p4.backends },
   ]);
 
   t.deepEqual(nullP4Changes, [
@@ -456,7 +454,6 @@ test("compare-project-models", async (t) => {
     },
     { type: "update-runtime-client-env", clientName: p4.clients[1].name, env: p4.clients[1].env },
     { type: "update-workspace-env-types", clients: p4.clients },
-    { type: "update-runtime-firedeck-config", config: p4.config, clients: p4.clients },
     {
       type: "update-runtime-firebase-config",
       config: p4.config,

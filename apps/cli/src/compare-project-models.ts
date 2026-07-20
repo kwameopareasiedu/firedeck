@@ -210,14 +210,6 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
     ).includes(change.type);
   });
 
-  if (updateRuntimeFiredeckConfig) {
-    changes.push({
-      type: "update-runtime-firedeck-config",
-      config: target.config,
-      clients: target.clients,
-    });
-  }
-
   if (updateWorkspaceEnvTypes) {
     changes.push({
       type: "update-workspace-env-types",
@@ -244,6 +236,7 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
   if (updateClientSdkApi) {
     changes.push({
       type: "update-client-sdk-api",
+      clients: target.clients,
       backends: target.backends,
     });
   }
