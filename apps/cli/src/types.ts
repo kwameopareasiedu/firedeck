@@ -11,8 +11,8 @@ export interface ClientModuleRoute {
   layoutImportPath: string | null;
   placeholderName: string | null;
   placeholderImportPath: string | null;
-  guardName: string | null;
-  guardImportPath: string | null;
+  beforeName: string | null;
+  beforeImportPath: string | null;
   urlPath: string | null;
   children: ClientModuleRoute[];
 }

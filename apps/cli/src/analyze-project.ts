@@ -1,8 +1,8 @@
-import { assertFiredeckRootDir, getProjectPaths, NOT_FOUND_URL_PATH } from "@/utils";
+import { assertFiredeckRootDir, getProjectPaths, NOT_FOUND_URL_PATH, pascalCase } from "@/utils";
 import { relative, resolve, sep } from "node:path";
 import fs from "fs-extra";
 import { camelCase } from "lodash";
-import { rollup } from "rollup";
+import { rollup, RollupOptions } from "rollup";
 import { dts } from "rollup-plugin-dts";
 import nodeResolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
@@ -131,7 +131,7 @@ function discoverRoutes(rootDir: string, dir: string, pagesDir: string): ClientM
     if (!itemPath) return [null, null];
 
     const rawItemName = getPathFileName(itemPath);
-    const itemName = rawItemName[0].toUpperCase() + camelCase(rawItemName).slice(1);
+    const itemName = pascalCase(rawItemName);
     if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(itemName))
       throw `${relative(modulesDir, itemPath)}: filename cannot be resolved to valid variable name: "${itemName}"`;
 
@@ -155,9 +155,9 @@ function discoverRoutes(rootDir: string, dir: string, pagesDir: string): ClientM
   if (placeholderFiles.length > 1) throw `${relativeDir} contains multiple placeholder files`;
   const [placeholderName, placeholderImportPath] = getNameAndImportPath(placeholderFiles[0]);
 
-  const guardFiles = dirFiles.filter((itemPath) => itemPath.endsWith("guard.ts"));
-  if (guardFiles.length > 1) throw `${relativeDir} contains multiple guard files`;
-  const [guardName, guardImportPath] = getNameAndImportPath(guardFiles[0]);
+  const beforeFiles = dirFiles.filter((itemPath) => itemPath.endsWith("before.ts"));
+  if (beforeFiles.length > 1) throw `${relativeDir} contains multiple before files`;
+  const [beforeName, beforeImportPath] = getNameAndImportPath(beforeFiles[0]);
 
   const urlPath = (() => {
     if (!pageImportPath) return null;
@@ -201,8 +201,8 @@ function discoverRoutes(rootDir: string, dir: string, pagesDir: string): ClientM
       layoutImportPath: layoutImportPath,
       placeholderName: placeholderName,
       placeholderImportPath: placeholderImportPath,
-      guardName: null,
-      guardImportPath: null,
+      beforeName: null,
+      beforeImportPath: null,
       urlPath: null,
       children: [
         {
@@ -212,8 +212,8 @@ function discoverRoutes(rootDir: string, dir: string, pagesDir: string): ClientM
           layoutImportPath: null,
           placeholderName: null,
           placeholderImportPath: null,
-          guardName: guardName,
-          guardImportPath: guardImportPath,
+          beforeName: beforeName,
+          beforeImportPath: beforeImportPath,
           urlPath: urlPath,
           children: [],
         },
@@ -231,8 +231,8 @@ function discoverRoutes(rootDir: string, dir: string, pagesDir: string): ClientM
     layoutImportPath: layoutImportPath,
     placeholderName: placeholderName,
     placeholderImportPath: placeholderImportPath,
-    guardName: guardName,
-    guardImportPath: guardImportPath,
+    beforeName: beforeName,
+    beforeImportPath: beforeImportPath,
     urlPath: urlPath,
     children: dirDirs.map((childDir) => {
       return discoverRoutes(rootDir, childDir, pagesDir);
@@ -245,17 +245,22 @@ export async function getFiredeckConfig(rootDir: string) {
   assertFiredeckRootDir(rootDir);
 
   const { configFile, workspaceConfigFile, workspaceConfigTypesFile } = getProjectPaths(rootDir);
+  const onWarn: RollupOptions["onwarn"] = (warning, defaultHandler) => {
+    if (!warning.message.includes("allowImportingTsExtensions")) defaultHandler(warning);
+  };
 
   const [codeBundle, typesBundle] = await Promise.all([
     rollup({
       input: configFile,
       plugins: [nodeResolve(), commonjs(), typescript()],
       treeshake: { moduleSideEffects: false },
+      onwarn: onWarn,
     }),
     rollup({
       input: configFile,
       plugins: [typescript(), dts({})],
       external: ["firedeck"],
+      onwarn: onWarn,
     }),
   ]);
 

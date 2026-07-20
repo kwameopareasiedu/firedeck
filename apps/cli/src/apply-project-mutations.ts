@@ -15,40 +15,40 @@ import {
   getProjectPaths,
   info,
   NOT_FOUND_URL_PATH,
+  pascalCase,
+  screamingSnakeCase,
   writeFileTree,
 } from "@/utils";
 import { relative, resolve } from "node:path";
 import { format } from "prettier";
-import { snakeCase, startCase } from "lodash";
-import { FiredeckConfig } from "shared/firedeck-config";
+import { startCase } from "lodash";
+import { ClientModuleFirebaseConfigBuilder, FiredeckConfig } from "shared/firedeck-config";
 
 /** Applies a list of `ProjectMutation` items to the project file system */
 export async function applyProjectMutations(
   rootDir: string,
   mutations: ProjectMutation[],
-  explain?: boolean,
+  opts?: { explain?: boolean },
 ) {
   assertFiredeckRootDir(rootDir);
 
-  if (explain) {
+  if (opts?.explain) {
     info(`Pending Mutations (${mutations.length})`);
 
     for (let i = 0; i < mutations.length; i++) {
-      info(`${(i + 1).toString().padStart(2, " ")}. ${mutations[i].type}`);
+      const spacing = "\n".repeat(i === mutations.length - 1 ? 1 : 0);
+      info(`${(i + 1).toString().padStart(2, " ")}. ${mutations[i].type} ${spacing}`);
     }
-
-    info("");
   }
 
   const {
-    clientSdkDir,
+    clientSdkRoutesFile,
+    getClientSdkClientModuleApiFile,
     runtimeDir,
     runtimeModulesDir,
     runtimeFirebaseRcFile,
     runtimeFirebaseJsonFile,
-    workspaceConfigFile,
     workspaceEnvTypesFile,
-    workspaceConfigTypesFile,
   } = getProjectPaths(rootDir);
 
   for (const mut of mutations) {
@@ -68,16 +68,6 @@ export async function applyProjectMutations(
           mut.config.packageManager.version,
         );
         await writeFileTree(runtimeDir, runtimeFileTree);
-        break;
-      }
-      case "update-runtime-firedeck-config": {
-        for (const client of mut.clients) {
-          const destFile = resolve(runtimeModulesDir, client.name, "firedeck.config.mjs");
-          const destTypesFile = resolve(runtimeModulesDir, client.name, "firedeck.config.d.mts");
-          fs.copyFileSync(workspaceConfigFile, destFile);
-          fs.copyFileSync(workspaceConfigTypesFile, destTypesFile);
-        }
-
         break;
       }
       case "update-runtime-firebase-config": {
@@ -159,13 +149,19 @@ export async function applyProjectMutations(
         break;
       }
       case "update-client-sdk-routes": {
-        const sdkRoutesFile = resolve(clientSdkDir, "routes.ts");
         const routesSource = await generateClientSdkRoutesSource(mut.clients);
-        fs.ensureFileSync(sdkRoutesFile);
-        fs.writeFileSync(sdkRoutesFile, routesSource);
+        fs.ensureFileSync(clientSdkRoutesFile);
+        fs.writeFileSync(clientSdkRoutesFile, routesSource);
         break;
       }
       case "update-client-sdk-api":
+        for (const client of mut.clients) {
+          const clientModuleSdkApiFile = getClientSdkClientModuleApiFile(client.name);
+          const clientModuleSdkApiSource = await generateClientSdkApiSource(mut.backends);
+          fs.ensureFileSync(clientModuleSdkApiFile);
+          fs.writeFileSync(clientModuleSdkApiFile, clientModuleSdkApiSource);
+        }
+
         // TODO: Update client SDK API
         break;
     }
@@ -309,8 +305,8 @@ function generateRuntimeClientFileTree(clientName: string): FileTree {
         
         const configOverride = firedeckConfig.vite 
           ? await firedeckConfig.vite({ 
-              module: "${clientName}",
-              mode: mode as never,
+              moduleName: "${clientName}",
+              viteMode: mode as never,
               env
             })
           : {};
@@ -429,6 +425,18 @@ function generateRuntimeClientFileTree(clientName: string): FileTree {
       import { RouterProvider, createBrowserRouter } from "react-router";
       import buildRoot from "@/client/${clientName}/root.tsx";
       import routes from "./routes.ts";
+      import { connectAuthEmulator } from "firebase/auth";
+      import { connectFunctionsEmulator } from "firebase/functions";
+      import { connectFirestoreEmulator } from "firebase/firestore";
+      import { connectStorageEmulator } from "firebase/storage";
+      import { auth, firestore, functions, storage } from "@/sdk/client/${clientName}-api.ts";
+      
+      if (import.meta.env.MODE === "development") {
+        connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
+        connectFunctionsEmulator(functions, "localhost", 5001);
+        connectFirestoreEmulator(firestore, "localhost", 8080);
+        connectStorageEmulator(storage, "localhost", 9199);
+      }
       
       const router = createBrowserRouter(routes);
       
@@ -464,7 +472,7 @@ async function generateRuntimeClientRoutesSource(routes: ClientModuleRoute) {
     return {
       id: elementName,
       path: route.pageImportPath ? route.urlPath! : undefined,
-      loader: route.guardImportPath ? createReplaceTarget(route.guardName!) : undefined,
+      loader: route.beforeImportPath ? createReplaceTarget(route.beforeName!) : undefined,
       lazy: elementName
         ? {
             Component: route.pageImportPath
@@ -497,8 +505,8 @@ async function generateRuntimeClientRoutesSource(routes: ClientModuleRoute) {
     if (route.placeholderImportPath)
       imports.push(`import ${route.placeholderName} from "${route.placeholderImportPath}";`);
 
-    if (route.guardImportPath)
-      imports.push(`import ${route.guardName} from "${route.guardImportPath}";`);
+    if (route.beforeImportPath)
+      imports.push(`import ${route.beforeName} from "${route.beforeImportPath}";`);
 
     return imports.length === 0 ? importSrc : importSrc + imports.join("\n") + "\n";
   }, "");
@@ -576,6 +584,10 @@ function generateRuntimeBackendFileTree(backendName: string): FileTree {
         ...Object.keys(packageInfo.devDependencies),
       ].map((dep) => new RegExp(\`^\${dep}.+\`));
       
+      const onWarn = (warning, defaultHandler) => {
+        if (!warning.message.includes("allowImportingTsExtensions")) defaultHandler(warning);
+      };
+      
       export default defineConfig([
         {
           input: "src/index.ts",
@@ -583,6 +595,7 @@ function generateRuntimeBackendFileTree(backendName: string): FileTree {
           plugins: [nodeResolve(), commonjs(), typescript(), typescriptPaths()],
           treeshake: { moduleSideEffects: false },
           external: external,
+          onwarn: onWarn,
         },
         {
           input: "src/index.ts",
@@ -590,6 +603,7 @@ function generateRuntimeBackendFileTree(backendName: string): FileTree {
           plugins: [typescript(), dts()],
           treeshake: { moduleSideEffects: false },
           external: external,
+          onwarn: onWarn,
         },
       ]);`,
     },
@@ -631,11 +645,11 @@ async function generateClientSdkRoutesSource(clients: ClientModule[]) {
     const routeEnumSource = flattenRoutes(client.routes).reduce((source, route) => {
       if (!route.pageName || !route.urlPath || route.urlPath === NOT_FOUND_URL_PATH) return source;
 
-      return source + `${snakeCase(route.pageName).toUpperCase()} = "${route.urlPath}",\n`;
+      return source + `${screamingSnakeCase(route.pageName)} = "${route.urlPath}",\n`;
     }, "");
 
     const clientSource = `
-      export enum ${startCase(client.name).replaceAll(" ", "")}Route { 
+      export enum ${pascalCase(client.name)}Route { 
         ${routeEnumSource} 
       };\n`;
 
@@ -643,49 +657,120 @@ async function generateClientSdkRoutesSource(clients: ClientModule[]) {
   }, "");
 
   const finalSource = `
-    /**
-     * ------------------------------------
-     * This file was generated by Firedeck.
-     *
-     * Do not edit this file directly.
-     * Your changes will be overwritten.
-     * ------------------------------------
-     */
-     
-     ${routerSource}
-    `;
+  /**
+   * ------------------------------------------------
+   * This file was generated by Firedeck. Do not edit
+   * ------------------------------------------------
+   */
+   
+   ${routerSource}`;
 
   return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
 }
 
-async function generateFirebaseRcSource(config: FiredeckConfig, clients: ClientModule[]) {
-  const projectConfig = config.firebase?.projects
-    ? Object.keys(config.firebase.projects).reduce(
-        (projectConfig, alias) => {
-          return { ...projectConfig, [alias]: config.firebase!.projects[alias].id };
-        },
+async function generateClientSdkApiSource(
+  backends: BackendModule[],
+  firebaseAppConfig?: {
+    apiKey: string;
+    authDomain: string;
+    projectId: string;
+    storageBucket: string;
+    messagingSenderId: string;
+    appId: string;
+    measurementId: string;
+  },
+) {
+  const backendSource = backends.reduce((src, backend) => {
+    return backend.functions.reduce((backendSrc, backendFunction) => {
+      return `${backendSrc}
+      
+      import ${backendFunction.name}Fn from "${backendFunction.importPath}";
+      type ArgOf${pascalCase(`${backendFunction.name}`)} = GetBackendFnArgs<typeof ${backendFunction.name}Fn>;
+      type RetOf${pascalCase(`${backendFunction.name}`)} = GetBackendFnReturn<typeof ${backendFunction.name}Fn>;
+      
+      export async function ${backendFunction.name} (args: ArgOf${pascalCase(`${backendFunction.name}`)}) {
+        return httpsCallable<typeof args, Awaited<RetOf${pascalCase(`${backendFunction.name}`)}>>
+            (functions, "${backendFunction.name}")(args).then((res) => res.data);
+      }`;
+    }, src);
+  }, "");
+
+  const finalSource = `
+  /**
+   * ------------------------------------------------
+   * This file was generated by Firedeck. Do not edit
+   * ------------------------------------------------
+   */
+   
+  import { initializeApp } from "firebase/app";
+  import { browserSessionPersistence, initializeAuth } from "firebase/auth";
+  import { initializeFirestore } from "firebase/firestore";
+  import { getFunctions, httpsCallable } from "firebase/functions";
+  import { getStorage } from "firebase/storage";
+  import { initializeAnalytics } from "firebase/analytics";
+  import type { CallableFunction } from "firebase-functions/https";
+  
+  type GetBackendFnArgs<T> = T extends CallableFunction<infer A, unknown> ? A : never;
+  type GetBackendFnReturn<T> = T extends CallableFunction<unknown, infer R> ? R : never;
+  
+  const firebaseConfig = {
+    apiKey: "demo-key",
+    authDomain: "demo-firedeck.firebaseapp.com",
+    projectId: "demo-firedeck",
+    storageBucket: "demo-firedeck.firebasestorage.app",
+    messagingSenderId: "",
+    appId: "demo-firedeck-app-id",
+    measurementId: "",
+  };
+  
+  // Initialize Firebase
+  export const app = initializeApp(firebaseConfig);
+  export const auth = initializeAuth(app, { persistence: browserSessionPersistence });
+  export const firestore = initializeFirestore(app, {});
+  export const functions = getFunctions(app);
+  export const storage = getStorage(app);
+  export const analytics = initializeAnalytics(app);
+
+  ${backendSource}
+  `;
+
+  return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
+}
+
+async function generateFirebaseRcSource(firedeckConfig: FiredeckConfig, clients: ClientModule[]) {
+  const projectConfig = firedeckConfig.firebase?.projects
+    ? Object.keys(firedeckConfig.firebase.projects).reduce(
+        (projectConfig, alias) => ({
+          ...projectConfig,
+          [alias]: firedeckConfig.firebase!.projects[alias].projectId,
+        }),
         {} as Record<string, string>,
       )
     : {};
 
-  const targetConfig = config.firebase?.projects
-    ? Object.keys(config.firebase.projects).reduce(
+  const hostingTargetConfig = firedeckConfig.firebase?.projects
+    ? Object.keys(firedeckConfig.firebase.projects).reduce(
         (targetConfig, alias) => {
-          const firebaseProjectId = config.firebase!.projects[alias].id;
-          const aliasHostingConfig = config.firebase!.projects[alias].targets?.hosting;
+          const firebaseConfig = firedeckConfig.firebase!.projects[alias];
+          const firebaseProjectId = firebaseConfig.projectId;
 
           const hostingTargetConfig = clients.reduce(
             (hostingTargetConfig, client) => {
-              const autoHostingSiteNames = [
-                `${firebaseProjectId}-${client.name}-${generateStringHash(firebaseProjectId + client.name)}`,
-              ];
+              const clientModuleFirebaseConfigBuilder: ClientModuleFirebaseConfigBuilder =
+                firebaseConfig.modules?.client ??
+                (({ moduleName }) => {
+                  const hash = generateStringHash(firebaseProjectId + moduleName);
+                  return { hostingSiteName: `${firebaseProjectId}-${moduleName}-${hash}` };
+                });
 
-              const hostingSiteNames =
-                !aliasHostingConfig || aliasHostingConfig === "auto"
-                  ? autoHostingSiteNames
-                  : aliasHostingConfig[client.name];
+              const clientModuleFirebaseConfig = clientModuleFirebaseConfigBuilder({
+                moduleName: client.name,
+              });
 
-              return { ...hostingTargetConfig, [client.name]: hostingSiteNames };
+              return {
+                ...hostingTargetConfig,
+                [client.name]: [clientModuleFirebaseConfig.hostingSiteName],
+              };
             },
             {} as Record<string, string[]>,
           );
@@ -699,7 +784,14 @@ async function generateFirebaseRcSource(config: FiredeckConfig, clients: ClientM
       )
     : {};
 
-  const finalSource = JSON.stringify({ project: projectConfig, targets: targetConfig }, null, 2);
+  const finalSource = JSON.stringify(
+    {
+      project: projectConfig,
+      targets: hostingTargetConfig,
+    },
+    null,
+    2,
+  );
 
   return format(finalSource, getPrettierConfig({ filePath: "a.json" }));
 }

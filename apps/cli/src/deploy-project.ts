@@ -1,5 +1,5 @@
 import { assertFiredeckRootDir, getProjectPaths, info, warn } from "@/utils";
-import { parseFiredeckConfig } from "@/analyze-project";
+import { getFiredeckConfig } from "@/analyze-project";
 import { execSync } from "node:child_process";
 import { buildProject } from "@/build-project";
 import fs from "fs-extra";
@@ -12,7 +12,7 @@ export async function deployProject(rootDir: string, opts: { alias?: string; bui
 
   let alias = opts?.alias;
   const { runtimeDir, runtimeFirebaseRcFile } = getProjectPaths(rootDir);
-  const firedeckConfig = await parseFiredeckConfig(rootDir);
+  const firedeckConfig = await getFiredeckConfig(rootDir);
 
   const localFirebaseProject = (() => {
     const localFirebaseProjects = firedeckConfig.firebase?.projects;
@@ -34,7 +34,7 @@ export async function deployProject(rootDir: string, opts: { alias?: string; bui
     }
   })();
 
-  if (localFirebaseProject.id.toLowerCase().startsWith("demo")) {
+  if (localFirebaseProject.projectId.toLowerCase().startsWith("demo")) {
     return warn("deployment halted: cannot deploy using a demo firebase id");
   }
 
@@ -45,17 +45,17 @@ export async function deployProject(rootDir: string, opts: { alias?: string; bui
 
   const firebaseUser = firebaseLogins[0].user;
   info(`deploying using firebase user: ${firebaseUser.email}`);
-  info(`deploying to firebase project: ${localFirebaseProject.id} (${alias})`);
+  info(`deploying to firebase project: ${localFirebaseProject.projectId} (${alias})`);
 
   const firebaseHostingSites = JSON.parse(
-    execSync(`firebase hosting:sites:list --project ${localFirebaseProject.id} --json`, {
+    execSync(`firebase hosting:sites:list --project ${localFirebaseProject.projectId} --json`, {
       encoding: "utf-8",
     }),
   )?.result.sites;
 
   const localHostingTargets = JSON.parse(
     fs.readFileSync(runtimeFirebaseRcFile, { encoding: "utf-8" }),
-  ).targets[localFirebaseProject.id].hosting;
+  ).targets[localFirebaseProject.projectId].hosting;
 
   for (const localClientName in localHostingTargets) {
     const localClientHostingTargets: string[] = localHostingTargets[localClientName];
@@ -63,7 +63,8 @@ export async function deployProject(rootDir: string, opts: { alias?: string; bui
     for (const localClientHostingTarget of localClientHostingTargets) {
       const localClientHostingTargetExists = firebaseHostingSites.find(
         (site: { name: string }) =>
-          site.name === `projects/${localFirebaseProject.id}/sites/${localClientHostingTarget}`,
+          site.name ===
+          `projects/${localFirebaseProject.projectId}/sites/${localClientHostingTarget}`,
       );
 
       if (!localClientHostingTargetExists) {
@@ -71,7 +72,7 @@ export async function deployProject(rootDir: string, opts: { alias?: string; bui
         info(`hosting site: creating ${localClientHostingTarget}`);
         const createSiteResponse = JSON.parse(
           execSync(
-            `firebase hosting:sites:create ${localClientHostingTarget} --project ${localFirebaseProject.id} --json`,
+            `firebase hosting:sites:create ${localClientHostingTarget} --project ${localFirebaseProject.projectId} --json`,
             { encoding: "utf-8" },
           ),
         );
@@ -84,7 +85,7 @@ export async function deployProject(rootDir: string, opts: { alias?: string; bui
     }
   }
 
-  execSync(`firebase deploy -f --project ${localFirebaseProject.id}`, {
+  execSync(`firebase deploy -f --project ${localFirebaseProject.projectId}`, {
     cwd: runtimeDir,
     stdio: "inherit",
   });

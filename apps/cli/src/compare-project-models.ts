@@ -206,6 +206,9 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
         "update-runtime-backend-functions",
         "rename-runtime-backend",
         "remove-runtime-backend",
+        "add-runtime-client",
+        "rename-runtime-client",
+        "remove-runtime-client",
       ] as ProjectMutation["type"][]
     ).includes(change.type);
   });

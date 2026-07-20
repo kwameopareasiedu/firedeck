@@ -1,5 +1,5 @@
 import { assertFiredeckRootDir, getProjectPaths, info } from "@/utils";
-import { parseFiredeckConfig } from "@/analyze-project";
+import { getFiredeckConfig } from "@/analyze-project";
 import { packageManagers } from "shared/package-manager";
 import { relative, resolve } from "node:path";
 import fs from "fs-extra";
@@ -7,13 +7,13 @@ import { compileProject } from "@/compile-project";
 import { spawn } from "node:child_process";
 
 /** Builds a Firedeck project for deployment to Firebase */
-export async function buildProject(rootDir: string, explain?: boolean) {
+export async function buildProject(rootDir: string, opts?: { explain?: boolean }) {
   assertFiredeckRootDir(rootDir);
 
-  const [projectModel] = await compileProject(rootDir, null, explain);
+  const [projectModel] = await compileProject(rootDir, null, { explain: opts?.explain });
 
   const { runtimeDir } = getProjectPaths(rootDir);
-  const firedeckConfig = await parseFiredeckConfig(rootDir);
+  const firedeckConfig = await getFiredeckConfig(rootDir);
   const packageManager = packageManagers[firedeckConfig.packageManager.name];
 
   for (const lockFileName of packageManager.lockFiles) {

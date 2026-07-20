@@ -108,7 +108,7 @@ cli
   .option("--explain", "log the mutations applied on the project")
   .action(async (opts) => {
     try {
-      await compileProject(process.cwd(), null, opts.explain);
+      await compileProject(process.cwd(), null, { explain: opts.explain });
 
       info("Project compiled");
       info("Runtime: .firedeck/runtime");
@@ -125,7 +125,7 @@ cli
   .option("--explain", "log the mutations applied on the project")
   .action(async (opts) => {
     try {
-      await runProject(process.cwd(), opts.explain);
+      await runProject(process.cwd(), { explain: opts.explain });
     } catch (err) {
       error(parseErrorMessage(err));
       process.exit(-1);
@@ -138,7 +138,7 @@ cli
   .option("--explain", "log the mutations applied on the project")
   .action(async (opts) => {
     try {
-      await buildProject(process.cwd(), opts.explain);
+      await buildProject(process.cwd(), { explain: opts.explain });
     } catch (err) {
       error(parseErrorMessage(err));
       process.exit(-1);

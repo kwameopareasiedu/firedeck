@@ -5,19 +5,19 @@ import { spawn } from "node:child_process";
 import kill from "tree-kill";
 import chokidar from "chokidar";
 import { compileProject } from "@/compile-project";
-import { parseFiredeckConfig } from "@/analyze-project";
+import { getFiredeckConfig } from "@/analyze-project";
 import { packageManagers } from "shared/package-manager";
 import { ProjectMutation } from "@/types";
 
 /** Starts a file watcher service and orchestrator thread to run a Firedeck project */
-export async function runProject(rootDir: string, explain?: boolean) {
+export async function runProject(rootDir: string, opts?: { explain?: boolean }) {
   assertFiredeckRootDir(rootDir);
 
   const { configFile, modulesDir, runtimeDir } = getProjectPaths(rootDir);
-  const firedeckConfig = await parseFiredeckConfig(rootDir);
+  const firedeckConfig = await getFiredeckConfig(rootDir);
   const packageManager = packageManagers[firedeckConfig.packageManager.name];
 
-  let [currentProjectModel] = await compileProject(rootDir, null, explain);
+  let [currentProjectModel] = await compileProject(rootDir, null, { explain: opts?.explain });
 
   for (const lockFileName of packageManager.lockFiles) {
     const lockFilePath = resolve(rootDir, lockFileName);
@@ -46,7 +46,7 @@ export async function runProject(rootDir: string, explain?: boolean) {
         const [newProjectModel, projectMutations] = await compileProject(
           rootDir,
           currentProjectModel,
-          explain,
+          { explain: opts?.explain },
         );
         currentProjectModel = newProjectModel;
 
@@ -61,7 +61,6 @@ export async function runProject(rootDir: string, explain?: boolean) {
               "rename-runtime-backend",
               "update-runtime-backend-env",
               "remove-runtime-backend",
-              "update-runtime-firedeck-config",
               "update-runtime-firebase-config",
             ] as ProjectMutation["type"][]
           ).includes(change.type);

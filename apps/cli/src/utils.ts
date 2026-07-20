@@ -3,6 +3,7 @@ import { extname, resolve } from "node:path";
 import fs from "fs-extra";
 import { FileTree } from "@/types";
 import chalk from "chalk";
+import { camelCase, snakeCase } from "lodash";
 
 /** React router catch-all route path */
 export const NOT_FOUND_URL_PATH = "/*";
@@ -30,6 +31,9 @@ export function getProjectPaths(rootDir: string) {
     runtimeFirebaseJsonFile: resolve(rootDir, ".firedeck/runtime/firebase.json"),
     runtimeModulesDir: resolve(rootDir, ".firedeck/runtime/modules"),
     clientSdkDir: resolve(rootDir, "modules/sdk/client"),
+    clientSdkRoutesFile: resolve(rootDir, "modules/sdk/client/routes.ts"),
+    getClientSdkClientModuleApiFile: (clientName: string) =>
+      resolve(rootDir, `modules/sdk/client/${clientName}-api.ts`),
   };
 }
 
@@ -118,4 +122,15 @@ export function generateStringHash(str: string) {
   }
 
   return Math.abs(hash);
+}
+
+/** Converts the string to pascal case */
+export function pascalCase(str: string) {
+  const camelCased = camelCase(str);
+  return camelCased[0].toUpperCase() + camelCased.slice(1);
+}
+
+/** Converts the string to screaming snake case */
+export function screamingSnakeCase(str: string) {
+  return snakeCase(str).toUpperCase();
 }
