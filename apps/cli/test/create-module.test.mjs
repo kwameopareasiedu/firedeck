@@ -31,6 +31,7 @@ test("create-module", async (t) => {
   t.true(fs.existsSync(resolve(testDir, "modules/client/admin/root.tsx")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/admin/pages/index-page.tsx")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/admin/pages/404/not-found-page.tsx")));
+  t.true(fs.existsSync(resolve(testDir, "modules/client/admin/public/favicon.svg")));
 
   await createModule(testDir, { name: "api2", type: "backend" });
   t.true(fs.existsSync(resolve(testDir, "modules/backend/api2/functions/hello.ts")));

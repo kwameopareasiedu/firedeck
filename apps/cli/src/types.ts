@@ -31,6 +31,7 @@ export interface RouterRoute {
 export interface ClientModule {
   name: string;
   routes: ClientModuleRoute;
+  publicLastModifiedTs: number;
   indexHtml: string;
   env: string;
 }
@@ -69,6 +70,7 @@ export type ProjectMutation =
   | { type: "update-runtime-client-routes"; clientName: string; clientRoutes: ClientModuleRoute }
   | { type: "update-runtime-client-html"; clientName: string; html: string }
   | { type: "update-runtime-client-env"; clientName: string; env: string }
+  | { type: "update-runtime-client-public-dir"; clientName: string }
   | { type: "remove-runtime-client"; clientName: string }
   | { type: "update-runtime-clients-config"; clients: ClientModule[]; config: FiredeckConfig }
   // Runtime backend mutations

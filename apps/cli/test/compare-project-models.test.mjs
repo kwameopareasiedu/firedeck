@@ -94,6 +94,7 @@ test("compare-project-models", async (t) => {
           ],
         },
         indexHtml: "<main>Main</main>",
+        publicLastModifiedTs: 1234564,
         env: "",
       },
     ],
@@ -192,6 +193,7 @@ test("compare-project-models", async (t) => {
           ],
         },
         indexHtml: "<main>Main</main>",
+        publicLastModifiedTs: 1234564,
         env: "",
       },
     ],
@@ -244,6 +246,7 @@ test("compare-project-models", async (t) => {
           children: [],
         },
         indexHtml: "<main>Amin</main>",
+        publicLastModifiedTs: 31312,
         env: "VITE_FOO=bar",
       },
       {
@@ -335,6 +338,7 @@ test("compare-project-models", async (t) => {
           ],
         },
         indexHtml: "<main>Amin</main>",
+        publicLastModifiedTs: 456534,
         env: "VITE_WEATHER=sunny",
       },
     ],
@@ -403,6 +407,7 @@ test("compare-project-models", async (t) => {
       html: p4.clients[0].indexHtml,
     },
     { type: "update-runtime-client-env", clientName: p4.clients[0].name, env: p4.clients[0].env },
+    { type: "update-runtime-client-public-dir", clientName: p4.clients[0].name },
     { type: "add-runtime-client", clientName: p4.clients[1].name },
     {
       type: "update-runtime-client-routes",
@@ -415,6 +420,7 @@ test("compare-project-models", async (t) => {
       html: p4.clients[1].indexHtml,
     },
     { type: "update-runtime-client-env", clientName: p4.clients[1].name, env: p4.clients[1].env },
+    { type: "update-runtime-client-public-dir", clientName: p4.clients[1].name },
     { type: "remove-runtime-client", clientName: p1.clients[0].name },
     { type: "remove-runtime-backend", backendName: p1.backends[0].name },
     { type: "update-workspace-env-types", clients: p4.clients },
@@ -443,6 +449,7 @@ test("compare-project-models", async (t) => {
       html: p4.clients[0].indexHtml,
     },
     { type: "update-runtime-client-env", clientName: p4.clients[0].name, env: p4.clients[0].env },
+    { type: "update-runtime-client-public-dir", clientName: p4.clients[0].name },
     { type: "add-runtime-client", clientName: p4.clients[1].name },
     {
       type: "update-runtime-client-routes",
@@ -455,6 +462,7 @@ test("compare-project-models", async (t) => {
       html: p4.clients[1].indexHtml,
     },
     { type: "update-runtime-client-env", clientName: p4.clients[1].name, env: p4.clients[1].env },
+    { type: "update-runtime-client-public-dir", clientName: p4.clients[1].name },
     { type: "update-workspace-env-types", clients: p4.clients },
     { type: "update-runtime-clients-config", config: p4.config, clients: p4.clients },
     {

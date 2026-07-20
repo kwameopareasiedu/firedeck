@@ -42,6 +42,7 @@ export async function applyProjectMutations(
   }
 
   const {
+    getClientModulePublicDir,
     clientSdkRoutesFile,
     getClientSdkClientModuleApiFile,
     runtimeDir,
@@ -122,6 +123,13 @@ export async function applyProjectMutations(
       case "update-runtime-client-env": {
         const envDest = resolve(runtimeModulesDir, mut.clientName, ".env");
         fs.writeFileSync(envDest, mut.env);
+        break;
+      }
+      case "update-runtime-client-public-dir": {
+        const clientPublicDir = getClientModulePublicDir(mut.clientName);
+        const clientRuntimePublicDir = resolve(runtimeModulesDir, mut.clientName, "public");
+        fs.removeSync(clientRuntimePublicDir);
+        fs.copySync(clientPublicDir, clientRuntimePublicDir);
         break;
       }
       case "remove-runtime-client": {

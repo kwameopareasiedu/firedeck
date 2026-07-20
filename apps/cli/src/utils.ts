@@ -17,6 +17,8 @@ export function getProjectPaths(rootDir: string) {
     clientModulesDir: resolve(rootDir, "modules/client"),
     getClientModulePagesDir: (clientName: string) =>
       resolve(rootDir, "modules/client", clientName, "pages"),
+    getClientModulePublicDir: (clientName: string) =>
+      resolve(rootDir, "modules/client", clientName, "public"),
     getClientModuleIndexHtmlFile: (clientName: string) =>
       resolve(rootDir, "modules/client", clientName, "index.html"),
     backendModulesDir: resolve(rootDir, "modules/backend"),
@@ -68,7 +70,7 @@ export async function writeFileTree(rootDir: string, tree: FileTree) {
   for (const relativePath in tree) {
     const absPath = resolve(rootDir, relativePath);
     const output = tree[relativePath];
-    const outputExt = output.extension || extname(absPath);
+    const outputExt = output.extension === null ? null : output.extension || extname(absPath);
     const formattedContent = !outputExt
       ? output.content
       : await format(

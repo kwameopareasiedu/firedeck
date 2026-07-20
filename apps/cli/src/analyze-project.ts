@@ -66,7 +66,8 @@ export async function analyzeProject(rootDir: string): Promise<ProjectModel> {
 
 /** Analyzes a client module directory, and builds a `ClientModule` object for it  */
 function analyzeClientModule(rootDir: string, clientModuleDir: string): ClientModule {
-  const { getClientModulePagesDir, getClientModuleIndexHtmlFile } = getProjectPaths(rootDir);
+  const { getClientModulePagesDir, getClientModuleIndexHtmlFile, getClientModulePublicDir } =
+    getProjectPaths(rootDir);
   const moduleName = clientModuleDir.split(sep).slice(-1)[0];
 
   const pagesDir = getClientModulePagesDir(moduleName);
@@ -78,11 +79,24 @@ function analyzeClientModule(rootDir: string, clientModuleDir: string): ClientMo
   if (!fs.existsSync(htmlFile)) throw `${relative(rootDir, htmlFile)}: file not found`;
   const htmlContent = fs.readFileSync(htmlFile, { encoding: "utf-8" });
 
+  const publicDir = getClientModulePublicDir(moduleName);
+  if (!fs.existsSync(publicDir)) throw `${relative(rootDir, publicDir)}: directory not found`;
+
+  const publicLastModifiedTimestamp = fs
+    .readdirSync(publicDir, { recursive: true, encoding: "utf-8" })
+    .filter((filename) => fs.lstatSync(resolve(publicDir, filename)).isFile())
+    .reduce((modifiedTimestamp, filename) => {
+      const filepath = resolve(publicDir, filename);
+      const fileModifiedTimestamp = fs.lstatSync(filepath).mtimeMs;
+      return Math.max(modifiedTimestamp, fileModifiedTimestamp);
+    }, 0);
+
   return {
     name: moduleName,
     routes: clientRoutes,
     indexHtml: htmlContent,
     env: getModuleEnv(rootDir, moduleName),
+    publicLastModifiedTs: publicLastModifiedTimestamp,
   };
 }
 

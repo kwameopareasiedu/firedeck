@@ -36,6 +36,10 @@ MAIN__VITE_FOO=bar
 API__DB_URL=postgres://user:pass@localhost:5173/db
       `,
     },
+    "modules/client/main/public/scatter.txt": {
+      content: "scatter-plot:data",
+      extension: null,
+    },
     "modules/client/main/pages/index-page.tsx": {
       content: `
         export default function IndexPage() {
@@ -119,6 +123,10 @@ API__DB_URL=postgres://user:pass@localhost:5173/db
   t.true(fs.existsSync(resolve(pagesDir, "(dashboard)/users/users-page.tsx")));
   t.true(fs.existsSync(resolve(pagesDir, "(dashboard)/users/[userId]/user-details-page.tsx")));
 
+  const publicDir = resolve(testDir, "modules/client/main/public");
+  t.true(fs.existsSync(resolve(publicDir, "favicon.svg")));
+  t.true(fs.existsSync(resolve(publicDir, "scatter.txt")));
+
   const functionsDir = resolve(testDir, "modules/backend/api/functions");
   t.true(fs.existsSync(resolve(functionsDir, "get-users.ts")));
   t.true(fs.existsSync(resolve(functionsDir, "create-user.ts")));
@@ -144,6 +152,8 @@ API__DB_URL=postgres://user:pass@localhost:5173/db
   t.true(fs.existsSync(resolve(runtimeMainDir, "vite.config.ts")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "index.html")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "global.d.ts")));
+  t.true(fs.existsSync(resolve(runtimeMainDir, "public/favicon.svg")));
+  t.true(fs.existsSync(resolve(runtimeMainDir, "public/scatter.txt")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "src/index.tsx")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "src/index.css")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "src/routes.ts")));

@@ -106,134 +106,136 @@ ADMIN__VITE_HELLO=world
   t.is(projectModel.clients.length, 1);
   t.is(projectModel.backends.length, 1);
 
-  t.deepEqual(projectModel.clients[0], {
-    name: "main",
-    routes: {
-      pageName: null,
-      pageImportPath: null,
-      layoutName: null,
-      layoutImportPath: null,
-      placeholderName: null,
-      placeholderImportPath: null,
-      beforeName: null,
-      beforeImportPath: null,
-      urlPath: null,
-      children: [
-        {
-          pageName: "IndexPage",
-          pageImportPath: "@/client/main/pages/index-page.tsx",
-          layoutName: null,
-          layoutImportPath: null,
-          placeholderName: null,
-          placeholderImportPath: null,
-          beforeName: null,
-          beforeImportPath: null,
-          urlPath: "/",
-          children: [],
-        },
-        {
-          pageName: null,
-          pageImportPath: null,
-          layoutName: "DashboardLayout",
-          layoutImportPath: "@/client/main/pages/(dashboard)/dashboard.layout.tsx",
-          placeholderName: null,
-          placeholderImportPath: null,
-          beforeName: null,
-          beforeImportPath: null,
-          urlPath: null,
-          children: [
-            {
-              pageName: "UsersPage",
-              pageImportPath: "@/client/main/pages/(dashboard)/users/users-page.tsx",
-              layoutName: null,
-              layoutImportPath: null,
-              placeholderName: null,
-              placeholderImportPath: null,
-              beforeName: null,
-              beforeImportPath: null,
-              urlPath: "/users",
-              children: [
-                {
-                  pageName: "UserDetailsPage",
-                  pageImportPath:
-                    "@/client/main/pages/(dashboard)/users/[userId]/user-details-page.tsx",
-                  layoutName: null,
-                  layoutImportPath: null,
-                  placeholderName: null,
-                  placeholderImportPath: null,
-                  beforeName: null,
-                  beforeImportPath: null,
-                  urlPath: "/users/:userId",
-                  children: [],
-                },
-              ],
-            },
-          ],
-        },
-        {
-          pageName: null,
-          pageImportPath: null,
-          layoutName: null,
-          layoutImportPath: null,
-          placeholderName: null,
-          placeholderImportPath: null,
-          beforeName: null,
-          beforeImportPath: null,
-          urlPath: null,
-          children: [
-            {
-              pageName: "ContactPage",
-              pageImportPath: "@/client/main/pages/(public)/contact/contact.page.tsx",
-              layoutName: null,
-              layoutImportPath: null,
-              placeholderName: null,
-              placeholderImportPath: null,
-              beforeName: null,
-              beforeImportPath: null,
-              urlPath: "/contact",
-              children: [],
-            },
-            {
-              pageName: "FeaturesPage",
-              pageImportPath: "@/client/main/pages/(public)/features/features-page.tsx",
-              layoutName: null,
-              layoutImportPath: null,
-              placeholderName: null,
-              placeholderImportPath: null,
-              beforeName: null,
-              beforeImportPath: null,
-              urlPath: "/features",
-              children: [],
-            },
-            {
-              pageName: "LandingPage",
-              pageImportPath: "@/client/main/pages/(public)/landing/landing.page.tsx",
-              layoutName: null,
-              layoutImportPath: null,
-              placeholderName: null,
-              placeholderImportPath: null,
-              beforeName: null,
-              beforeImportPath: null,
-              urlPath: "/landing",
-              children: [],
-            },
-          ],
-        },
-        {
-          pageName: "NotFoundPage",
-          pageImportPath: "@/client/main/pages/404/not-found-page.tsx",
-          layoutName: null,
-          layoutImportPath: null,
-          placeholderName: null,
-          placeholderImportPath: null,
-          beforeName: null,
-          beforeImportPath: null,
-          urlPath: "/*",
-          children: [],
-        },
-      ],
-    },
-    indexHtml: await format(
+  t.is(projectModel.clients[0].name, "main");
+  t.deepEqual(projectModel.clients[0].routes, {
+    pageName: null,
+    pageImportPath: null,
+    layoutName: null,
+    layoutImportPath: null,
+    placeholderName: null,
+    placeholderImportPath: null,
+    beforeName: null,
+    beforeImportPath: null,
+    urlPath: null,
+    children: [
+      {
+        pageName: "IndexPage",
+        pageImportPath: "@/client/main/pages/index-page.tsx",
+        layoutName: null,
+        layoutImportPath: null,
+        placeholderName: null,
+        placeholderImportPath: null,
+        beforeName: null,
+        beforeImportPath: null,
+        urlPath: "/",
+        children: [],
+      },
+      {
+        pageName: null,
+        pageImportPath: null,
+        layoutName: "DashboardLayout",
+        layoutImportPath: "@/client/main/pages/(dashboard)/dashboard.layout.tsx",
+        placeholderName: null,
+        placeholderImportPath: null,
+        beforeName: null,
+        beforeImportPath: null,
+        urlPath: null,
+        children: [
+          {
+            pageName: "UsersPage",
+            pageImportPath: "@/client/main/pages/(dashboard)/users/users-page.tsx",
+            layoutName: null,
+            layoutImportPath: null,
+            placeholderName: null,
+            placeholderImportPath: null,
+            beforeName: null,
+            beforeImportPath: null,
+            urlPath: "/users",
+            children: [
+              {
+                pageName: "UserDetailsPage",
+                pageImportPath:
+                  "@/client/main/pages/(dashboard)/users/[userId]/user-details-page.tsx",
+                layoutName: null,
+                layoutImportPath: null,
+                placeholderName: null,
+                placeholderImportPath: null,
+                beforeName: null,
+                beforeImportPath: null,
+                urlPath: "/users/:userId",
+                children: [],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        pageName: null,
+        pageImportPath: null,
+        layoutName: null,
+        layoutImportPath: null,
+        placeholderName: null,
+        placeholderImportPath: null,
+        beforeName: null,
+        beforeImportPath: null,
+        urlPath: null,
+        children: [
+          {
+            pageName: "ContactPage",
+            pageImportPath: "@/client/main/pages/(public)/contact/contact.page.tsx",
+            layoutName: null,
+            layoutImportPath: null,
+            placeholderName: null,
+            placeholderImportPath: null,
+            beforeName: null,
+            beforeImportPath: null,
+            urlPath: "/contact",
+            children: [],
+          },
+          {
+            pageName: "FeaturesPage",
+            pageImportPath: "@/client/main/pages/(public)/features/features-page.tsx",
+            layoutName: null,
+            layoutImportPath: null,
+            placeholderName: null,
+            placeholderImportPath: null,
+            beforeName: null,
+            beforeImportPath: null,
+            urlPath: "/features",
+            children: [],
+          },
+          {
+            pageName: "LandingPage",
+            pageImportPath: "@/client/main/pages/(public)/landing/landing.page.tsx",
+            layoutName: null,
+            layoutImportPath: null,
+            placeholderName: null,
+            placeholderImportPath: null,
+            beforeName: null,
+            beforeImportPath: null,
+            urlPath: "/landing",
+            children: [],
+          },
+        ],
+      },
+      {
+        pageName: "NotFoundPage",
+        pageImportPath: "@/client/main/pages/404/not-found-page.tsx",
+        layoutName: null,
+        layoutImportPath: null,
+        placeholderName: null,
+        placeholderImportPath: null,
+        beforeName: null,
+        beforeImportPath: null,
+        urlPath: "/*",
+        children: [],
+      },
+    ],
+  });
+
+  t.is(
+    projectModel.clients[0].indexHtml,
+    await format(
       `<!doctype html>
       <html lang="en">
         <head>
@@ -249,9 +251,15 @@ ADMIN__VITE_HELLO=world
       </html>`,
       getPrettierConfig({ filePath: "a.html" }),
     ),
-    env: `VITE_HELLO=world
+  );
+
+  t.is(
+    projectModel.clients[0].env,
+    `VITE_HELLO=world
 VITE_FOO=bar`,
-  });
+  );
+
+  t.true(projectModel.clients[0].publicLastModifiedTs > 0);
 
   t.deepEqual(projectModel.backends[0], {
     name: "api",

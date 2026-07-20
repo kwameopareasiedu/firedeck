@@ -103,6 +103,7 @@ Client modules live under `modules/client` and have the following directory stru
 ```
 <module-name>/  
   - pages/        #(Contains component files which make up the compiled React+Vite application)
+  - public/       #(Contains files to be copied to the public directory of the compiled React+Vite application)
   - index.html    #(The entry point into the React+Vite application)
   - index.css     #(The stylesheet of the React+Vite, configured to use Tailwind 4)
   - root.tsx      #(The root builder of the React+Vite application. More on this below)
@@ -228,6 +229,11 @@ export default function RootBuilder(appRouter: ReactNode) {
     );
 }
 ```
+
+#### Public Directory Support
+
+Each client module has a `public` directory. Changes made to this directory are reflected to the
+`public` directory of the compiled React+Vite application.
 
 ### Backend Modules
 

@@ -50,6 +50,10 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
           clientName: destClient.name,
           env: destClient.env,
         },
+        {
+          type: "update-runtime-client-public-dir",
+          clientName: destClient.name,
+        },
       );
     } else {
       if (sourceClient.name !== destClient.name) {
@@ -81,6 +85,13 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
           type: "update-runtime-client-env",
           clientName: destClient.name,
           env: destClient.env,
+        });
+      }
+
+      if (sourceClient.publicLastModifiedTs !== destClient.publicLastModifiedTs) {
+        changes.push({
+          type: "update-runtime-client-public-dir",
+          clientName: destClient.name,
         });
       }
     }
