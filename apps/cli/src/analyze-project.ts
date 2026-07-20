@@ -116,9 +116,7 @@ function analyzeBackendModule(rootDir: string, backendModuleDir: string): Backen
 
 /**
  * Recursively traverses the given `dir` directory path, building a nested `ClientModuleRoute`
- * object.
- *
- * This object is later used to create the nested route object for React Router.
+ * object, which is later used to create the nested route object for React Router.
  */
 function discoverRoutes(rootDir: string, dir: string, pagesDir: string): ClientModuleRoute {
   const { modulesDir } = getProjectPaths(rootDir);
@@ -271,7 +269,7 @@ export async function getFiredeckConfig(rootDir: string) {
   return await import(workspaceConfigFile).then((mod) => mod.default as FiredeckConfig);
 }
 
-/** Parses the root env file and returns the env string containing keys for a given module */
+/** Parses the root env file and returns the env string specific to the given module name */
 function getModuleEnv(rootDir: string, moduleName: string) {
   const { envFile } = getProjectPaths(rootDir);
 
@@ -294,7 +292,7 @@ function getModuleEnv(rootDir: string, moduleName: string) {
 
 /**
  * Returns the file name for a given file path, properly parsing files names with multiple
- * periods in them (E.g. `index.page.tsx` => `index.page`)
+ * periods (E.g. `index.page.tsx` => `index.page`)
  */
 function getPathFileName(path: string) {
   const lastSegment = path.split(sep).slice(-1)[0];

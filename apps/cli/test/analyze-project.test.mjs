@@ -40,13 +40,13 @@ ADMIN__VITE_HELLO=world
         return <p>Hello World</p>;
       }`,
     },
-    "modules/client/main/pages/(public)/landing/landing-page.tsx": {
+    "modules/client/main/pages/(public)/landing/landing.page.tsx": {
       content: `
       export default function() {
         return <p>Hello World</p>;
       };`,
     },
-    "modules/client/main/pages/(public)/contact/contact-page.tsx": {
+    "modules/client/main/pages/(public)/contact/contact.page.tsx": {
       content: `
       export default function() {
         return <p>Hello World</p>;
@@ -58,7 +58,7 @@ ADMIN__VITE_HELLO=world
         return <p>Hello World</p>;
       }`,
     },
-    "modules/client/main/pages/(dashboard)/dashboard-layout.tsx": {
+    "modules/client/main/pages/(dashboard)/dashboard.layout.tsx": {
       content: `
       export default function() {
         return <p>Hello World</p>;
@@ -135,7 +135,7 @@ ADMIN__VITE_HELLO=world
           pageName: null,
           pageImportPath: null,
           layoutName: "DashboardLayout",
-          layoutImportPath: "@/client/main/pages/(dashboard)/dashboard-layout.tsx",
+          layoutImportPath: "@/client/main/pages/(dashboard)/dashboard.layout.tsx",
           placeholderName: null,
           placeholderImportPath: null,
           guardName: null,
@@ -183,7 +183,7 @@ ADMIN__VITE_HELLO=world
           children: [
             {
               pageName: "ContactPage",
-              pageImportPath: "@/client/main/pages/(public)/contact/contact-page.tsx",
+              pageImportPath: "@/client/main/pages/(public)/contact/contact.page.tsx",
               layoutName: null,
               layoutImportPath: null,
               placeholderName: null,
@@ -207,7 +207,7 @@ ADMIN__VITE_HELLO=world
             },
             {
               pageName: "LandingPage",
-              pageImportPath: "@/client/main/pages/(public)/landing/landing-page.tsx",
+              pageImportPath: "@/client/main/pages/(public)/landing/landing.page.tsx",
               layoutName: null,
               layoutImportPath: null,
               placeholderName: null,
