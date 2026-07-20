@@ -220,6 +220,14 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
     });
   }
 
+  if (updateRuntimeFiredeckConfig) {
+    changes.push({
+      type: "update-runtime-clients-config",
+      config: target.config,
+      clients: target.clients,
+    });
+  }
+
   if (updateRuntimeFirebaseConfig) {
     changes.push({
       type: "update-runtime-firebase-config",

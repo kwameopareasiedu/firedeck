@@ -49,6 +49,8 @@ export async function applyProjectMutations(
     runtimeFirebaseRcFile,
     runtimeFirebaseJsonFile,
     workspaceEnvTypesFile,
+    workspaceConfigFile,
+    workspaceConfigTypesFile,
   } = getProjectPaths(rootDir);
 
   for (const mut of mutations) {
@@ -56,6 +58,16 @@ export async function applyProjectMutations(
       case "update-workspace-env-types": {
         const envTypesSource = await generateWorkspaceEnvTypesSource(mut.clients);
         fs.writeFileSync(workspaceEnvTypesFile, envTypesSource);
+
+        break;
+      }
+      case "update-runtime-clients-config": {
+        for (const client of mut.clients) {
+          const configDestPath = resolve(runtimeModulesDir, client.name, "firedeck.config.mjs");
+          const typesDestPath = resolve(runtimeModulesDir, client.name, "firedeck.config.d.mts");
+          fs.copyFileSync(workspaceConfigFile, configDestPath);
+          fs.copyFileSync(workspaceConfigTypesFile, typesDestPath);
+        }
 
         break;
       }
@@ -110,7 +122,6 @@ export async function applyProjectMutations(
       case "update-runtime-client-env": {
         const envDest = resolve(runtimeModulesDir, mut.clientName, ".env");
         fs.writeFileSync(envDest, mut.env);
-
         break;
       }
       case "remove-runtime-client": {
@@ -296,7 +307,7 @@ function generateRuntimeClientFileTree(clientName: string): FileTree {
       import react from "@vitejs/plugin-react";
       import tailwindcss from "@tailwindcss/vite";
       import { resolve } from "node:path";
-      import firedeckConfig from "../../../firedeck.config.mjs";
+      import firedeckConfig from "./firedeck.config.mjs";
 
       const __dirname = import.meta.dirname;
 
@@ -688,7 +699,7 @@ async function generateClientSdkApiSource(
       type ArgOf${pascalCase(`${backendFunction.name}`)} = GetBackendFnArgs<typeof ${backendFunction.name}Fn>;
       type RetOf${pascalCase(`${backendFunction.name}`)} = GetBackendFnReturn<typeof ${backendFunction.name}Fn>;
       
-      export async function ${backendFunction.name} (args: ArgOf${pascalCase(`${backendFunction.name}`)}) {
+      export async function call${pascalCase(backendFunction.name)} (args: ArgOf${pascalCase(`${backendFunction.name}`)}) {
         return httpsCallable<typeof args, Awaited<RetOf${pascalCase(`${backendFunction.name}`)}>>
             (functions, "${backendFunction.name}")(args).then((res) => res.data);
       }`;

@@ -70,6 +70,7 @@ export type ProjectMutation =
   | { type: "update-runtime-client-html"; clientName: string; html: string }
   | { type: "update-runtime-client-env"; clientName: string; env: string }
   | { type: "remove-runtime-client"; clientName: string }
+  | { type: "update-runtime-clients-config"; clients: ClientModule[]; config: FiredeckConfig }
   // Runtime backend mutations
   | { type: "add-runtime-backend"; backendName: string }
   | { type: "rename-runtime-backend"; oldBackendName: string; newBackendName: string }

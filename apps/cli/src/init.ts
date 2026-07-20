@@ -133,6 +133,7 @@ function generateProjectFileTree(args: {
           "moduleResolution": "Bundler",
           "esModuleInterop": true,
           "forceConsistentCasingInFileNames": true,
+          "allowImportingTsExtensions": true,
           "jsx": "react-jsx",
           "strict": true,
           "noEmit": true,
