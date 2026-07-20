@@ -3,7 +3,7 @@ import fs from "fs-extra";
 import { resolve } from "node:path";
 import { execSync } from "node:child_process";
 import { init } from "../temp/init.js";
-import { analyzeProject } from "../temp/analyze-project.js";
+import { analyzeProject, getFiredeckConfig } from "../temp/analyze-project.js";
 import { writeFileTree, getPrettierConfig } from "../temp/utils.js";
 import { format } from "prettier";
 
@@ -97,8 +97,14 @@ ADMIN__VITE_HELLO=world
   await writeFileTree(testDir, mainModuleFileTree);
 
   const projectModel = await analyzeProject(testDir);
+  const firedeckConfig = await getFiredeckConfig(testDir);
 
+  t.true(fs.existsSync(resolve(testDir, ".firedeck/firedeck.config.mjs")));
+  t.true(fs.existsSync(resolve(testDir, ".firedeck/firedeck.config.d.mts")));
+  t.deepEqual(firedeckConfig.firebase.projects, { default: { projectId: "demo-firedeck" } });
+  t.is(firedeckConfig.packageManager.name, "yarn");
   t.is(projectModel.clients.length, 1);
+  t.is(projectModel.backends.length, 1);
 
   t.deepEqual(projectModel.clients[0], {
     name: "main",
@@ -246,8 +252,6 @@ ADMIN__VITE_HELLO=world
     env: `VITE_HELLO=world
 VITE_FOO=bar`,
   });
-
-  t.is(projectModel.backends.length, 1);
 
   t.deepEqual(projectModel.backends[0], {
     name: "api",

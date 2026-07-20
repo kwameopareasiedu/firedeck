@@ -1,12 +1,4 @@
-import {
-  assertFiredeckRootDir,
-  ENV_VAR_KEY_VALUE_SEPARATOR,
-  ENV_VAR_LINE_MATCH_REGEX,
-  ENV_VAR_LINE_SPLIT_REGEX,
-  getProjectPaths,
-  NOT_FOUND_DIR_SUFFIX,
-  NOT_FOUND_URL_PATH,
-} from "@/utils";
+import { assertFiredeckRootDir, getProjectPaths, NOT_FOUND_URL_PATH } from "@/utils";
 import { relative, resolve, sep } from "node:path";
 import fs from "fs-extra";
 import { camelCase } from "lodash";
@@ -24,11 +16,20 @@ import {
   ProjectModel,
 } from "@/types";
 
+/** Regex matcher for a line of the root .env file (E.g. MAIN__VITE_FOO=bar) */
+const ENV_VAR_LINE_MATCH_REGEX = /^.+?__\w+=.+$/;
+/** Regex matcher for splitting the module name from a line of the root .env file (E.g. MAIN__) */
+const ENV_VAR_LINE_SPLIT_REGEX = /^.+?__/;
+/** Module name separator of a line of the root .env file */
+const ENV_VAR_KEY_VALUE_SEPARATOR = "__";
+/** Pages-level not-found directory name */
+const NOT_FOUND_DIR_SUFFIX = "404";
+
 /** Analyzes a Firedeck project and generates a `ProjectModel` object from it */
 export async function analyzeProject(rootDir: string): Promise<ProjectModel> {
   assertFiredeckRootDir(rootDir);
 
-  const firedeckConfig = await parseFiredeckConfig(rootDir);
+  const firedeckConfig = await getFiredeckConfig(rootDir);
   const { clientModulesDir, backendModulesDir } = getProjectPaths(rootDir);
 
   const clientModuleDirs = fs.existsSync(clientModulesDir)
@@ -65,16 +66,17 @@ export async function analyzeProject(rootDir: string): Promise<ProjectModel> {
 
 /** Analyzes a client module directory, and builds a `ClientModule` object for it  */
 function analyzeClientModule(rootDir: string, clientModuleDir: string): ClientModule {
+  const { getClientModulePagesDir, getClientModuleIndexHtmlFile } = getProjectPaths(rootDir);
   const moduleName = clientModuleDir.split(sep).slice(-1)[0];
 
-  const pagesDir = resolve(clientModuleDir, "pages");
+  const pagesDir = getClientModulePagesDir(moduleName);
   if (!fs.existsSync(pagesDir)) throw `${relative(rootDir, pagesDir)}: directory not found`;
 
   const clientRoutes = discoverRoutes(rootDir, pagesDir, pagesDir);
 
-  const htmlPath = resolve(clientModuleDir, "index.html");
-  if (!fs.existsSync(htmlPath)) throw `${relative(rootDir, htmlPath)}: file not found`;
-  const htmlContent = fs.readFileSync(htmlPath, { encoding: "utf-8" });
+  const htmlFile = getClientModuleIndexHtmlFile(moduleName);
+  if (!fs.existsSync(htmlFile)) throw `${relative(rootDir, htmlFile)}: file not found`;
+  const htmlContent = fs.readFileSync(htmlFile, { encoding: "utf-8" });
 
   return {
     name: moduleName,
@@ -86,11 +88,11 @@ function analyzeClientModule(rootDir: string, clientModuleDir: string): ClientMo
 
 /** Analyzes a backend module directory, and builds a `BackendModule` object for it  */
 function analyzeBackendModule(rootDir: string, backendModuleDir: string): BackendModule {
-  const { modulesDir } = getProjectPaths(rootDir);
+  const { modulesDir, getBackendModuleFunctionsDir } = getProjectPaths(rootDir);
 
   const moduleName = backendModuleDir.split(sep).slice(-1)[0];
 
-  const functionsDir = resolve(backendModuleDir, "functions");
+  const functionsDir = getBackendModuleFunctionsDir(moduleName);
   if (!fs.existsSync(functionsDir)) throw `${relative(rootDir, functionsDir)}: directory not found`;
 
   const functionFiles = fs
@@ -241,7 +243,7 @@ function discoverRoutes(rootDir: string, dir: string, pagesDir: string): ClientM
 }
 
 /** Transpiles and executes the root `firedeck.config.ts`, returning the configuration object */
-export async function parseFiredeckConfig(rootDir: string) {
+export async function getFiredeckConfig(rootDir: string) {
   assertFiredeckRootDir(rootDir);
 
   const { configFile, workspaceConfigFile, workspaceConfigTypesFile } = getProjectPaths(rootDir);

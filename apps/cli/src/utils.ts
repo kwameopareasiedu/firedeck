@@ -4,26 +4,23 @@ import fs from "fs-extra";
 import { FileTree } from "@/types";
 import chalk from "chalk";
 
-/** Regex matcher for a line of the root .env file (E.g. MAIN__VITE_FOO=bar) */
-export const ENV_VAR_LINE_MATCH_REGEX = /^.+?__\w+=.+$/;
-/** Regex matcher for splitting the module name from a line of the root .env file (E.g. MAIN__) */
-export const ENV_VAR_LINE_SPLIT_REGEX = /^.+?__/;
-/** Module name separator of a line of the root .env file */
-export const ENV_VAR_KEY_VALUE_SEPARATOR = "__";
-/** Pages-level not-found directory name */
-export const NOT_FOUND_DIR_SUFFIX = "404";
 /** React router catch-all route path */
 export const NOT_FOUND_URL_PATH = "/*";
 
 /** Returns relevant file paths of a Firedeck project */
 export function getProjectPaths(rootDir: string) {
   return {
-    rootDir: rootDir,
     envFile: resolve(rootDir, ".env"),
     configFile: resolve(rootDir, "firedeck.config.ts"),
     modulesDir: resolve(rootDir, "modules"),
     clientModulesDir: resolve(rootDir, "modules/client"),
+    getClientModulePagesDir: (clientName: string) =>
+      resolve(rootDir, "modules/client", clientName, "pages"),
+    getClientModuleIndexHtmlFile: (clientName: string) =>
+      resolve(rootDir, "modules/client", clientName, "index.html"),
     backendModulesDir: resolve(rootDir, "modules/backend"),
+    getBackendModuleFunctionsDir: (backendName: string) =>
+      resolve(rootDir, "modules/backend", backendName, "functions"),
     workspaceDir: resolve(rootDir, ".firedeck"),
     workspaceEnvTypesFile: resolve(rootDir, ".firedeck/env.d.ts"),
     workspaceConfigFile: resolve(rootDir, ".firedeck/firedeck.config.mjs"),

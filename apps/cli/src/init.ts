@@ -192,6 +192,13 @@ function generateProjectFileTree(args: {
           name: "${args.packageManagerName}",
           version: "${args.packageManagerVersion}",
         },
+        firebase: {
+          projects: {
+            default: {
+              projectId: "demo-firedeck",
+            },
+          },
+        },
       });`,
     },
 
