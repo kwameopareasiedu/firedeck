@@ -5,12 +5,13 @@ import { relative, resolve } from "node:path";
 import fs from "fs-extra";
 import { compileProject } from "@/compile-project";
 import { spawn } from "node:child_process";
+import { CompileProjectOptions } from "@/types";
 
 /** Builds a Firedeck project for deployment to Firebase */
-export async function buildProject(rootDir: string, opts?: { explain?: boolean }) {
+export async function buildProject(rootDir: string, opts?: CompileProjectOptions) {
   assertFiredeckRootDir(rootDir);
 
-  const [projectModel] = await compileProject(rootDir, null, { explain: opts?.explain });
+  const [projectModel] = await compileProject(rootDir, null, opts);
 
   const { runtimeDir } = getProjectPaths(rootDir);
   const firedeckConfig = await getFiredeckConfig(rootDir);

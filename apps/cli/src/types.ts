@@ -3,6 +3,10 @@ import { FiredeckConfig } from "shared/firedeck-config";
 export type ModuleType = "client" | "backend";
 export type FileNode = { content: string; extension?: string };
 export type FileTree = { [path: string]: FileNode };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type NestedRecord = { [key: string]: any };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type NestedArray = any[];
 
 export interface ClientModuleRoute {
   pageName: string | null;
@@ -85,4 +89,14 @@ export type ProjectMutation =
   | { type: "remove-runtime-backend"; backendName: string }
   // Client SDK mutations
   | { type: "update-client-sdk-routes"; clients: ClientModule[] }
-  | { type: "update-client-sdk-api"; clients: ClientModule[]; backends: BackendModule[] };
+  | {
+      type: "update-client-sdk-api";
+      clients: ClientModule[];
+      backends: BackendModule[];
+      config: FiredeckConfig;
+    };
+
+export interface CompileProjectOptions {
+  explain?: boolean;
+  firebaseProjectAlias?: string;
+}

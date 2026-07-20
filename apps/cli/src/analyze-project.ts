@@ -285,7 +285,26 @@ export async function getFiredeckConfig(rootDir: string) {
 
   await Promise.all([codeBundle.close(), typesBundle.close()]);
 
-  return await import(workspaceConfigFile).then((mod) => mod.default as FiredeckConfig);
+  const firedeckConfig = await import(workspaceConfigFile).then(
+    (mod) => mod.default as FiredeckConfig,
+  );
+
+  if (firedeckConfig.firebase?.projects) {
+    const uniqueFirebaseProjectIds = new Set<string>();
+    const uniqueFirebaseProjectAliases = new Set<string>();
+
+    for (const project of firedeckConfig.firebase.projects) {
+      if (!uniqueFirebaseProjectIds.has(project.projectId))
+        uniqueFirebaseProjectIds.add(project.projectId);
+      else throw `firebase project id: ${project.projectId} duplicated in firedeck config`;
+
+      if (!uniqueFirebaseProjectAliases.has(project.projectAlias))
+        uniqueFirebaseProjectAliases.add(project.projectAlias);
+      else throw `firebase project alias: ${project.projectAlias} duplicated in firedeck config`;
+    }
+  }
+
+  return firedeckConfig;
 }
 
 /** Parses the root env file and returns the env string specific to the given module name */

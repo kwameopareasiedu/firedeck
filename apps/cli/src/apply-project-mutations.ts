@@ -10,10 +10,9 @@ import {
 } from "@/types";
 import {
   assertFiredeckRootDir,
-  generateStringHash,
+  demoFirebaseProject,
   getPrettierConfig,
   getProjectPaths,
-  info,
   NOT_FOUND_URL_PATH,
   pascalCase,
   screamingSnakeCase,
@@ -21,25 +20,15 @@ import {
 } from "@/utils";
 import { relative, resolve } from "node:path";
 import { format } from "prettier";
-import { startCase } from "lodash";
-import { ClientModuleFirebaseConfigBuilder, FiredeckConfig } from "shared/firedeck-config";
+import { FiredeckConfig } from "shared/firedeck-config";
 
 /** Applies a list of `ProjectMutation` items to the project file system */
 export async function applyProjectMutations(
   rootDir: string,
   mutations: ProjectMutation[],
-  opts?: { explain?: boolean },
+  opts?: { firebaseProjectAlias?: string },
 ) {
   assertFiredeckRootDir(rootDir);
-
-  if (opts?.explain) {
-    info(`Pending Mutations (${mutations.length})`);
-
-    for (let i = 0; i < mutations.length; i++) {
-      const spacing = "\n".repeat(i === mutations.length - 1 ? 1 : 0);
-      info(`${(i + 1).toString().padStart(2, " ")}. ${mutations[i].type} ${spacing}`);
-    }
-  }
 
   const {
     getClientModulePublicDir,
@@ -176,18 +165,21 @@ export async function applyProjectMutations(
       case "update-client-sdk-api":
         for (const client of mut.clients) {
           const clientModuleSdkApiFile = getClientSdkClientModuleApiFile(client.name);
-          const clientModuleSdkApiSource = await generateClientSdkApiSource(mut.backends);
+          const clientModuleSdkApiSource = await generateClientSdkApiSource(
+            mut.config,
+            client,
+            mut.backends,
+            opts?.firebaseProjectAlias,
+          );
           fs.ensureFileSync(clientModuleSdkApiFile);
           fs.writeFileSync(clientModuleSdkApiFile, clientModuleSdkApiSource);
         }
-
-        // TODO: Update client SDK API
         break;
     }
   }
 }
 
-async function generateWorkspaceEnvTypesSource(clients: ClientModule[]) {
+function generateWorkspaceEnvTypesSource(clients: ClientModule[]) {
   const allClientEnvs = clients
     .reduce((envs, client) => `${envs}${client.env}\n`, "")
     .split("\n")
@@ -251,7 +243,7 @@ function generateRuntimeFileTree(
         "scripts": {
           "dev": "../../node_modules/.bin/turbo dev emulate",
           "build": "../../node_modules/.bin/turbo build",
-          "emulate": "../../node_modules/.bin/kill-port 4000 8080 8085 && firebase emulators:start --project demo-firedeck --import ../../.temp/firebase-emulator --export-on-exit"
+          "emulate": "../../node_modules/.bin/kill-port 4000 8080 8085 && firebase emulators:start --project demo-firedeck --import ../../temp/firebase/emulator --export-on-exit"
         }
       }`,
     },
@@ -414,25 +406,11 @@ function generateRuntimeClientFileTree(clientName: string): FileTree {
     },
 
     "index.html": {
-      content: `
-      <!doctype html>
-      <html lang="en">
-        <head>
-          <meta charset="UTF-8" />
-          <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>${startCase(clientName)}</title>
-        </head>
-        <body>
-          <div id="root"></div>
-          <script type="module" src="/src/index.tsx"></script>
-        </body>
-      </html>`,
+      content: "",
     },
 
     "public/favicon.svg": {
-      content:
-        '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="46" fill="none" viewBox="0 0 48 46"><path fill="#863bff" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" style="fill:#863bff;fill:color(display-p3 .5252 .23 1);fill-opacity:1"/><mask id="a" width="48" height="46" x="0" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M25.842 44.938c-.664.844-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.183c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.498 0-3.579-1.842-3.579H1.133c-.92 0-1.456-1.04-.92-1.787L9.91.473c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.578 1.842 3.578h11.377c.943 0 1.473 1.088.89 1.832L25.843 44.94z" style="fill:#000;fill-opacity:1"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#ede6ff" rx="5.508" ry="14.704" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -4.47 31.516)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#ede6ff" rx="10.399" ry="29.851" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -39.328 7.883)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#7e14ff" rx="5.508" ry="30.487" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -25.913 -14.639)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -32.644 -3.334)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -34.34 30.47)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#ede6ff" rx="14.072" ry="22.078" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="rotate(93.35 24.506 48.493)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx=".387" cy="8.972" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(39.51 .387 8.972)"/></g><g filter="url(#k)"><ellipse cx="47.523" cy="-6.092" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 47.523 -6.092)"/></g><g filter="url(#l)"><ellipse cx="41.412" cy="6.333" fill="#47bfff" rx="5.971" ry="9.665" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 41.412 6.333)"/></g><g filter="url(#m)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#n)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#o)"><ellipse cx="35.651" cy="29.907" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 35.651 29.907)"/></g><g filter="url(#p)"><ellipse cx="38.418" cy="32.4" fill="#47bfff" rx="5.971" ry="15.297" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 38.418 32.4)"/></g></g><defs><filter id="b" width="60.045" height="41.654" x="-19.77" y="16.149" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-54.613" y="-7.533" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-49.64" y="2.03" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-45.045" y="20.029" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-43.513" y="21.178" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="15.756" y="-17.901" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-27.636" y="-22.853" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="20.116" y="-38.415" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="24.641" y="-11.323" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="8.244" y="-2.416" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="18.713" y="10.588" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter></defs></svg>',
+      content: "",
       extension: "html",
     },
 
@@ -477,7 +455,15 @@ function generateRuntimeClientFileTree(clientName: string): FileTree {
   };
 }
 
-async function generateRuntimeClientRoutesSource(routes: ClientModuleRoute) {
+function generateRuntimeClientRoutesSource(routes: ClientModuleRoute) {
+  function createReplaceTarget(str: string) {
+    return `$$${str}$$`;
+  }
+
+  function removeReplaceTarget(str: string) {
+    return str.replace(/"?\$\$"?/gm, "");
+  }
+
   function createDynamicImportStatement(str: string) {
     return createReplaceTarget(`() => import('${str}').then((mod) => mod.default)`);
   }
@@ -513,9 +499,8 @@ async function generateRuntimeClientRoutesSource(routes: ClientModuleRoute) {
     };
   }
 
-  const routeDeclarationSource = JSON.stringify(generateReactRouterRoute(routes)).replace(
-    /"?\$\$"?/gm,
-    "",
+  const routeDeclarationSource = removeReplaceTarget(
+    JSON.stringify(generateReactRouterRoute(routes)),
   );
 
   const routeImportSource = flattenRoutes(routes).reduce((importSrc, route) => {
@@ -531,10 +516,10 @@ async function generateRuntimeClientRoutesSource(routes: ClientModuleRoute) {
   }, "");
 
   const routerSource = `
-      ${routeImportSource}
+    ${routeImportSource}
 
-      export default [${routeDeclarationSource}];
-    `;
+    export default [${routeDeclarationSource}];
+  `;
 
   return format(routerSource, getPrettierConfig({ filePath: "a.tsx" }));
 }
@@ -641,7 +626,7 @@ function generateRuntimeBackendFileTree(backendName: string): FileTree {
   };
 }
 
-async function generateRuntimeBackendFunctionsSource(functions: BackendModuleFunction[]) {
+function generateRuntimeBackendFunctionsSource(functions: BackendModuleFunction[]) {
   const functionsImportSource = functions
     .map((fn) => `import ${fn.name} from "${fn.importPath}";`)
     .join("\n");
@@ -659,7 +644,7 @@ async function generateRuntimeBackendFunctionsSource(functions: BackendModuleFun
   return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
 }
 
-async function generateClientSdkRoutesSource(clients: ClientModule[]) {
+function generateClientSdkRoutesSource(clients: ClientModule[]) {
   const routerSource = clients.reduce((source, client) => {
     const routeEnumSource = flattenRoutes(client.routes).reduce((source, route) => {
       if (!route.pageName || !route.urlPath || route.urlPath === NOT_FOUND_URL_PATH) return source;
@@ -687,28 +672,30 @@ async function generateClientSdkRoutesSource(clients: ClientModule[]) {
   return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
 }
 
-async function generateClientSdkApiSource(
+function generateClientSdkApiSource(
+  firedeckConfig: FiredeckConfig,
+  client: ClientModule,
   backends: BackendModule[],
-  firebaseAppConfig?: {
-    apiKey: string;
-    authDomain: string;
-    projectId: string;
-    storageBucket: string;
-    messagingSenderId: string;
-    appId: string;
-    measurementId: string;
-  },
+  firebaseProjectAlias?: string,
 ) {
+  const firebaseProjectConfigs = firedeckConfig.firebase?.projects ?? [];
+
+  const firebaseProjectConfig = firebaseProjectAlias
+    ? firebaseProjectConfigs.find((project) => project.projectAlias === firebaseProjectAlias)
+    : demoFirebaseProject;
+
+  if (!firebaseProjectConfig) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
+
   const backendSource = backends.reduce((src, backend) => {
     return backend.functions.reduce((backendSrc, backendFunction) => {
       return `${backendSrc}
       
       import ${backendFunction.name}Fn from "${backendFunction.importPath}";
-      type ArgOf${pascalCase(`${backendFunction.name}`)} = GetBackendFnArgs<typeof ${backendFunction.name}Fn>;
-      type RetOf${pascalCase(`${backendFunction.name}`)} = GetBackendFnReturn<typeof ${backendFunction.name}Fn>;
+      type ArgOf${pascalCase(backendFunction.name)} = GetBackendFnArgs<typeof ${backendFunction.name}Fn>;
+      type RetOf${pascalCase(backendFunction.name)} = GetBackendFnReturn<typeof ${backendFunction.name}Fn>;
       
-      export async function call${pascalCase(backendFunction.name)} (args: ArgOf${pascalCase(`${backendFunction.name}`)}) {
-        return httpsCallable<typeof args, Awaited<RetOf${pascalCase(`${backendFunction.name}`)}>>
+      export async function call${pascalCase(backendFunction.name)} (args: ArgOf${pascalCase(backendFunction.name)}) {
+        return httpsCallable<typeof args, Awaited<RetOf${pascalCase(backendFunction.name)}>>
             (functions, "${backendFunction.name}")(args).then((res) => res.data);
       }`;
     }, src);
@@ -732,15 +719,7 @@ async function generateClientSdkApiSource(
   type GetBackendFnArgs<T> = T extends CallableFunction<infer A, unknown> ? A : never;
   type GetBackendFnReturn<T> = T extends CallableFunction<unknown, infer R> ? R : never;
   
-  const firebaseConfig = {
-    apiKey: "demo-key",
-    authDomain: "demo-firedeck.firebaseapp.com",
-    projectId: "demo-firedeck",
-    storageBucket: "demo-firedeck.firebasestorage.app",
-    messagingSenderId: "",
-    appId: "demo-firedeck-app-id",
-    measurementId: "",
-  };
+  const firebaseConfig = ${JSON.stringify(firebaseProjectConfig.apps({ moduleName: client.name }))};
   
   // Initialize Firebase
   export const app = initializeApp(firebaseConfig);
@@ -756,52 +735,31 @@ async function generateClientSdkApiSource(
   return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
 }
 
-async function generateFirebaseRcSource(firedeckConfig: FiredeckConfig, clients: ClientModule[]) {
-  const projectConfig = firedeckConfig.firebase?.projects
-    ? Object.keys(firedeckConfig.firebase.projects).reduce(
-        (projectConfig, alias) => ({
-          ...projectConfig,
-          [alias]: firedeckConfig.firebase!.projects[alias].projectId,
+function generateFirebaseRcSource(firedeckConfig: FiredeckConfig, clients: ClientModule[]) {
+  const firebaseProjectConfigs = firedeckConfig.firebase?.projects ?? [demoFirebaseProject];
+
+  const projectConfig = firebaseProjectConfigs.reduce(
+    (projectConfig, project) => ({ ...projectConfig, [project.projectAlias]: project.projectId }),
+    {} as Record<string, string>,
+  );
+
+  const hostingTargetConfig = firebaseProjectConfigs.reduce(
+    (targetConfig, project) => {
+      const hostingTargetConfig = clients.reduce(
+        (hostingTargetConfig, client) => ({
+          ...hostingTargetConfig,
+          [client.name]: [project.hosting({ moduleName: client.name }).siteId],
         }),
-        {} as Record<string, string>,
-      )
-    : {};
+        {} as Record<string, string[]>,
+      );
 
-  const hostingTargetConfig = firedeckConfig.firebase?.projects
-    ? Object.keys(firedeckConfig.firebase.projects).reduce(
-        (targetConfig, alias) => {
-          const firebaseConfig = firedeckConfig.firebase!.projects[alias];
-          const firebaseProjectId = firebaseConfig.projectId;
-
-          const hostingTargetConfig = clients.reduce(
-            (hostingTargetConfig, client) => {
-              const clientModuleFirebaseConfigBuilder: ClientModuleFirebaseConfigBuilder =
-                firebaseConfig.modules?.client ??
-                (({ moduleName }) => {
-                  const hash = generateStringHash(firebaseProjectId + moduleName);
-                  return { hostingSiteName: `${firebaseProjectId}-${moduleName}-${hash}` };
-                });
-
-              const clientModuleFirebaseConfig = clientModuleFirebaseConfigBuilder({
-                moduleName: client.name,
-              });
-
-              return {
-                ...hostingTargetConfig,
-                [client.name]: [clientModuleFirebaseConfig.hostingSiteName],
-              };
-            },
-            {} as Record<string, string[]>,
-          );
-
-          return {
-            ...targetConfig,
-            [firebaseProjectId]: { hosting: hostingTargetConfig },
-          };
-        },
-        {} as Record<string, Record<string, Record<string, string[]>>>,
-      )
-    : {};
+      return {
+        ...targetConfig,
+        [project.projectId]: { hosting: hostingTargetConfig },
+      };
+    },
+    {} as Record<string, Record<string, Record<string, string[]>>>,
+  );
 
   const finalSource = JSON.stringify(
     {
@@ -866,8 +824,4 @@ function flattenRoutes(route: ClientModuleRoute): ClientModuleRoute[] {
       return [...flats, ...flattenRoutes(childRoute)];
     }, [] as ClientModuleRoute[]),
   ];
-}
-
-function createReplaceTarget(str: string) {
-  return `$$${str}$$`;
 }

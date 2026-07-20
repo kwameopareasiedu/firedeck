@@ -1,92 +1,124 @@
-import { assertFiredeckRootDir, getProjectPaths, info, warn } from "@/utils";
-import { getFiredeckConfig } from "@/analyze-project";
+import {
+  assertFiredeckRootDir,
+  demoFirebaseProject,
+  error,
+  getProjectPaths,
+  info,
+  warn,
+} from "@/utils";
+import { analyzeProject, getFiredeckConfig } from "@/analyze-project";
 import { execSync } from "node:child_process";
 import { buildProject } from "@/build-project";
 import fs from "fs-extra";
+import { CompileProjectOptions, NestedArray, NestedRecord } from "@/types";
 
 /** Builds and deploys a Firedeck project to Firebase using the global `firebase` command */
-export async function deployProject(rootDir: string, opts: { alias?: string; build?: boolean }) {
+export async function deployProject(rootDir: string, opts?: CompileProjectOptions) {
   assertFiredeckRootDir(rootDir);
 
-  if (opts.build) await buildProject(rootDir);
-
-  let alias = opts?.alias;
+  const alias = opts?.firebaseProjectAlias;
   const { runtimeDir, runtimeFirebaseRcFile } = getProjectPaths(rootDir);
   const firedeckConfig = await getFiredeckConfig(rootDir);
+  const firebaseProjectConfigs = firedeckConfig.firebase?.projects ?? [];
 
-  const localFirebaseProject = (() => {
-    const localFirebaseProjects = firedeckConfig.firebase?.projects;
-    if (!localFirebaseProjects) throw "no firebase projects aliases in firedeck.config.ts";
+  const localProjectConfig = await (async () => {
+    const aliasProjectConfig = alias
+      ? firebaseProjectConfigs.find((project) => project.projectAlias === alias)
+      : demoFirebaseProject;
 
-    const localAliases = Object.keys(localFirebaseProjects);
+    if (!aliasProjectConfig) throw `invalid firebase project alias: ${alias}`;
+    if (aliasProjectConfig.projectId.toLowerCase().startsWith("demo"))
+      throw `cannot deploy using a demo firebase project alias: ${alias}`;
 
-    if (localAliases.length === 0) {
-      throw "no firebase projects aliases in firedeck.config.ts";
-    } else if (localAliases.length === 1) {
-      alias ??= localAliases[0];
-
-      if (!localFirebaseProjects[alias]) throw `no firebase project with alias: ${alias}`;
-      return localFirebaseProjects[alias];
-    } else {
-      if (!alias) throw `multiple aliases detected ${localAliases} but --alias not provided`;
-      if (!localFirebaseProjects[alias]) throw `no firebase project with alias: ${alias}`;
-      return localFirebaseProjects[alias];
-    }
+    return aliasProjectConfig;
   })();
 
-  if (localFirebaseProject.projectId.toLowerCase().startsWith("demo")) {
-    return warn("deployment halted: cannot deploy using a demo firebase id");
+  const firebaseAuthUser = (() => {
+    const res = queryFirebase<NestedRecord>("login:list", localProjectConfig.projectId);
+    if (!res?.[0]) throw 'run "firebase login" to sign into firebase first';
+    return res[0].user;
+  })();
+
+  const remoteProjects = queryFirebase<NestedArray>("projects:list", localProjectConfig.projectId);
+  if (!remoteProjects.find((p) => p.projectId === localProjectConfig.projectId))
+    throw `firebase project not found: ${localProjectConfig.projectId}`;
+
+  const projectModel = await analyzeProject(rootDir);
+  const remoteApps = queryFirebase<NestedArray>("apps:list", localProjectConfig.projectId);
+  const remoteHostingSites = queryFirebase<NestedArray>(
+    "hosting:sites:list",
+    localProjectConfig.projectId,
+  );
+
+  for (const client of projectModel.clients) {
+    const clientLocalApp = localProjectConfig.apps({ moduleName: client.name });
+    if (!clientLocalApp) throw `no configured firebase app for client module: ${client.name}`;
+
+    const clientRemoteApp = remoteApps.find(
+      (app) => app.platform === "WEB" && app.appId === clientLocalApp.appId,
+    );
+    if (!clientRemoteApp) throw `no remote firebase app for client module: ${client.name}`;
+
+    const clientLocalHostingSite = localProjectConfig.hosting({ moduleName: client.name });
+    if (!clientLocalHostingSite)
+      throw `no configured firebase hosting site for client module: ${client.name}`;
+
+    const clientRemoteHostingSite = remoteHostingSites.find(
+      (site) => site.type === "USER_SITE" && site.includes(clientLocalHostingSite.siteId),
+    );
+    if (!clientRemoteHostingSite)
+      throw `no remote firebase hosting site for client module: ${client.name}`;
   }
 
-  const firebaseLogins = JSON.parse(
-    execSync("firebase login:list --json", { encoding: "utf-8" }),
-  )?.result;
-  if (!firebaseLogins?.[0]) throw 'run "firebase login" to sign into firebase first and try again';
+  info(`deploying using firebase user: ${firebaseAuthUser.email}`);
+  info(`deploying to firebase project: ${localProjectConfig.projectId} (${alias})`);
 
-  const firebaseUser = firebaseLogins[0].user;
-  info(`deploying using firebase user: ${firebaseUser.email}`);
-  info(`deploying to firebase project: ${localFirebaseProject.projectId} (${alias})`);
+  // await buildProject(rootDir, opts);
 
-  const firebaseHostingSites = JSON.parse(
-    execSync(`firebase hosting:sites:list --project ${localFirebaseProject.projectId} --json`, {
-      encoding: "utf-8",
-    }),
-  )?.result.sites;
+  //
+  // const localHostingTargets = JSON.parse(
+  //   fs.readFileSync(runtimeFirebaseRcFile, { encoding: "utf-8" }),
+  // ).targets[localFirebaseProject.projectId].hosting;
+  //
+  // for (const localClientName in localHostingTargets) {
+  //   const localClientHostingTargets: string[] = localHostingTargets[localClientName];
+  //
+  //   for (const localClientHostingTarget of localClientHostingTargets) {
+  //     const localClientHostingTargetExists = firebaseHostingSites.find(
+  //       (site: { name: string }) =>
+  //         site.name ===
+  //         `projects/${localFirebaseProject.projectId}/sites/${localClientHostingTarget}`,
+  //     );
+  //
+  //     if (!localClientHostingTargetExists) {
+  //       warn(`hosting site: missing ${localClientHostingTarget}`);
+  //       info(`hosting site: creating ${localClientHostingTarget}`);
+  //       const createSiteResponse = JSON.parse(
+  //         execSync(
+  //           `firebase hosting:sites:create ${localClientHostingTarget} --project ${localFirebaseProject.projectId} --json`,
+  //           { encoding: "utf-8" },
+  //         ),
+  //       );
+  //
+  //       if (createSiteResponse.status === "error") throw createSiteResponse.error;
+  //       info(`hosting site: created: ${localClientHostingTarget}`);
+  //     } else {
+  //       info(`hosting site: found ${localClientHostingTarget}`);
+  //     }
+  //   }
+  // }
+  //
+  // execSync(`firebase deploy -f --project ${localFirebaseProject.projectId}`, {
+  //   cwd: runtimeDir,
+  //   stdio: "inherit",
+  // });
+}
 
-  const localHostingTargets = JSON.parse(
-    fs.readFileSync(runtimeFirebaseRcFile, { encoding: "utf-8" }),
-  ).targets[localFirebaseProject.projectId].hosting;
+function queryFirebase<T>(command: string, projectId: string) {
+  const response = JSON.parse(
+    execSync(`firebase ${command} --project ${projectId} --json`, { encoding: "utf-8" }),
+  );
 
-  for (const localClientName in localHostingTargets) {
-    const localClientHostingTargets: string[] = localHostingTargets[localClientName];
-
-    for (const localClientHostingTarget of localClientHostingTargets) {
-      const localClientHostingTargetExists = firebaseHostingSites.find(
-        (site: { name: string }) =>
-          site.name ===
-          `projects/${localFirebaseProject.projectId}/sites/${localClientHostingTarget}`,
-      );
-
-      if (!localClientHostingTargetExists) {
-        warn(`hosting site: missing ${localClientHostingTarget}`);
-        info(`hosting site: creating ${localClientHostingTarget}`);
-        const createSiteResponse = JSON.parse(
-          execSync(
-            `firebase hosting:sites:create ${localClientHostingTarget} --project ${localFirebaseProject.projectId} --json`,
-            { encoding: "utf-8" },
-          ),
-        );
-
-        if (createSiteResponse.status === "error") throw createSiteResponse.error;
-        info(`hosting site: created: ${localClientHostingTarget}`);
-      } else {
-        info(`hosting site: found ${localClientHostingTarget}`);
-      }
-    }
-  }
-
-  execSync(`firebase deploy -f --project ${localFirebaseProject.projectId}`, {
-    cwd: runtimeDir,
-    stdio: "inherit",
-  });
+  if (response.status === "error") throw response.error;
+  return response.result as T;
 }

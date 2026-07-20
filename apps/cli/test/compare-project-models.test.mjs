@@ -391,7 +391,12 @@ test("compare-project-models", async (t) => {
       backends: p3.backends,
     },
     { type: "update-client-sdk-routes", clients: p3.clients },
-    { type: "update-client-sdk-api", clients: p3.clients, backends: p3.backends },
+    {
+      type: "update-client-sdk-api",
+      clients: p3.clients,
+      backends: p3.backends,
+      config: p3.config,
+    },
   ]);
 
   t.deepEqual(p1p4Changes, [
@@ -432,7 +437,12 @@ test("compare-project-models", async (t) => {
       backends: p4.backends,
     },
     { type: "update-client-sdk-routes", clients: p4.clients },
-    { type: "update-client-sdk-api", clients: p4.clients, backends: p4.backends },
+    {
+      type: "update-client-sdk-api",
+      clients: p4.clients,
+      backends: p4.backends,
+      config: p4.config,
+    },
   ]);
 
   t.deepEqual(nullP4Changes, [
@@ -472,6 +482,11 @@ test("compare-project-models", async (t) => {
       backends: p4.backends,
     },
     { type: "update-client-sdk-routes", clients: p4.clients },
-    { type: "update-client-sdk-api", clients: p4.clients, backends: p4.backends },
+    {
+      type: "update-client-sdk-api",
+      clients: p4.clients,
+      backends: p4.backends,
+      config: p4.config,
+    },
   ]);
 });

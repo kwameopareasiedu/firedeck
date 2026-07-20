@@ -1,12 +1,51 @@
 import { format, Options } from "prettier";
 import { extname, resolve } from "node:path";
 import fs from "fs-extra";
-import { FileTree } from "@/types";
 import chalk from "chalk";
+import { FileTree } from "@/types";
 import { camelCase, snakeCase } from "lodash";
+import { FirebaseProjectConfig } from "shared/firedeck-config";
 
 /** React router catch-all route path */
 export const NOT_FOUND_URL_PATH = "/*";
+
+export const demoFirebaseProject: FirebaseProjectConfig = {
+  projectAlias: "default",
+  projectId: "demo-firedeck",
+  apps: () => ({
+    apiKey: "demo-firedeck-api-key",
+    authDomain: "demo-firedeck.firebaseapp.com",
+    projectId: "demo-firedeck",
+    storageBucket: "demo-firedeck.firebasestorage.app",
+    messagingSenderId: "demo-firedeck-messaging-sender-id",
+    appId: "demo-firedeck-app-id",
+    measurementId: "demo-firedeck-measurement-id",
+  }),
+  hosting: ({ moduleName }) => {
+    const hash = generateStringHash("demo-firedeck" + moduleName);
+    return { siteId: `demo-firedeck-${moduleName}-${hash}` };
+  },
+  firestore: {
+    rules: `rules_version = '2';
+    service cloud.firestore {
+      match /databases/{database}/documents {
+        match /{document=**} {
+          allow read, write: if false;
+        }
+      }
+    }`,
+  },
+  storage: {
+    rules: `rules_version = '2';
+    service firebase.storage {
+      match /b/{bucket}/o {
+        match /** {
+          allow read, write: if false;
+        }
+      }
+    }`,
+  },
+};
 
 /** Returns relevant file paths of a Firedeck project */
 export function getProjectPaths(rootDir: string) {
@@ -24,14 +63,14 @@ export function getProjectPaths(rootDir: string) {
     backendModulesDir: resolve(rootDir, "modules/backend"),
     getBackendModuleFunctionsDir: (backendName: string) =>
       resolve(rootDir, "modules/backend", backendName, "functions"),
-    workspaceDir: resolve(rootDir, ".firedeck"),
-    workspaceEnvTypesFile: resolve(rootDir, ".firedeck/env.d.ts"),
-    workspaceConfigFile: resolve(rootDir, ".firedeck/firedeck.config.mjs"),
-    workspaceConfigTypesFile: resolve(rootDir, ".firedeck/firedeck.config.d.mts"),
-    runtimeDir: resolve(rootDir, ".firedeck/runtime"),
-    runtimeFirebaseRcFile: resolve(rootDir, ".firedeck/runtime/.firebaserc"),
-    runtimeFirebaseJsonFile: resolve(rootDir, ".firedeck/runtime/firebase.json"),
-    runtimeModulesDir: resolve(rootDir, ".firedeck/runtime/modules"),
+    workspaceDir: resolve(rootDir, "firedeck"),
+    workspaceEnvTypesFile: resolve(rootDir, "firedeck/env.d.ts"),
+    workspaceConfigFile: resolve(rootDir, "firedeck/firedeck.config.mjs"),
+    workspaceConfigTypesFile: resolve(rootDir, "firedeck/firedeck.config.d.mts"),
+    runtimeDir: resolve(rootDir, "firedeck/runtime"),
+    runtimeFirebaseRcFile: resolve(rootDir, "firedeck/runtime/.firebaserc"),
+    runtimeFirebaseJsonFile: resolve(rootDir, "firedeck/runtime/firebase.json"),
+    runtimeModulesDir: resolve(rootDir, "firedeck/runtime/modules"),
     clientSdkDir: resolve(rootDir, "modules/sdk/client"),
     clientSdkRoutesFile: resolve(rootDir, "modules/sdk/client/routes.ts"),
     getClientSdkClientModuleApiFile: (clientName: string) =>

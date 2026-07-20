@@ -135,15 +135,15 @@ API__DB_URL=postgres://user:pass@localhost:5173/db
   const mutations = compareProjectModels(null, model);
   await applyProjectMutations(testDir, mutations);
 
-  const workspaceDir = resolve(testDir, ".firedeck");
+  const workspaceDir = resolve(testDir, "firedeck");
   t.true(fs.existsSync(resolve(workspaceDir, "firedeck.config.mjs")));
   t.true(fs.existsSync(resolve(workspaceDir, "firedeck.config.d.mts")));
 
-  const runtimeDir = resolve(testDir, ".firedeck/runtime");
+  const runtimeDir = resolve(testDir, "firedeck/runtime");
   t.true(fs.existsSync(resolve(runtimeDir, ".firebaserc")));
   t.true(fs.existsSync(resolve(runtimeDir, "firebase.json")));
 
-  const runtimeMainDir = resolve(testDir, ".firedeck/runtime/modules/main");
+  const runtimeMainDir = resolve(testDir, "firedeck/runtime/modules/main");
   t.true(fs.existsSync(resolve(runtimeMainDir, ".env")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "package.json")));
   t.true(fs.existsSync(resolve(runtimeMainDir, "tsconfig.app.json")));
@@ -168,7 +168,7 @@ API__DB_URL=postgres://user:pass@localhost:5173/db
 VITE_FOO=bar`,
   );
 
-  const runtimeApiDir = resolve(testDir, ".firedeck/runtime/modules/api");
+  const runtimeApiDir = resolve(testDir, "firedeck/runtime/modules/api");
   t.true(fs.existsSync(resolve(runtimeApiDir, ".env")));
   t.true(fs.existsSync(resolve(runtimeApiDir, "package.json")));
   t.true(fs.existsSync(resolve(runtimeApiDir, "tsconfig.json")));
@@ -291,7 +291,7 @@ VITE_FOO=bar`,
     ),
   );
 
-  const workspaceEnvTypesSource = fs.readFileSync(resolve(testDir, ".firedeck/env.d.ts"), {
+  const workspaceEnvTypesSource = fs.readFileSync(resolve(testDir, "firedeck/env.d.ts"), {
     encoding: "utf-8",
   });
 

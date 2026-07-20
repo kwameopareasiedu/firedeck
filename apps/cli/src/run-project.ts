@@ -67,6 +67,8 @@ export async function runProject(rootDir: string, opts?: { explain?: boolean }) 
         });
 
         if (restartRuntimeDevProc) {
+          info("restarting runtime");
+
           kill(runtimeDevProc.pid!);
           await new Promise((resolve) => setTimeout(resolve, 1250));
 

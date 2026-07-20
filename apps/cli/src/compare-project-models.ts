@@ -258,6 +258,7 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
   if (updateClientSdkApi) {
     changes.push({
       type: "update-client-sdk-api",
+      config: target.config,
       clients: target.clients,
       backends: target.backends,
     });

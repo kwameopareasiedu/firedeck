@@ -41,7 +41,7 @@ working runtime that can be built and deployed to Firebase.
 A Firedeck application has the following structure:
 
 ```
-- .firedeck/
+- firedeck/
 - modules/
   - backend/
   - client/
@@ -58,7 +58,7 @@ A Firedeck application has the following structure:
 
 | Path                 | Description                               |
 |----------------------|-------------------------------------------|
-| `.firedeck`          | Firedeck workspace directory              |
+| `firedeck`           | Firedeck workspace directory              |
 | `modules/backend`    | Backend [modules](#Modules) directory     |
 | `modules/client`     | Client [modules](#Modules) directory      |
 | `modules/sdk/client` | Directory for auto-generated client SDK   |
@@ -330,7 +330,7 @@ API__SERVICE_KEY=oiroinvowijref0928f2398
 When `firedeck compile`, `firedeck run` or `firedeck buid` is invoked, Firedeck compiles the
 "modules" directory into a full runtime.
 
-The runtime is a [Turbo](https://turborepo.dev/) monorepo which lives at `.firedeck/runtime` and
+The runtime is a [Turbo](https://turborepo.dev/) monorepo which lives at `firedeck/runtime` and
 contains [Vite](https://vite.dev/) applications for each client module, and a single
 [Firebase cloud functions apps](https://firebase.google.com/docs/functions) for each backend module.
 

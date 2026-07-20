@@ -29,8 +29,8 @@ test("init", async (t) => {
   t.true(fs.existsSync(resolve(testDir, "tsconfig.json")));
   t.true(fs.existsSync(resolve(testDir, ".prettierrc")));
   t.true(fs.existsSync(resolve(testDir, ".gitignore")));
-  t.true(fs.existsSync(resolve(testDir, ".firedeck/env.d.ts")));
-  t.true(fs.existsSync(resolve(testDir, ".temp/firebase-emulator/.gitignore")));
+  t.true(fs.existsSync(resolve(testDir, "firedeck/env.d.ts")));
+  t.true(fs.existsSync(resolve(testDir, "temp/firebase/emulator/.gitignore")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/main")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/main/index.html")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/main/index.css")));

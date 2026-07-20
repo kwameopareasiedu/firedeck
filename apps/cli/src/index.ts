@@ -3,7 +3,7 @@
 import fs from "fs-extra";
 import { isAbsolute, relative, resolve } from "node:path";
 import { Command } from "commander";
-import { error, info, parseErrorMessage } from "@/utils";
+import { error, getProjectPaths, info, parseErrorMessage } from "@/utils";
 import { input, select } from "@inquirer/prompts";
 import { PackageManagerName, packageManagers } from "shared/package-manager";
 import { init } from "@/init";
@@ -109,10 +109,11 @@ cli
   .action(async (opts) => {
     try {
       await compileProject(process.cwd(), null, { explain: opts.explain });
+      const { runtimeDir, clientSdkDir } = getProjectPaths(process.cwd());
 
       info("Project compiled");
-      info("Runtime: .firedeck/runtime");
-      info("Client SDK: modules/sdk/client");
+      info(`Runtime: ${runtimeDir}`);
+      info(`Client SDK: ${clientSdkDir}`);
     } catch (err) {
       error(parseErrorMessage(err));
       process.exit(-1);
@@ -149,10 +150,9 @@ cli
   .command("deploy")
   .description("Deploys built modules to their respective Firebase components")
   .option("--alias <alias>", "firebase project alias to deploy to")
-  .option("--no-build", "skip project build")
   .action(async (opts) => {
     try {
-      await deployProject(process.cwd(), { alias: opts.alias, build: opts.build });
+      await deployProject(process.cwd(), { firebaseProjectAlias: opts.alias });
     } catch (err) {
       error(parseErrorMessage(err));
       process.exit(-1);

@@ -87,7 +87,7 @@ function generateProjectFileTree(args: {
           "eslint-plugin-react": "^7.37.5",
           "firebase": "^12.16.0",
           "firebase-functions-test": "^3.5.0",
-          "firedeck": "^0.1.9",
+          "firedeck": "^0.1.10",
           "fs-extra": "^11.3.6",
           "globals": "^17.7.0",
           "kill-port": "^2.0.1",
@@ -110,7 +110,7 @@ function generateProjectFileTree(args: {
 
     ".gitignore": {
       content: [
-        ".firedeck",
+        "firedeck",
         ".idea",
         ".vscode",
         "node_modules",
@@ -142,7 +142,7 @@ function generateProjectFileTree(args: {
           "paths": {
             "@/*": ["./modules/*"]
           },
-          "types": ["vite/client", "./.firedeck/env"]
+          "types": ["vite/client", "./firedeck/env"]
         },
         "include": ["./modules"]
       }`,
@@ -193,17 +193,10 @@ function generateProjectFileTree(args: {
           name: "${args.packageManagerName}",
           version: "${args.packageManagerVersion}",
         },
-        firebase: {
-          projects: {
-            default: {
-              projectId: "demo-firedeck",
-            },
-          },
-        },
       });`,
     },
 
-    ".firedeck/env.d.ts": {
+    "firedeck/env.d.ts": {
       content: `
       interface ViteTypeOptions {
         strictImportMetaEnv: unknown;
@@ -217,7 +210,7 @@ function generateProjectFileTree(args: {
       }`,
     },
 
-    ".temp/firebase-emulator/.gitignore": {
+    "temp/firebase/emulator/.gitignore": {
       content: "*\n!.gitignore",
     },
 
@@ -339,10 +332,10 @@ function generateProjectFileTree(args: {
 
     "modules/backend/api/functions/hello.ts": {
       content: `
-      import {onCall} from "firebase-functions/v2/https";
+      import {CallableRequest,onCall} from "firebase-functions/v2/https";
       
-      export default onCall<{ greeting: string }>(async function(req){
-        return "Hello " + req.data.greeting;
+      export default onCall(async function(req: CallableRequest<{ name: string }>){
+        return "Hello " + req.data.name;
       });`,
     },
 

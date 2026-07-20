@@ -99,9 +99,9 @@ ADMIN__VITE_HELLO=world
   const projectModel = await analyzeProject(testDir);
   const firedeckConfig = await getFiredeckConfig(testDir);
 
-  t.true(fs.existsSync(resolve(testDir, ".firedeck/firedeck.config.mjs")));
-  t.true(fs.existsSync(resolve(testDir, ".firedeck/firedeck.config.d.mts")));
-  t.deepEqual(firedeckConfig.firebase.projects, { default: { projectId: "demo-firedeck" } });
+  t.true(fs.existsSync(resolve(testDir, "firedeck/firedeck.config.mjs")));
+  t.true(fs.existsSync(resolve(testDir, "firedeck/firedeck.config.d.mts")));
+  t.deepEqual(firedeckConfig.firebase, undefined);
   t.is(firedeckConfig.packageManager.name, "yarn");
   t.is(projectModel.clients.length, 1);
   t.is(projectModel.backends.length, 1);
