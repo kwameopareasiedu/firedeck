@@ -38,6 +38,7 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
         {
           type: "add-runtime-client",
           clientName: destClient.name,
+          backends: target.backends,
         },
         {
           type: "update-runtime-client-routes",

@@ -125,7 +125,7 @@ export async function applyProjectMutations(
       }
       case "add-runtime-client": {
         const clientRoot = resolve(runtimeModulesDir, mut.clientName);
-        const clientFileTree = generateRuntimeClientFileTree(mut.clientName);
+        const clientFileTree = generateRuntimeClientFileTree(mut.clientName, mut.backends);
         await writeFileTree(clientRoot, clientFileTree);
         break;
       }
@@ -354,7 +354,7 @@ function generateRuntimeFileTree(
   };
 }
 
-function generateRuntimeClientFileTree(clientName: string): FileTree {
+function generateRuntimeClientFileTree(clientName: string, backends: BackendModule[]): FileTree {
   return {
     "package.json": {
       content: `
@@ -493,17 +493,24 @@ function generateRuntimeClientFileTree(clientName: string): FileTree {
       import { RouterProvider, createBrowserRouter } from "react-router";
       import buildRoot from "@/client/${clientName}/root.tsx";
       import routes from "./routes.ts";
-      import { connectAuthEmulator } from "firebase/auth";
-      import { connectFunctionsEmulator } from "firebase/functions";
-      import { connectFirestoreEmulator } from "firebase/firestore";
-      import { connectStorageEmulator } from "firebase/storage";
-      import { auth, firestore, functions, storage } from "@/sdk/client/${clientName}-api.ts";
       
-      if (import.meta.env.MODE === "development") {
-        connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
-        connectFunctionsEmulator(functions, "localhost", 5001);
-        connectFirestoreEmulator(firestore, "localhost", 8080);
-        connectStorageEmulator(storage, "localhost", 9199);
+      ${
+        backends.length > 0
+          ? `
+          import { connectAuthEmulator } from "firebase/auth";
+          import { connectFunctionsEmulator } from "firebase/functions";
+          import { connectFirestoreEmulator } from "firebase/firestore";
+          import { connectStorageEmulator } from "firebase/storage";
+          import { auth, firestore, functions, storage } from "@/sdk/client/${clientName}-api.ts";
+      
+          if (import.meta.env.MODE === "development") {
+            connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
+            connectFunctionsEmulator(functions, "localhost", 5001);
+            connectFirestoreEmulator(firestore, "localhost", 8080);
+            connectStorageEmulator(storage, "localhost", 9199);
+          }
+          `
+          : ""
       }
       
       const router = createBrowserRouter(routes);

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 import fs from "fs-extra";
-import { isAbsolute, relative, resolve } from "node:path";
+import { isAbsolute, relative, resolve, basename } from "node:path";
 import { Command } from "commander";
-import { error, getProjectPaths, info, parseErrorMessage } from "@/utils";
+import { error, getFiredeckAsciiArt, getProjectPaths, info, parseErrorMessage } from "@/utils";
 import { input, select } from "@inquirer/prompts";
 import { PackageManagerName, packageManagers } from "shared/package-manager";
 import { init } from "@/init";
@@ -21,33 +21,25 @@ const packageInfo = JSON.parse(
 const cli = new Command("firedeck");
 cli.description(packageInfo.description);
 cli.version(packageInfo.version, "-v");
+cli.addHelpText("beforeAll", getFiredeckAsciiArt());
 
 cli
   .command("init <rootDir>")
   .description("Create a new Firedeck project")
   .action(async (rootDir) => {
     try {
-      rootDir = isAbsolute(rootDir) ? rootDir : resolve(process.cwd(), rootDir);
+      console.log(getFiredeckAsciiArt());
 
-      console.log(
-        `
-███████╗ ██╗ ██████╗  ███████╗ ██████╗  ███████╗  ██████╗ ██╗  ██╗
-█████╗   ██║ ██████╝  █████╗   ██║  ██║ █████╗   ██║      █████╔╝ 
-██║      ██║ ██║  ██║ ███████╗ ██████╔╝ ███████╗ ╚██████╗ ██║  ██╗
-╚═╝      ╚═╝ ╚═╝  ╚═╝ ╚══════╝ ╚═════╝  ╚══════╝  ╚═════╝ ╚═╝  ╚═╝`,
-      );
+      rootDir = isAbsolute(rootDir) ? rootDir : resolve(process.cwd(), rootDir);
 
       const projectName = await input({
         message: "Name:",
-        default: "new-project",
+        default: basename(rootDir),
         pattern: /^[a-z0-9-_]{1,214}$/,
       });
-      const projectDescription = await input({
-        message: "Description:",
-        default: "A fun little test project",
-      });
+      const projectDescription = await input({ message: "Description:" });
       const projectVersion = await input({ message: "Version:", default: "0.1.0" });
-      const projectAuthor = await input({ message: "Author:", default: "Kwame" });
+      const projectAuthor = await input({ message: "Author:" });
       const packageManagerName = await select({
         message: "Package Manager",
         choices: Object.values(PackageManagerName).map((name) => ({ name, value: name })),

@@ -401,7 +401,7 @@ test("compare-project-models", async (t) => {
   ]);
 
   t.deepEqual(p1p4Changes, [
-    { type: "add-runtime-client", clientName: p4.clients[0].name },
+    { type: "add-runtime-client", clientName: p4.clients[0].name, backends: p4.backends },
     {
       type: "update-runtime-client-routes",
       clientName: p4.clients[0].name,
@@ -414,7 +414,7 @@ test("compare-project-models", async (t) => {
     },
     { type: "update-runtime-client-env", clientName: p4.clients[0].name, env: p4.clients[0].env },
     { type: "update-runtime-client-public-dir", clientName: p4.clients[0].name },
-    { type: "add-runtime-client", clientName: p4.clients[1].name },
+    { type: "add-runtime-client", clientName: p4.clients[1].name, backends: p4.backends },
     {
       type: "update-runtime-client-routes",
       clientName: p4.clients[1].name,
@@ -449,7 +449,7 @@ test("compare-project-models", async (t) => {
 
   t.deepEqual(nullP4Changes, [
     { type: "create-runtime", config: p4.config, backends: p4.backends },
-    { type: "add-runtime-client", clientName: p4.clients[0].name },
+    { type: "add-runtime-client", clientName: p4.clients[0].name, backends: p4.backends },
     {
       type: "update-runtime-client-routes",
       clientName: p4.clients[0].name,
@@ -462,7 +462,7 @@ test("compare-project-models", async (t) => {
     },
     { type: "update-runtime-client-env", clientName: p4.clients[0].name, env: p4.clients[0].env },
     { type: "update-runtime-client-public-dir", clientName: p4.clients[0].name },
-    { type: "add-runtime-client", clientName: p4.clients[1].name },
+    { type: "add-runtime-client", clientName: p4.clients[1].name, backends: p4.backends },
     {
       type: "update-runtime-client-routes",
       clientName: p4.clients[1].name,

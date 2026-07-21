@@ -70,7 +70,7 @@ export type ProjectMutation =
       backends: BackendModule[];
     }
   // Runtime client mutations
-  | { type: "add-runtime-client"; clientName: string }
+  | { type: "add-runtime-client"; clientName: string; backends: BackendModule[] }
   | { type: "rename-runtime-client"; oldClientName: string; newClientName: string }
   | { type: "update-runtime-client-routes"; clientName: string; clientRoutes: ClientModuleRoute }
   | { type: "update-runtime-client-html"; clientName: string; html: string }

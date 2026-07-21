@@ -178,3 +178,12 @@ export function pascalCase(str: string) {
 export function screamingSnakeCase(str: string) {
   return snakeCase(str).toUpperCase();
 }
+
+/** Returns the ASCII art for Firedeck */
+export function getFiredeckAsciiArt() {
+  return `
+███████╗ ██╗ ██████╗  ███████╗ ██████╗  ███████╗  ██████╗ ██╗  ██╗
+█████╗   ██║ ██████╝  █████╗   ██║  ██║ █████╗   ██║      █████╔╝ 
+██║      ██║ ██║  ██║ ███████╗ ██████╔╝ ███████╗ ╚██████╗ ██║  ██╗
+╚═╝      ╚═╝ ╚═╝  ╚═╝ ╚══════╝ ╚═════╝  ╚══════╝  ╚═════╝ ╚═╝  ╚═╝`;
+}
