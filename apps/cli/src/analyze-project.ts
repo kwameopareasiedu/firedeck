@@ -24,6 +24,10 @@ const ENV_VAR_LINE_SPLIT_REGEX = /^.+?__/;
 const ENV_VAR_KEY_VALUE_SEPARATOR = "__";
 /** Pages-level not-found directory name */
 const NOT_FOUND_DIR_SUFFIX = "404";
+/** Reserved firedeck firebase project ids */
+const RESERVED_FIREBASE_PROJECT_IDS = ["demo-firedeck"];
+/** Reserved firedeck firebase project aliases */
+const RESERVED_FIREBASE_PROJECT_ALIASES = ["demo"];
 
 /** Analyzes a Firedeck project and generates a `ProjectModel` object from it */
 export async function analyzeProject(rootDir: string): Promise<ProjectModel> {
@@ -294,6 +298,12 @@ export async function getFiredeckConfig(rootDir: string) {
     const uniqueFirebaseProjectAliases = new Set<string>();
 
     for (const project of firedeckConfig.firebase.projects) {
+      if (RESERVED_FIREBASE_PROJECT_IDS.includes(project.projectId))
+        throw `firebase project id: ${project.projectId} is reserved`;
+
+      if (RESERVED_FIREBASE_PROJECT_ALIASES.includes(project.projectAlias))
+        throw `firebase project alias: ${project.projectAlias} is reserved`;
+
       if (!uniqueFirebaseProjectIds.has(project.projectId))
         uniqueFirebaseProjectIds.add(project.projectId);
       else throw `firebase project id: ${project.projectId} duplicated in firedeck config`;

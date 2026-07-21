@@ -7,17 +7,17 @@ import chokidar from "chokidar";
 import { compileProject } from "@/compile-project";
 import { getFiredeckConfig } from "@/analyze-project";
 import { packageManagers } from "shared/package-manager";
-import { ProjectMutation } from "@/types";
+import { CompileProjectOptions, ProjectMutation } from "@/types";
 
 /** Starts a file watcher service and orchestrator thread to run a Firedeck project */
-export async function runProject(rootDir: string, opts?: { explain?: boolean }) {
+export async function runProject(rootDir: string, opts?: CompileProjectOptions) {
   assertFiredeckRootDir(rootDir);
 
   const { configFile, modulesDir, runtimeDir } = getProjectPaths(rootDir);
   const firedeckConfig = await getFiredeckConfig(rootDir);
   const packageManager = packageManagers[firedeckConfig.packageManager.name];
 
-  let [currentProjectModel] = await compileProject(rootDir, null, { explain: opts?.explain });
+  let [currentProjectModel] = await compileProject(rootDir, null, opts);
 
   for (const lockFileName of packageManager.lockFiles) {
     const lockFilePath = resolve(rootDir, lockFileName);
@@ -46,7 +46,7 @@ export async function runProject(rootDir: string, opts?: { explain?: boolean }) 
         const [newProjectModel, projectMutations] = await compileProject(
           rootDir,
           currentProjectModel,
-          { explain: opts?.explain },
+          opts,
         );
         currentProjectModel = newProjectModel;
 

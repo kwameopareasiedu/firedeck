@@ -106,10 +106,15 @@ cli
 cli
   .command("compile")
   .description("Compile the Firedeck runtime")
+  .option("--alias <alias>", "firebase project alias to compile for")
   .option("--explain", "log the mutations applied on the project")
   .action(async (opts) => {
     try {
-      await compileProject(process.cwd(), null, { explain: opts.explain });
+      await compileProject(process.cwd(), null, {
+        explain: opts.explain,
+        firebaseProjectAlias: opts.alias,
+      });
+
       const { runtimeDir, clientSdkDir } = getProjectPaths(process.cwd());
 
       info("Project compiled");
@@ -124,10 +129,11 @@ cli
 cli
   .command("run")
   .description("Start the Firedeck runtime")
+  .option("--alias <alias>", "firebase project alias to run on")
   .option("--explain", "log the mutations applied on the project")
   .action(async (opts) => {
     try {
-      await runProject(process.cwd(), { explain: opts.explain });
+      await runProject(process.cwd(), { explain: opts.explain, firebaseProjectAlias: opts.alias });
     } catch (err) {
       error(parseErrorMessage(err));
       process.exit(-1);
@@ -137,10 +143,14 @@ cli
 cli
   .command("build")
   .description("Build all modules for deployment")
+  .option("--alias <alias>", "firebase project alias to build for")
   .option("--explain", "log the mutations applied on the project")
   .action(async (opts) => {
     try {
-      await buildProject(process.cwd(), { explain: opts.explain });
+      await buildProject(process.cwd(), {
+        explain: opts.explain,
+        firebaseProjectAlias: opts.alias,
+      });
     } catch (err) {
       error(parseErrorMessage(err));
       process.exit(-1);

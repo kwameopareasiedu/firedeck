@@ -142,6 +142,9 @@ API__DB_URL=postgres://user:pass@localhost:5173/db
   const runtimeDir = resolve(testDir, "firedeck/runtime");
   t.true(fs.existsSync(resolve(runtimeDir, ".firebaserc")));
   t.true(fs.existsSync(resolve(runtimeDir, "firebase.json")));
+  t.true(fs.existsSync(resolve(runtimeDir, "firestore.json")));
+  t.true(fs.existsSync(resolve(runtimeDir, "firestore.rules")));
+  t.true(fs.existsSync(resolve(runtimeDir, "storage.rules")));
 
   const runtimeMainDir = resolve(testDir, "firedeck/runtime/modules/main");
   t.true(fs.existsSync(resolve(runtimeMainDir, ".env")));

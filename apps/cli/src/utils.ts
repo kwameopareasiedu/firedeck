@@ -9,8 +9,8 @@ import { FirebaseProjectConfig } from "shared/firedeck-config";
 /** React router catch-all route path */
 export const NOT_FOUND_URL_PATH = "/*";
 
-export const demoFirebaseProject: FirebaseProjectConfig = {
-  projectAlias: "default",
+export const demoFirebaseProjectConfig: FirebaseProjectConfig = {
+  projectAlias: "demo",
   projectId: "demo-firedeck",
   apps: () => ({
     apiKey: "demo-firedeck-api-key",
@@ -71,6 +71,9 @@ export function getProjectPaths(rootDir: string) {
     runtimeModulesDir: resolve(rootDir, "firedeck/runtime/modules"),
     runtimeFirebaseRcFile: resolve(rootDir, "firedeck/runtime/.firebaserc"),
     runtimeFirebaseJsonFile: resolve(rootDir, "firedeck/runtime/firebase.json"),
+    runtimeFirebaseFirestoreJsonFile: resolve(rootDir, "firedeck/runtime/firestore.json"),
+    runtimeFirebaseFirestoreRulesFile: resolve(rootDir, "firedeck/runtime/firestore.rules"),
+    runtimeFirebaseStorageRulesFile: resolve(rootDir, "firedeck/runtime/storage.rules"),
     clientSdkDir: resolve(rootDir, "firedeck/sdk/client"),
     clientSdkRoutesFile: resolve(rootDir, "firedeck/sdk/client/routes.ts"),
     getClientSdkClientModuleApiFile: (clientName: string) =>

@@ -1,7 +1,7 @@
 import { FiredeckConfig } from "shared/firedeck-config";
 
 export type ModuleType = "client" | "backend";
-export type FileNode = { content: string; extension?: string };
+export type FileNode = { content: string; extension?: string | null };
 export type FileTree = { [path: string]: FileNode };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type NestedRecord = { [key: string]: any };

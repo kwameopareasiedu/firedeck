@@ -10,7 +10,7 @@ import {
 } from "@/types";
 import {
   assertFiredeckRootDir,
-  demoFirebaseProject,
+  demoFirebaseProjectConfig,
   getPrettierConfig,
   getProjectPaths,
   NOT_FOUND_URL_PATH,
@@ -38,6 +38,9 @@ export async function applyProjectMutations(
     runtimeModulesDir,
     runtimeFirebaseRcFile,
     runtimeFirebaseJsonFile,
+    runtimeFirebaseFirestoreJsonFile,
+    runtimeFirebaseFirestoreRulesFile,
+    runtimeFirebaseStorageRulesFile,
     workspaceEnvTypesFile,
     workspaceConfigFile,
     workspaceConfigTypesFile,
@@ -68,6 +71,7 @@ export async function applyProjectMutations(
         const runtimeFileTree = generateRuntimeFileTree(
           mut.config.packageManager.name,
           mut.config.packageManager.version,
+          opts?.firebaseProjectAlias,
         );
         await writeFileTree(runtimeDir, runtimeFileTree);
         break;
@@ -82,7 +86,29 @@ export async function applyProjectMutations(
           runtimeDir,
           runtimeModulesDir,
         );
+
         fs.writeFileSync(runtimeFirebaseJsonFile, firebaseJsonSource);
+
+        const firestoreJsonSource = await generateFirebaseFirestoreJsonSource(
+          mut.config,
+          opts?.firebaseProjectAlias,
+        );
+
+        fs.writeFileSync(runtimeFirebaseFirestoreJsonFile, firestoreJsonSource);
+
+        const firestoreRulesSource = generateFirebaseFirestoreRulesSource(
+          mut.config,
+          opts?.firebaseProjectAlias,
+        );
+
+        fs.writeFileSync(runtimeFirebaseFirestoreRulesFile, firestoreRulesSource);
+
+        const storageRuleSource = generateFirebaseStorageRulesSource(
+          mut.config,
+          opts?.firebaseProjectAlias,
+        );
+
+        fs.writeFileSync(runtimeFirebaseStorageRulesFile, storageRuleSource);
 
         break;
       }
@@ -227,6 +253,7 @@ function generateWorkspaceEnvTypesSource(clients: ClientModule[]) {
 function generateRuntimeFileTree(
   packageManagerName: string,
   packageManagerVersion: string,
+  firebaseProjectAlias?: string,
 ): FileTree {
   return {
     "package.json": {
@@ -243,7 +270,11 @@ function generateRuntimeFileTree(
         "scripts": {
           "dev": "../../node_modules/.bin/turbo dev emulate",
           "build": "../../node_modules/.bin/turbo build",
-          "emulate": "../../node_modules/.bin/kill-port 4000 8080 8085 && firebase emulators:start --project demo-firedeck --import ../../temp/firebase/emulator --export-on-exit"
+          ${
+            firebaseProjectAlias
+              ? `"emulate": "../../node_modules/.bin/kill-port 4000 8080 8085 && firebase use ${firebaseProjectAlias} && firebase emulators:start --import ../../temp/firebase/emulator --export-on-exit"`
+              : `"emulate": "../../node_modules/.bin/kill-port 4000 8080 8085 && firebase emulators:start --project demo-firedeck --import ../../temp/firebase/emulator --export-on-exit"`
+          }
         }
       }`,
     },
@@ -280,6 +311,29 @@ function generateRuntimeFileTree(
         "*.log",
         "firebase-export-*",
       ].join("\n"),
+    },
+
+    ".firebaserc": {
+      content: "{}",
+      extension: "json",
+    },
+
+    "firebase.json": {
+      content: "{}",
+    },
+
+    "firestore.json": {
+      content: "{}",
+    },
+
+    "firestore.rules": {
+      content: "",
+      extension: null,
+    },
+
+    "storage.rules": {
+      content: "",
+      extension: null,
     },
   };
 }
@@ -683,7 +737,7 @@ function generateClientSdkApiSource(
 
   const firebaseProjectConfig = firebaseProjectAlias
     ? firebaseProjectConfigs.find((project) => project.projectAlias === firebaseProjectAlias)
-    : demoFirebaseProject;
+    : demoFirebaseProjectConfig;
 
   if (!firebaseProjectConfig) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
 
@@ -737,7 +791,10 @@ function generateClientSdkApiSource(
 }
 
 function generateFirebaseRcSource(firedeckConfig: FiredeckConfig, clients: ClientModule[]) {
-  const firebaseProjectConfigs = firedeckConfig.firebase?.projects ?? [demoFirebaseProject];
+  const firebaseProjectConfigs = [
+    demoFirebaseProjectConfig,
+    ...(firedeckConfig.firebase?.projects ?? []),
+  ];
 
   const projectConfig = firebaseProjectConfigs.reduce(
     (projectConfig, project) => ({ ...projectConfig, [project.projectAlias]: project.projectId }),
@@ -764,7 +821,7 @@ function generateFirebaseRcSource(firedeckConfig: FiredeckConfig, clients: Clien
 
   const finalSource = JSON.stringify(
     {
-      project: projectConfig,
+      projects: projectConfig,
       targets: hostingTargetConfig,
     },
     null,
@@ -800,6 +857,13 @@ async function generateFirebaseJsonSource(
     {
       functions: functionsConfig,
       hosting: hostingConfig,
+      firestore: {
+        rules: "firestore.rules",
+        indexes: "firestore.json",
+      },
+      storage: {
+        rules: "storage.rules",
+      },
       emulators: {
         auth: { port: 9099 },
         functions: { port: 5001 },
@@ -816,6 +880,57 @@ async function generateFirebaseJsonSource(
   );
 
   return format(finalSource, getPrettierConfig({ filePath: "a.json" }));
+}
+
+function generateFirebaseFirestoreJsonSource(
+  firedeckConfig: FiredeckConfig,
+  firebaseProjectAlias?: string,
+) {
+  const firebaseProjectConfigs = firedeckConfig.firebase?.projects ?? [];
+
+  const firebaseProjectConfig = firebaseProjectAlias
+    ? firebaseProjectConfigs.find((project) => project.projectAlias === firebaseProjectAlias)
+    : demoFirebaseProjectConfig;
+
+  if (!firebaseProjectConfig) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
+
+  const finalSource = JSON.stringify(
+    { indexes: firebaseProjectConfig.firestore?.indexes ?? [] },
+    null,
+    2,
+  );
+
+  return format(finalSource, getPrettierConfig({ filePath: "a.json" }));
+}
+
+function generateFirebaseFirestoreRulesSource(
+  firedeckConfig: FiredeckConfig,
+  firebaseProjectAlias?: string,
+) {
+  const firebaseProjectConfigs = firedeckConfig.firebase?.projects ?? [];
+
+  const firebaseProjectConfig = firebaseProjectAlias
+    ? firebaseProjectConfigs.find((project) => project.projectAlias === firebaseProjectAlias)
+    : demoFirebaseProjectConfig;
+
+  if (!firebaseProjectConfig) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
+
+  return firebaseProjectConfig.firestore?.rules ?? "";
+}
+
+function generateFirebaseStorageRulesSource(
+  firedeckConfig: FiredeckConfig,
+  firebaseProjectAlias?: string,
+) {
+  const firebaseProjectConfigs = firedeckConfig.firebase?.projects ?? [];
+
+  const firebaseProjectConfig = firebaseProjectAlias
+    ? firebaseProjectConfigs.find((project) => project.projectAlias === firebaseProjectAlias)
+    : demoFirebaseProjectConfig;
+
+  if (!firebaseProjectConfig) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
+
+  return firebaseProjectConfig.storage?.rules ?? "";
 }
 
 function flattenRoutes(route: ClientModuleRoute): ClientModuleRoute[] {

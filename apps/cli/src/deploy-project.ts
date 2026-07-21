@@ -1,4 +1,4 @@
-import { assertFiredeckRootDir, demoFirebaseProject, getProjectPaths, info } from "@/utils";
+import { assertFiredeckRootDir, demoFirebaseProjectConfig, getProjectPaths, info } from "@/utils";
 import { analyzeProject, getFiredeckConfig } from "@/analyze-project";
 import { execSync } from "node:child_process";
 import { buildProject } from "@/build-project";
@@ -24,7 +24,7 @@ export async function deployProject(rootDir: string, opts?: DeployProjectOptions
   const localProjectConfig = await (async () => {
     const aliasProjectConfig = alias
       ? firebaseProjectConfigs.find((project) => project.projectAlias === alias)
-      : demoFirebaseProject;
+      : demoFirebaseProjectConfig;
 
     if (!aliasProjectConfig) throw `invalid firebase project alias: ${alias}`;
     if (aliasProjectConfig.projectId.toLowerCase().startsWith("demo"))

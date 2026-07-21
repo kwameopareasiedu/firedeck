@@ -67,7 +67,7 @@ function generateProjectFileTree(args: {
         "type": "module",
         "scripts": {
           "dev": "firedeck run",
-          "compile": "firedeck compile"
+          "compile": "firedeck compile",
           "build": "firedeck build"
         },
         "dependencies": {
