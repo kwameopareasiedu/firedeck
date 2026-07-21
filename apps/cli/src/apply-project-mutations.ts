@@ -357,11 +357,11 @@ function generateRuntimeClientFileTree(clientName: string): FileTree {
           "noFallthroughCasesInSwitch": true,
           "rootDir": "../../../../",
           "paths": {
-            "@/*": ["../../../../modules/*"],
+            "@/*": ["../../../../modules/*", "../../../../firedeck/*"]
           },
           "types": ["vite/client"]
         },
-        "include": ["./src", "./global.d.ts", "../../../../modules"]
+        "include": ["./src", "./global.d.ts", "../../../../modules", "../../../../firedeck"]
       }`,
     },
 
