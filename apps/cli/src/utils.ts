@@ -78,11 +78,11 @@ export function getProjectPaths(rootDir: string) {
   };
 }
 
-/** Ensures that the given `rootDir` is a Firedeck project by ensuring the `firedeck.config.ts` file exists */
-export function assertFiredeckRootDir(rootDir: string) {
-  const { configFile } = getProjectPaths(rootDir);
+/** Ensures that the given `dir` is a Firedeck project or throws an error */
+export function assertFiredeckRootDir(dir: string) {
+  const { configFile } = getProjectPaths(dir);
 
-  if (!fs.existsSync(configFile)) throw `${rootDir}: directory is not a firedeck project`;
+  if (!fs.existsSync(configFile)) throw `${dir}: directory is not a firedeck project`;
 }
 
 /** Returns configuration for the [Prettier](https://prettier.io) for consistent code formatting */

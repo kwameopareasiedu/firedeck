@@ -67,6 +67,7 @@ function generateProjectFileTree(args: {
         "type": "module",
         "scripts": {
           "dev": "firedeck run",
+          "compile": "firedeck compile"
           "build": "firedeck build"
         },
         "dependencies": {
@@ -333,6 +334,17 @@ function generateProjectFileTree(args: {
     "modules/backend/api/functions/hello.ts": {
       content: `
       import {CallableRequest,onCall} from "firebase-functions/v2/https";
+      
+      /* 
+      Note on types:
+      
+      For the generated client SDK functions to properly infer input and output types, use either
+      \`onCall(function (req: CallableRequest<Args>) {})\` or 
+      \`onCall<Args, Return>(function (req) {})\` signature.
+      
+      Simply using \`onCall<Args>(function (req) {})\` results in the generated functions having a 
+      return type of \`any\`.
+      */  
       
       export default onCall(async function(req: CallableRequest<{ name: string }>){
         return "Hello " + req.data.name;

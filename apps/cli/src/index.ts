@@ -12,6 +12,7 @@ import { compileProject } from "@/compile-project";
 import { runProject } from "@/run-project";
 import { buildProject } from "@/build-project";
 import { deployProject } from "@/deploy-project";
+import chalk from "chalk";
 
 const packageInfo = JSON.parse(
   fs.readFileSync(resolve(__dirname, "../package.json"), { encoding: "utf-8" }),
@@ -81,9 +82,9 @@ cli
 
 cli
   .command("module <moduleName>")
+  .description("Add a new module to a Firedeck project")
   .option("--client", "create a client module")
   .option("--backend", "create a backend module")
-  .description("Adds a new module to a Firedeck project")
   .action(async (moduleName, opts) => {
     try {
       if (!opts.client && !opts.backend) throw "either --client or --backend option required";
@@ -104,7 +105,7 @@ cli
 
 cli
   .command("compile")
-  .description("Compiles the Firedeck runtime")
+  .description("Compile the Firedeck runtime")
   .option("--explain", "log the mutations applied on the project")
   .action(async (opts) => {
     try {
@@ -122,7 +123,7 @@ cli
 
 cli
   .command("run")
-  .description("Starts the Firedeck runtime")
+  .description("Start the Firedeck runtime")
   .option("--explain", "log the mutations applied on the project")
   .action(async (opts) => {
     try {
@@ -135,7 +136,7 @@ cli
 
 cli
   .command("build")
-  .description("Builds all modules for deployment")
+  .description("Build all modules for deployment")
   .option("--explain", "log the mutations applied on the project")
   .action(async (opts) => {
     try {
@@ -148,11 +149,26 @@ cli
 
 cli
   .command("deploy")
-  .description("Deploys built modules to their respective Firebase components")
-  .option("--alias <alias>", "firebase project alias to deploy to")
+  .description("Deploy modules to Firebase")
+  .requiredOption("--alias <alias>", "firebase project alias to deploy to")
+  .option("--functions-batch-size <fnBatchSize>", "number of cloud functions to deploy in a batch")
+  .option("--no-build", `skip project build ${chalk.yellow("(⚠: may deploy stale project)")}`)
+  .option("--dry-run", "validate and build project without actually deploying to firebase")
   .action(async (opts) => {
     try {
-      await deployProject(process.cwd(), { firebaseProjectAlias: opts.alias });
+      const functionsBatchSize =
+        opts.functionsBatchSize !== undefined ? Number.parseInt(opts.functionsBatchSize) : null;
+
+      if (Number.isNaN(functionsBatchSize)) throw "invalid functions-batch-size";
+      else if (functionsBatchSize !== null && functionsBatchSize <= 1)
+        throw "functions-batch-size must be more than 1";
+
+      await deployProject(process.cwd(), {
+        firebaseProjectAlias: opts.alias,
+        functionsBatchSize: functionsBatchSize,
+        build: opts.build,
+        dryRun: opts.dryRun,
+      });
     } catch (err) {
       error(parseErrorMessage(err));
       process.exit(-1);

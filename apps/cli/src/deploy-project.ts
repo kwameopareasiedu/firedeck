@@ -4,10 +4,16 @@ import { execSync } from "node:child_process";
 import { buildProject } from "@/build-project";
 import { BackendModuleFunction, CompileProjectOptions, NestedArray, NestedRecord } from "@/types";
 
-const FN_DEPLOY_BATCH_SIZE = 10;
+const DEFAULT_FUNCTION_BATCH_SIZE = 25;
+
+interface DeployProjectOptions extends CompileProjectOptions {
+  functionsBatchSize?: number | null;
+  build?: boolean;
+  dryRun?: boolean;
+}
 
 /** Builds and deploys a Firedeck project to Firebase using the global `firebase` command */
-export async function deployProject(rootDir: string, opts?: CompileProjectOptions) {
+export async function deployProject(rootDir: string, opts?: DeployProjectOptions) {
   assertFiredeckRootDir(rootDir);
 
   const alias = opts?.firebaseProjectAlias;
@@ -33,9 +39,13 @@ export async function deployProject(rootDir: string, opts?: CompileProjectOption
     return res[0].user;
   })();
 
+  info(`firebase user: ${firebaseAuthUser.email}\n`);
+
   const remoteProjects = runFirebaseCmd<NestedArray>("projects:list", localProjectConfig.projectId);
   if (!remoteProjects?.find((p) => p.projectId === localProjectConfig.projectId))
     throw `firebase project not found: ${localProjectConfig.projectId}`;
+
+  info(`firebase project: ${localProjectConfig.projectId} (${alias})\n`);
 
   const projectModel = await analyzeProject(rootDir);
   const remoteApps = runFirebaseCmd<NestedArray>("apps:list", localProjectConfig.projectId);
@@ -64,26 +74,25 @@ export async function deployProject(rootDir: string, opts?: CompileProjectOption
       throw `no remote firebase hosting site for client module: ${client.name}`;
   }
 
-  info(`firebase user: ${firebaseAuthUser.email}`);
-  info(`firebase project: ${localProjectConfig.projectId} (${alias})`);
+  if (opts?.build ?? true) await buildProject(rootDir, { firebaseProjectAlias: alias });
 
-  await buildProject(rootDir, { firebaseProjectAlias: alias });
-
-  runFirebaseCmd("deploy --except functions --dry-run -f", localProjectConfig.projectId, {
-    cwd: runtimeDir,
-    noJson: true,
-  });
+  runFirebaseCmd(
+    `deploy --except functions ${opts?.dryRun ? "--dry-run" : ""} -f`,
+    localProjectConfig.projectId,
+    { cwd: runtimeDir, noJson: true },
+  );
 
   const backendFunctions = projectModel.backends.reduce(
     (fns, backend) => [...fns, ...backend.functions.map((fn) => ({ ...fn, module: backend.name }))],
     [] as (BackendModuleFunction & { module: string })[],
   );
 
-  const functionBatchCount = Math.ceil(backendFunctions.length / FN_DEPLOY_BATCH_SIZE);
+  const functionBatchSize = opts?.functionsBatchSize || DEFAULT_FUNCTION_BATCH_SIZE;
+  const functionBatchCount = Math.ceil(backendFunctions.length / functionBatchSize);
 
   for (let idx = 0; idx < functionBatchCount; idx++) {
-    const startIndex = idx * FN_DEPLOY_BATCH_SIZE;
-    const endIndex = Math.min(startIndex + FN_DEPLOY_BATCH_SIZE, backendFunctions.length);
+    const startIndex = idx * functionBatchSize;
+    const endIndex = Math.min(startIndex + functionBatchSize, backendFunctions.length);
 
     const batchFunctions = backendFunctions.slice(startIndex, endIndex);
     const functionDeployCommands = batchFunctions
@@ -91,7 +100,7 @@ export async function deployProject(rootDir: string, opts?: CompileProjectOption
       .join(",");
 
     runFirebaseCmd(
-      `deploy --only ${functionDeployCommands} --dry-run -f`,
+      `deploy --only ${functionDeployCommands} ${opts?.dryRun ? "--dry-run" : ""} -f`,
       localProjectConfig.projectId,
       { cwd: runtimeDir, noJson: true },
     );
@@ -108,7 +117,7 @@ function runFirebaseCmd<T>(
   let fullCommand = `firebase ${command} --project ${projectId}`;
   if (!opts?.noJson) fullCommand += " --json";
 
-  // info(`executing: ${fullCommand}`);
+  info(fullCommand);
 
   if (opts?.noJson) {
     execSync(fullCommand, { cwd: opts?.cwd, stdio: "inherit" });
