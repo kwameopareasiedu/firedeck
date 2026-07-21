@@ -9,8 +9,6 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
   const changes: ProjectMutation[] = [];
 
   if (!source) {
-    changes.push({ type: "create-runtime", config: target.config });
-
     source = {
       config: {
         packageManager: {
@@ -21,6 +19,12 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
       clients: [],
       backends: [],
     };
+
+    changes.push({
+      type: "create-runtime",
+      config: target.config,
+      backends: target.backends,
+    });
   }
 
   const sourceClients = new Map(source.clients.map((client) => [client.name, client]));
@@ -184,6 +188,16 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
   const updateRuntimeFiredeckConfig =
     JSON.stringify(source.config, jsonReplacer) !== JSON.stringify(target.config, jsonReplacer);
 
+  const updateRuntime = changes.some((change) => {
+    return (
+      [
+        "add-runtime-backend",
+        "rename-runtime-backend",
+        "remove-runtime-backend",
+      ] as ProjectMutation["type"][]
+    ).includes(change.type);
+  });
+
   const updateRuntimeFirebaseConfig =
     updateRuntimeFiredeckConfig ||
     changes.some((change) => {
@@ -228,6 +242,14 @@ export function compareProjectModels(source: ProjectModel | null, target: Projec
     changes.push({
       type: "update-workspace-env-types",
       clients: target.clients,
+    });
+  }
+
+  if (updateRuntime) {
+    changes.push({
+      type: "update-runtime",
+      config: target.config,
+      backends: target.backends,
     });
   }
 

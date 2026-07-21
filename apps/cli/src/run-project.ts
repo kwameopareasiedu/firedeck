@@ -53,6 +53,7 @@ export async function runProject(rootDir: string, opts?: CompileProjectOptions) 
         const restartRuntimeDevProc = projectMutations.some((change) => {
           return (
             [
+              "update-runtime",
               "add-runtime-client",
               "rename-runtime-client",
               "update-runtime-client-env",

@@ -383,6 +383,7 @@ test("compare-project-models", async (t) => {
       env: p3.backends[1].env,
     },
     { type: "update-workspace-env-types", clients: p3.clients },
+    { type: "update-runtime", config: p3.config, backends: p3.backends },
     { type: "update-runtime-clients-config", config: p3.config, clients: p3.clients },
     {
       type: "update-runtime-firebase-config",
@@ -429,6 +430,7 @@ test("compare-project-models", async (t) => {
     { type: "remove-runtime-client", clientName: p1.clients[0].name },
     { type: "remove-runtime-backend", backendName: p1.backends[0].name },
     { type: "update-workspace-env-types", clients: p4.clients },
+    { type: "update-runtime", config: p4.config, backends: p4.backends },
     { type: "update-runtime-clients-config", config: p4.config, clients: p4.clients },
     {
       type: "update-runtime-firebase-config",
@@ -446,7 +448,7 @@ test("compare-project-models", async (t) => {
   ]);
 
   t.deepEqual(nullP4Changes, [
-    { type: "create-runtime", config: p4.config },
+    { type: "create-runtime", config: p4.config, backends: p4.backends },
     { type: "add-runtime-client", clientName: p4.clients[0].name },
     {
       type: "update-runtime-client-routes",

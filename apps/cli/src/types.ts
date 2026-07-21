@@ -61,7 +61,8 @@ export type ProjectMutation =
   // Workspace mutations
   | { type: "update-workspace-env-types"; clients: ClientModule[] }
   // Runtime mutations
-  | { type: "create-runtime"; config: FiredeckConfig }
+  | { type: "create-runtime"; config: FiredeckConfig; backends: BackendModule[] }
+  | { type: "update-runtime"; config: FiredeckConfig; backends: BackendModule[] }
   | {
       type: "update-runtime-firebase-config";
       config: FiredeckConfig;

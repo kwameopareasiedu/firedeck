@@ -71,6 +71,17 @@ export async function applyProjectMutations(
         const runtimeFileTree = generateRuntimeFileTree(
           mut.config.packageManager.name,
           mut.config.packageManager.version,
+          mut.backends,
+          opts?.firebaseProjectAlias,
+        );
+        await writeFileTree(runtimeDir, runtimeFileTree);
+        break;
+      }
+      case "update-runtime": {
+        const runtimeFileTree = generateRuntimeFileTree(
+          mut.config.packageManager.name,
+          mut.config.packageManager.version,
+          mut.backends,
           opts?.firebaseProjectAlias,
         );
         await writeFileTree(runtimeDir, runtimeFileTree);
@@ -253,6 +264,7 @@ function generateWorkspaceEnvTypesSource(clients: ClientModule[]) {
 function generateRuntimeFileTree(
   packageManagerName: string,
   packageManagerVersion: string,
+  backends: BackendModule[],
   firebaseProjectAlias?: string,
 ): FileTree {
   return {
@@ -268,7 +280,11 @@ function generateRuntimeFileTree(
           "modules/*"
         ],
         "scripts": {
-          "dev": "../../node_modules/.bin/turbo dev emulate",
+          ${
+            backends.length > 0
+              ? `"dev": "../../node_modules/.bin/turbo dev emulate",`
+              : `"dev": "../../node_modules/.bin/turbo dev",`
+          }
           "build": "../../node_modules/.bin/turbo build",
           ${
             firebaseProjectAlias
