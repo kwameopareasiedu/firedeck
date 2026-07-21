@@ -341,15 +341,58 @@ contains [Vite](https://vite.dev/) applications for each client module, and a si
 
 ## Client SDK
 
-Firedeck also generates a client SDK source files based on the modules. This package provides
-utilities which connect the frontend and backend module component.
+Firedeck also generates a client SDK for you, which allows your client modules to communicate with
+your backend modules.
 
-The client SDK lives at `modules/sdk/client`. Because it is part of the user code, IDE auto-complete
-and intellisense work out of the box and can also be commited to version control if you so wish.
+The client SDK, which lives at `firedeck/sdk/client`, contains generated route enums for page
+navigation as well as typed functions for calling backend module functions.
+
+As an example, here's a project structure with two client modules; `main` and `admin`:
+
+```
+- firedeck/
+  - sdk/
+    - client/
+      - routes.ts
+      - main-api.ts
+      - admin-api.ts
+- modules/
+  - client/
+    - main/
+    - admin/
+```
+
+You'll notice that each client module has a corresponding `*-api.ts` file in the SDK directory. Why
+is this, you might ask?
+
+For frontend applications to connect to Firebase services, they need to be given app configurations
+which look like this:
+
+```javascript
+const firebaseConfig = {
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: "",
+  measurementId: ""
+};
+```
+
+This config object is then used to initialize the frontend components of Firebase.
+
+Now, since each client module is a frontend application, we generate an API file for each, where
+every function is scoped to the respective firebase config object.
 
 > ⚡ **Important Note**
 >
 > - _The client SDK is managed by the Firedeck compiler. Any manual changes will be overwritten._
+>
+>
+> - _When calling generated SDK functions, make sure to import from the client's generated API file.
+    As an example, in `modules/client/main/pages/index-page.tsx`, you would use
+    the `import {} from "@/sdk/client/main-api.ts";`._
 
 The client SDK contains the following files:
 

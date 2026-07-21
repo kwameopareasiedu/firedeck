@@ -112,8 +112,8 @@ cli
       const { runtimeDir, clientSdkDir } = getProjectPaths(process.cwd());
 
       info("Project compiled");
-      info(`Runtime: ${runtimeDir}`);
-      info(`Client SDK: ${clientSdkDir}`);
+      info(`Runtime: ${relative(process.cwd(), runtimeDir)}`);
+      info(`Client SDK: ${relative(process.cwd(), clientSdkDir)}`);
     } catch (err) {
       error(parseErrorMessage(err));
       process.exit(-1);

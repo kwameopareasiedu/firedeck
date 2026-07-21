@@ -68,13 +68,13 @@ export function getProjectPaths(rootDir: string) {
     workspaceConfigFile: resolve(rootDir, "firedeck/firedeck.config.mjs"),
     workspaceConfigTypesFile: resolve(rootDir, "firedeck/firedeck.config.d.mts"),
     runtimeDir: resolve(rootDir, "firedeck/runtime"),
+    runtimeModulesDir: resolve(rootDir, "firedeck/runtime/modules"),
     runtimeFirebaseRcFile: resolve(rootDir, "firedeck/runtime/.firebaserc"),
     runtimeFirebaseJsonFile: resolve(rootDir, "firedeck/runtime/firebase.json"),
-    runtimeModulesDir: resolve(rootDir, "firedeck/runtime/modules"),
-    clientSdkDir: resolve(rootDir, "modules/sdk/client"),
-    clientSdkRoutesFile: resolve(rootDir, "modules/sdk/client/routes.ts"),
+    clientSdkDir: resolve(rootDir, "firedeck/sdk/client"),
+    clientSdkRoutesFile: resolve(rootDir, "firedeck/sdk/client/routes.ts"),
     getClientSdkClientModuleApiFile: (clientName: string) =>
-      resolve(rootDir, `modules/sdk/client/${clientName}-api.ts`),
+      resolve(rootDir, `firedeck/sdk/client/${clientName}-api.ts`),
   };
 }
 

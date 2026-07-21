@@ -262,7 +262,7 @@ VITE_FOO=bar`,
     ),
   );
 
-  const clientSdkDir = resolve(testDir, "modules/sdk/client");
+  const clientSdkDir = resolve(testDir, "firedeck/sdk/client");
   t.true(fs.existsSync(resolve(clientSdkDir, "routes.ts")));
 
   const generatedRoutesSource = fs.readFileSync(resolve(clientSdkDir, "routes.ts"), {

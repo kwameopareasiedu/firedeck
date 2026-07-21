@@ -140,11 +140,11 @@ function generateProjectFileTree(args: {
           "skipLibCheck": true,
           "rootDir": ".",
           "paths": {
-            "@/*": ["./modules/*"]
+            "@/*": ["./modules/*", "./firedeck/*"]
           },
           "types": ["vite/client", "./firedeck/env"]
         },
-        "include": ["./modules"]
+        "include": ["./modules", "./firedeck"]
       }`,
     },
 

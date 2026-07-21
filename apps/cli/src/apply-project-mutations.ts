@@ -327,6 +327,7 @@ function generateRuntimeClientFileTree(clientName: string): FileTree {
             plugins: [react(), tailwindcss()],
             resolve: {
               alias: {
+                "@/sdk/client": resolve(__dirname, "../../../../firedeck/sdk/client"),
                 "@": resolve(__dirname, "../../../../modules"),
               },
             }

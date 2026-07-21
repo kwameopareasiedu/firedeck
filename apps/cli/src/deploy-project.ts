@@ -45,10 +45,10 @@ export async function deployProject(rootDir: string, opts?: CompileProjectOption
 
   const projectModel = await analyzeProject(rootDir);
   const remoteApps = queryFirebase<NestedArray>("apps:list", localProjectConfig.projectId);
-  const remoteHostingSites = queryFirebase<NestedArray>(
+  const remoteHostingSites = queryFirebase<NestedRecord>(
     "hosting:sites:list",
     localProjectConfig.projectId,
-  );
+  )?.sites as NestedArray | undefined;
 
   for (const client of projectModel.clients) {
     const clientLocalApp = localProjectConfig.apps({ moduleName: client.name });
@@ -63,15 +63,15 @@ export async function deployProject(rootDir: string, opts?: CompileProjectOption
     if (!clientLocalHostingSite)
       throw `no configured firebase hosting site for client module: ${client.name}`;
 
-    const clientRemoteHostingSite = remoteHostingSites.find(
-      (site) => site.type === "USER_SITE" && site.includes(clientLocalHostingSite.siteId),
+    const clientRemoteHostingSite = remoteHostingSites?.find((site) =>
+      site.name.endsWith(clientLocalHostingSite.siteId),
     );
     if (!clientRemoteHostingSite)
       throw `no remote firebase hosting site for client module: ${client.name}`;
   }
 
-  info(`deploying using firebase user: ${firebaseAuthUser.email}`);
-  info(`deploying to firebase project: ${localProjectConfig.projectId} (${alias})`);
+  info(`firebase user: ${firebaseAuthUser.email}`);
+  info(`firebase project: ${localProjectConfig.projectId} (${alias})`);
 
   // await buildProject(rootDir, opts);
 
