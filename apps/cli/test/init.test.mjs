@@ -47,4 +47,31 @@ test("init", async (t) => {
   t.is(packageJson.description, "Test Ava project");
   t.is(packageJson.version, "0.1.0");
   t.is(packageJson.author, "Kwame");
+
+  let packageManagerVersion = execSync("yarn --version", { encoding: "utf-8" }).trim();
+  if (!packageManagerVersion) throw `package manager not found: npm`;
+
+  let firedeckConfigSource = fs.readFileSync(resolve(testDir, "firedeck.config.ts"), {
+    encoding: "utf-8",
+  });
+  t.true(firedeckConfigSource.includes(`name: "yarn"`));
+  t.true(firedeckConfigSource.includes(`version: "${packageManagerVersion}"`));
+
+  await init(testDir, {
+    projectName: "ava-test",
+    projectDescription: "Test Ava project",
+    projectVersion: "0.1.0",
+    projectAuthor: "Kwame",
+    packageManagerName: "npm",
+    update: true,
+  });
+
+  packageManagerVersion = execSync("npm --version", { encoding: "utf-8" }).trim();
+  if (!packageManagerVersion) throw `package manager not found: npm`;
+
+  firedeckConfigSource = fs.readFileSync(resolve(testDir, "firedeck.config.ts"), {
+    encoding: "utf-8",
+  });
+  t.true(firedeckConfigSource.includes(`name: "npm"`));
+  t.true(firedeckConfigSource.includes(`version: "${packageManagerVersion}"`));
 });

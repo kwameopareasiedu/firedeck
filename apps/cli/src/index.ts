@@ -25,21 +25,25 @@ cli.addHelpText("beforeAll", getFiredeckAsciiArt());
 
 cli
   .command("init <rootDir>")
-  .description("Create a new Firedeck project")
-  .action(async (rootDir) => {
+  .description("Initialize a Firedeck project")
+  .option("--update", "update config files only")
+  .action(async (_rootDir, opts) => {
     try {
       console.log(getFiredeckAsciiArt());
 
-      rootDir = isAbsolute(rootDir) ? rootDir : resolve(process.cwd(), rootDir);
+      const update = Boolean(opts.update);
+      const rootDir = isAbsolute(_rootDir) ? _rootDir : resolve(process.cwd(), _rootDir);
 
-      const projectName = await input({
-        message: "Name:",
-        default: basename(rootDir),
-        pattern: /^[a-z0-9-_]{1,214}$/,
-      });
-      const projectDescription = await input({ message: "Description:" });
-      const projectVersion = await input({ message: "Version:", default: "0.1.0" });
-      const projectAuthor = await input({ message: "Author:" });
+      const projectName = !update
+        ? await input({
+            message: "Name:",
+            default: basename(rootDir),
+            pattern: /^[a-z0-9-_]{1,214}$/,
+          })
+        : "";
+      const projectDescription = !update ? await input({ message: "Description:" }) : "";
+      const projectVersion = !update ? await input({ message: "Version:", default: "0.1.0" }) : "";
+      const projectAuthor = !update ? await input({ message: "Author:" }) : "";
       const packageManagerName = await select({
         message: "Package Manager",
         choices: Object.values(PackageManagerName).map((name) => ({ name, value: name })),
@@ -51,6 +55,7 @@ cli
         projectVersion,
         projectAuthor,
         packageManagerName,
+        update,
       });
 
       const nextSteps = [];

@@ -15,6 +15,7 @@ export const DEMO_FIREBASE_PROJECT_ALIAS = "demo";
 export function getProjectPaths(rootDir: string) {
   // prettier-ignore
   return {
+    packageJsonFile: resolve(rootDir, "package.json"),
     envFile: resolve(rootDir, ".env"),
     configFile: resolve(rootDir, "firedeck.config.ts"),
     modulesDir: resolve(rootDir, "modules"),

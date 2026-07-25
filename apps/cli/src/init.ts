@@ -2,7 +2,7 @@ import { PackageManagerName, packageManagers } from "shared/package-manager";
 import fs from "fs-extra";
 import { relative } from "node:path";
 import { execSync } from "node:child_process";
-import { writeFileTree } from "@/utils";
+import { getProjectPaths, writeFileTree } from "@/utils";
 import { FileTree } from "@/types";
 
 /** Initializes a new Firedeck project */
@@ -14,11 +14,12 @@ export async function init(
     projectVersion: string;
     projectAuthor: string;
     packageManagerName: PackageManagerName;
+    update?: boolean;
   },
 ) {
   if (!fs.existsSync(rootDir)) {
     fs.ensureDirSync(rootDir);
-  } else if (fs.readdirSync(rootDir).length !== 0) {
+  } else if (fs.readdirSync(rootDir).length !== 0 && !opts.update) {
     throw `./${relative(process.cwd(), rootDir)}: directory is not empty`;
   }
 
@@ -31,19 +32,27 @@ export async function init(
 
   if (!packageManagerVersion) throw `package manager not found: ${opts.packageManagerName}`;
 
-  const projectFileTree = generateProjectFileTree({
-    projectName: opts.projectName,
-    projectDescription: opts.projectDescription,
-    projectVersion: opts.projectVersion,
-    projectAuthor: opts.projectAuthor,
-    packageManagerName: opts.packageManagerName,
-    packageManagerVersion: packageManagerVersion,
-  });
+  const { packageJsonFile } = getProjectPaths(rootDir);
+
+  const projectFileTree = !opts.update
+    ? generateNewProjectFileTree({
+        projectName: opts.projectName,
+        projectDescription: opts.projectDescription,
+        projectVersion: opts.projectVersion,
+        projectAuthor: opts.projectAuthor,
+        packageManagerName: opts.packageManagerName,
+        packageManagerVersion: packageManagerVersion,
+      })
+    : generateProjectUpdateFileTree({
+        packageJsonFile: packageJsonFile,
+        packageManagerName: opts.packageManagerName,
+        packageManagerVersion: packageManagerVersion,
+      });
 
   await writeFileTree(rootDir, projectFileTree);
 }
 
-function generateProjectFileTree(args: {
+function generateNewProjectFileTree(args: {
   projectName: string;
   projectDescription: string;
   projectVersion: string;
@@ -417,6 +426,84 @@ function generateProjectFileTree(args: {
 
     "modules/shared/components/index.tsx": {
       content: ``,
+    },
+  };
+}
+
+function generateProjectUpdateFileTree(args: {
+  packageJsonFile: string;
+  packageManagerName: string;
+  packageManagerVersion: string;
+}): FileTree {
+  const existingJson = fs.readJSONSync(args.packageJsonFile);
+  existingJson.devDependencies.firedeck = "^0.1.11";
+
+  return {
+    "package.json": {
+      content: JSON.stringify(existingJson, null, 2),
+    },
+
+    "firedeck.config.ts": {
+      content: `
+      import {defineConfig} from "firedeck";
+      
+      export default defineConfig({
+        packageManager: {
+          name: "${args.packageManagerName}",
+          version: "${args.packageManagerVersion}",
+        },
+        // Demo firebase config, enabling true offline mode
+        // (https://firebase.google.com/docs/emulator-suite/connect_auth#choose_a_firebase_project)
+        // Replace with config from your project in the Firebase console when ready to deploy
+        firebase: {
+          projects: {
+            demo: {
+              projectId: "demo-firedeck",
+              apps: {
+                main: {
+                  apiKey: "demo-firedeck-api-key",
+                  authDomain: "demo-firedeck.firebaseapp.com",
+                  projectId: "demo-firedeck",
+                  storageBucket: "demo-firedeck.firebasestorage.app",
+                  messagingSenderId: "demo-firedeck-messaging-sender-id",
+                  appId: "demo-firedeck-app-id",
+                  measurementId: "demo-firedeck-measurement-id",
+                },
+              },
+              hosting: {
+                main: {
+                  siteId: "demo-firedeck-main-site",
+                },
+              },
+              firestore: {
+                indexes: [],
+                rules: \`
+                  rules_version = '2';
+                  
+                  service cloud.firestore {
+                    match /databases/{database}/documents {
+                      match /{document=**} {
+                        allow read, write: if false;
+                      }
+                    }
+                  }\`,
+              },
+              storage: {
+                rules: \`
+                  rules_version = '2';
+                  
+                  service firebase.storage {
+                    match /b/{bucket}/o {
+                      match /** {
+                        allow read, write: if false;
+                      }
+                    }
+                  }\`,
+              },
+            },
+          },
+        },
+      });`,
     },
   };
 }
