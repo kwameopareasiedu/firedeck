@@ -53,16 +53,16 @@ export async function runProject(rootDir: string, opts?: CompileProjectOptions) 
         const restartRuntimeDevProc = projectMutations.some((change) => {
           return (
             [
+              "create-runtime",
               "update-runtime",
               "add-runtime-client",
-              "rename-runtime-client",
               "update-runtime-client-env",
+              "rename-runtime-client",
               "remove-runtime-client",
               "add-runtime-backend",
-              "rename-runtime-backend",
               "update-runtime-backend-env",
+              "rename-runtime-backend",
               "remove-runtime-backend",
-              "update-runtime-firebase-config",
             ] as ProjectMutation["type"][]
           ).includes(change.type);
         });
