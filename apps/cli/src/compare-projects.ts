@@ -117,19 +117,12 @@ export function compareProjects(source: FiredeckProject | null, target: Firedeck
     }
   }
 
-  const updateWorkspaceClientEnvTypes = changes.some((change) => {
+  const updateWorkspaceEnvTypes = changes.some((change) => {
     return (
       [
         "add-runtime-client",
         "update-runtime-client-env",
         "remove-runtime-client",
-      ] as ProjectMutationType[]
-    ).includes(change.type);
-  });
-
-  const updateWorkspaceBackendEnvTypes = changes.some((change) => {
-    return (
-      [
         "add-runtime-backend",
         "update-runtime-backend-env",
         "remove-runtime-backend",
@@ -149,8 +142,7 @@ export function compareProjects(source: FiredeckProject | null, target: Firedeck
       ).includes(change.type);
     });
 
-  if (updateWorkspaceClientEnvTypes) changes.push({ type: "update-workspace-client-env-types" });
-  if (updateWorkspaceBackendEnvTypes) changes.push({ type: "update-workspace-backend-env-types" });
+  if (updateWorkspaceEnvTypes) changes.push({ type: "update-workspace-env-types" });
   if (updateRuntime) changes.push({ type: "update-runtime" });
 
   return changes;

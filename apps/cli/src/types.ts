@@ -59,8 +59,7 @@ export interface FiredeckProject {
 
 export type ProjectMutation =
   // Workspace mutations
-  | { type: "update-workspace-client-env-types" }
-  | { type: "update-workspace-backend-env-types" }
+  | { type: "update-workspace-env-types" }
   // Runtime mutations
   | { type: "create-runtime" }
   | { type: "update-runtime" }

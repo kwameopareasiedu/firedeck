@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { execSync } from "node:child_process";
 import { init } from "../temp/init.js";
 import { analyzeProject } from "../temp/analyze-project.js";
-import { compareProjectModels } from "../temp/compare-project-models.js";
+import { compareProjects } from "../temp/compare-projects.js";
 import { applyProjectMutations } from "../temp/apply-project-mutations.js";
 import { getPrettierConfig, writeFileTree } from "../temp/utils.js";
 import { format } from "prettier";
@@ -132,7 +132,7 @@ API__DB_URL=postgres://user:pass@localhost:5173/db
   t.true(fs.existsSync(resolve(functionsDir, "create-user.ts")));
 
   const project = await analyzeProject(testDir);
-  const mutations = compareProjectModels(null, project);
+  const mutations = compareProjects(null, project);
   await applyProjectMutations(testDir, project, mutations);
 
   const workspaceDir = resolve(testDir, "firedeck");

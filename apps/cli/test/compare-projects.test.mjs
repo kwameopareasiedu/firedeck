@@ -1,5 +1,5 @@
 import test from "ava";
-import { compareProjectModels } from "../temp/compare-project-models.js";
+import { compareProjects } from "../temp/compare-projects.js";
 
 test("compare-projects", async (t) => {
   const p1 = {
@@ -345,10 +345,10 @@ test("compare-projects", async (t) => {
     backends: [],
   };
 
-  const p1p2Changes = compareProjectModels(p1, p2);
-  const p1p3Changes = compareProjectModels(p1, p3);
-  const p1p4Changes = compareProjectModels(p1, p4);
-  const nullP4Changes = compareProjectModels(null, p4);
+  const p1p2Changes = compareProjects(p1, p2);
+  const p1p3Changes = compareProjects(p1, p3);
+  const p1p4Changes = compareProjects(p1, p4);
+  const nullP4Changes = compareProjects(null, p4);
 
   // console.dir(p1p4Changes, { depth: null });
 
@@ -360,8 +360,7 @@ test("compare-projects", async (t) => {
     { type: "add-runtime-backend", backendName: "admin" },
     { type: "update-runtime-backend-functions", backendName: "admin" },
     { type: "update-runtime-backend-env", backendName: "admin" },
-    { type: "update-workspace-client-env-types" },
-    { type: "update-workspace-backend-env-types" },
+    { type: "update-workspace-env-types" },
     { type: "update-runtime" },
   ]);
 
@@ -378,8 +377,7 @@ test("compare-projects", async (t) => {
     { type: "update-runtime-client-public-dir", clientName: "external" },
     { type: "remove-runtime-client", clientName: "main" },
     { type: "remove-runtime-backend", backendName: "api" },
-    { type: "update-workspace-client-env-types" },
-    { type: "update-workspace-backend-env-types" },
+    { type: "update-workspace-env-types" },
     { type: "update-runtime" },
   ]);
 
@@ -395,7 +393,7 @@ test("compare-projects", async (t) => {
     { type: "update-runtime-client-html", clientName: "external" },
     { type: "update-runtime-client-env", clientName: "external" },
     { type: "update-runtime-client-public-dir", clientName: "external" },
-    { type: "update-workspace-client-env-types" },
+    { type: "update-workspace-env-types" },
     { type: "update-runtime" },
   ]);
 });

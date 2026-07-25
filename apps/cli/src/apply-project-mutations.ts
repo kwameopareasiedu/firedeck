@@ -63,20 +63,18 @@ export async function applyProjectMutations(
 
   for (const mut of mutations) {
     switch (mut.type) {
-      case "update-workspace-client-env-types": {
-        const envTypesSource = await generateWorkspaceClientsEnvTypesSource(
+      case "update-workspace-env-types": {
+        const clientEnvTypesSource = await generateWorkspaceClientsEnvTypesSource(
           firedeckProject.clients,
         );
         fs.ensureFileSync(workspaceClientEnvTypesFile);
-        fs.writeFileSync(workspaceClientEnvTypesFile, envTypesSource);
-        break;
-      }
-      case "update-workspace-backend-env-types": {
-        const envTypesSource = await generateWorkspaceBackendsEnvTypesSource(
+        fs.writeFileSync(workspaceClientEnvTypesFile, clientEnvTypesSource);
+
+        const backendEnvTypesSource = await generateWorkspaceBackendsEnvTypesSource(
           firedeckProject.backends,
         );
         fs.ensureFileSync(workspaceBackendEnvTypesFile);
-        fs.writeFileSync(workspaceBackendEnvTypesFile, envTypesSource);
+        fs.writeFileSync(workspaceBackendEnvTypesFile, backendEnvTypesSource);
         break;
       }
       case "create-runtime": {
@@ -713,7 +711,8 @@ function generateRuntimeBackendFileTree(backendName: string): FileTree {
       ].map((dep) => new RegExp(\`^\${dep}.+\`));
       
       const onWarn = (warning, defaultHandler) => {
-        if (!warning.message.includes("allowImportingTsExtensions")) defaultHandler(warning);
+        if (!warning.message.includes("allowImportingTsExtensions"))
+          defaultHandler(warning);
       };
       
       export default defineConfig([
