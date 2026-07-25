@@ -51,7 +51,7 @@ export interface BackendModule {
   env: string;
 }
 
-export interface ProjectModel {
+export interface FiredeckProject {
   config: FiredeckConfig;
   clients: ClientModule[];
   backends: BackendModule[];
@@ -59,43 +59,33 @@ export interface ProjectModel {
 
 export type ProjectMutation =
   // Workspace mutations
-  | { type: "update-workspace-env-types"; clients: ClientModule[] }
+  | { type: "update-workspace-client-env-types" }
+  | { type: "update-workspace-backend-env-types" }
   // Runtime mutations
-  | { type: "create-runtime"; config: FiredeckConfig; backends: BackendModule[] }
-  | { type: "update-runtime"; config: FiredeckConfig; backends: BackendModule[] }
-  | {
-      type: "update-runtime-firebase-config";
-      config: FiredeckConfig;
-      clients: ClientModule[];
-      backends: BackendModule[];
-    }
+  | { type: "create-runtime" }
+  | { type: "update-runtime" }
+  // | { type: "update-runtime-firebase-config"; config: FiredeckConfig; clients: ClientModule[]; backends: BackendModule[]; }
   // Runtime client mutations
-  | { type: "add-runtime-client"; clientName: string; backends: BackendModule[] }
-  | { type: "rename-runtime-client"; oldClientName: string; newClientName: string }
-  | { type: "update-runtime-client-routes"; clientName: string; clientRoutes: ClientModuleRoute }
-  | { type: "update-runtime-client-html"; clientName: string; html: string }
-  | { type: "update-runtime-client-env"; clientName: string; env: string }
+  | { type: "add-runtime-client"; clientName: string }
+  // | { type: "update-runtime-client-routes"; clientName: string }
+  | { type: "update-runtime-client-html"; clientName: string }
+  | { type: "update-runtime-client-env"; clientName: string }
   | { type: "update-runtime-client-public-dir"; clientName: string }
+  | { type: "update-runtime-client-sdk"; clientName: string }
+  | { type: "rename-runtime-client"; oldName: string; newName: string }
   | { type: "remove-runtime-client"; clientName: string }
-  | { type: "update-runtime-clients-config"; clients: ClientModule[]; config: FiredeckConfig }
+  // | { type: "update-runtime-clients-config"; clients: ClientModule[]; config: FiredeckConfig }
   // Runtime backend mutations
   | { type: "add-runtime-backend"; backendName: string }
-  | { type: "rename-runtime-backend"; oldBackendName: string; newBackendName: string }
-  | {
-      type: "update-runtime-backend-functions";
-      backendName: string;
-      backendFunctions: BackendModuleFunction[];
-    }
-  | { type: "update-runtime-backend-env"; backendName: string; env: string }
-  | { type: "remove-runtime-backend"; backendName: string }
-  // Client SDK mutations
-  | { type: "update-client-sdk-routes"; clients: ClientModule[] }
-  | {
-      type: "update-client-sdk-api";
-      clients: ClientModule[];
-      backends: BackendModule[];
-      config: FiredeckConfig;
-    };
+  | { type: "update-runtime-backend-functions"; backendName: string }
+  | { type: "update-runtime-backend-env"; backendName: string }
+  | { type: "rename-runtime-backend"; oldName: string; newName: string }
+  | { type: "remove-runtime-backend"; backendName: string };
+// Client SDK mutations
+// | { type: "update-client-sdk-routes"; clients: ClientModule[] }
+// | { type: "update-client-sdk-api" };
+
+export type ProjectMutationType = ProjectMutation["type"];
 
 export interface CompileProjectOptions {
   explain?: boolean;

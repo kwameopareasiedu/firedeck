@@ -99,10 +99,62 @@ ADMIN__VITE_HELLO=world
   const projectModel = await analyzeProject(testDir);
   const firedeckConfig = await getFiredeckConfig(testDir);
 
+  const packageManagerVersion = execSync("yarn --version", { encoding: "utf-8" }).trim();
+  if (!packageManagerVersion) throw `package manager not found: yarn`;
+
   t.true(fs.existsSync(resolve(testDir, "firedeck/firedeck.config.mjs")));
   t.true(fs.existsSync(resolve(testDir, "firedeck/firedeck.config.d.mts")));
-  t.deepEqual(firedeckConfig.firebase, undefined);
-  t.is(firedeckConfig.packageManager.name, "yarn");
+  t.deepEqual(firedeckConfig, {
+    packageManager: { name: "yarn", version: packageManagerVersion },
+    firebase: {
+      projects: {
+        demo: {
+          projectId: "demo-firedeck",
+          apps: {
+            main: {
+              apiKey: "demo-firedeck-api-key",
+              authDomain: "demo-firedeck.firebaseapp.com",
+              projectId: "demo-firedeck",
+              storageBucket: "demo-firedeck.firebasestorage.app",
+              messagingSenderId: "demo-firedeck-messaging-sender-id",
+              appId: "demo-firedeck-app-id",
+              measurementId: "demo-firedeck-measurement-id",
+            },
+          },
+          hosting: {
+            main: {
+              siteId: "demo-firedeck-main-site",
+            },
+          },
+          firestore: {
+            indexes: [],
+            rules: `
+                  rules_version = '2';
+                  
+                  service cloud.firestore {
+                    match /databases/{database}/documents {
+                      match /{document=**} {
+                        allow read, write: if false;
+                      }
+                    }
+                  }`,
+          },
+          storage: {
+            rules: `
+                  rules_version = '2';
+                  
+                  service firebase.storage {
+                    match /b/{bucket}/o {
+                      match /** {
+                        allow read, write: if false;
+                      }
+                    }
+                  }`,
+          },
+        },
+      },
+    },
+  });
   t.is(projectModel.clients.length, 1);
   t.is(projectModel.backends.length, 1);
 

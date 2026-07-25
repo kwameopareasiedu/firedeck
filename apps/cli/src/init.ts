@@ -143,7 +143,7 @@ function generateProjectFileTree(args: {
           "paths": {
             "@/*": ["./modules/*", "./firedeck/*"]
           },
-          "types": ["vite/client", "./firedeck/env"]
+          "types": ["vite/client", "./firedeck/env-client", "./firedeck/env-backend"]
         },
         "include": ["./modules", "./firedeck"]
       }`,
@@ -194,10 +194,61 @@ function generateProjectFileTree(args: {
           name: "${args.packageManagerName}",
           version: "${args.packageManagerVersion}",
         },
+        // Demo firebase config, enabling true offline mode
+        // (https://firebase.google.com/docs/emulator-suite/connect_auth#choose_a_firebase_project)
+        // Replace with config from your project in the Firebase console when ready to deploy
+        firebase: {
+          projects: {
+            demo: {
+              projectId: "demo-firedeck",
+              apps: {
+                main: {
+                  apiKey: "demo-firedeck-api-key",
+                  authDomain: "demo-firedeck.firebaseapp.com",
+                  projectId: "demo-firedeck",
+                  storageBucket: "demo-firedeck.firebasestorage.app",
+                  messagingSenderId: "demo-firedeck-messaging-sender-id",
+                  appId: "demo-firedeck-app-id",
+                  measurementId: "demo-firedeck-measurement-id",
+                },
+              },
+              hosting: {
+                main: {
+                  siteId: "demo-firedeck-main-site",
+                },
+              },
+              firestore: {
+                indexes: [],
+                rules: \`
+                  rules_version = '2';
+                  
+                  service cloud.firestore {
+                    match /databases/{database}/documents {
+                      match /{document=**} {
+                        allow read, write: if false;
+                      }
+                    }
+                  }\`,
+              },
+              storage: {
+                rules: \`
+                  rules_version = '2';
+                  
+                  service firebase.storage {
+                    match /b/{bucket}/o {
+                      match /** {
+                        allow read, write: if false;
+                      }
+                    }
+                  }\`,
+              },
+            },
+          },
+        },
       });`,
     },
 
-    "firedeck/env.d.ts": {
+    "firedeck/env-client.d.ts": {
       content: `
       interface ViteTypeOptions {
         strictImportMetaEnv: unknown;
@@ -209,6 +260,19 @@ function generateProjectFileTree(args: {
       interface ImportMeta {
         readonly env: ImportMetaEnv;
       }`,
+    },
+
+    "firedeck/env-backend.d.ts": {
+      content: `
+      declare global {
+        namespace NodeJS {
+          interface ProcessEnv {
+            NODE_ENV: string;
+          }
+        }
+      }
+      
+      export {};`,
     },
 
     "temp/firebase/emulator/.gitignore": {
@@ -283,7 +347,7 @@ function generateProjectFileTree(args: {
     "modules/client/main/pages/404/not-found-page.tsx": {
       content: `
       import React from "react";
-      import { MainRoute } from "@/sdk/client/routes";
+      import { MainRoute } from "@/client-sdk/main";
       import { Link } from "react-router";
       
       export default function NotFoundPage() {

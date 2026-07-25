@@ -3,81 +3,54 @@ import { extname, resolve } from "node:path";
 import fs from "fs-extra";
 import chalk from "chalk";
 import { FileTree } from "@/types";
-import { camelCase, snakeCase } from "lodash";
-import { FirebaseProjectConfig } from "shared/firedeck-config";
+import { camelCase, kebabCase, snakeCase } from "lodash";
 
 /** React router catch-all route path */
 export const NOT_FOUND_URL_PATH = "/*";
 
-export const demoFirebaseProjectConfig: FirebaseProjectConfig = {
-  projectAlias: "demo",
-  projectId: "demo-firedeck",
-  apps: () => ({
-    apiKey: "demo-firedeck-api-key",
-    authDomain: "demo-firedeck.firebaseapp.com",
-    projectId: "demo-firedeck",
-    storageBucket: "demo-firedeck.firebasestorage.app",
-    messagingSenderId: "demo-firedeck-messaging-sender-id",
-    appId: "demo-firedeck-app-id",
-    measurementId: "demo-firedeck-measurement-id",
-  }),
-  hosting: ({ moduleName }) => {
-    const hash = generateStringHash("demo-firedeck" + moduleName);
-    return { siteId: `demo-firedeck-${moduleName}-${hash}` };
-  },
-  firestore: {
-    rules: `rules_version = '2';
-    service cloud.firestore {
-      match /databases/{database}/documents {
-        match /{document=**} {
-          allow read, write: if false;
-        }
-      }
-    }`,
-  },
-  storage: {
-    rules: `rules_version = '2';
-    service firebase.storage {
-      match /b/{bucket}/o {
-        match /** {
-          allow read, write: if false;
-        }
-      }
-    }`,
-  },
-};
+/** Alias for demo firebase project config */
+export const DEMO_FIREBASE_PROJECT_ALIAS = "demo";
 
 /** Returns relevant file paths of a Firedeck project */
 export function getProjectPaths(rootDir: string) {
+  // prettier-ignore
   return {
     envFile: resolve(rootDir, ".env"),
     configFile: resolve(rootDir, "firedeck.config.ts"),
     modulesDir: resolve(rootDir, "modules"),
     clientModulesDir: resolve(rootDir, "modules/client"),
-    getClientModulePagesDir: (clientName: string) =>
-      resolve(rootDir, "modules/client", clientName, "pages"),
-    getClientModulePublicDir: (clientName: string) =>
-      resolve(rootDir, "modules/client", clientName, "public"),
-    getClientModuleIndexHtmlFile: (clientName: string) =>
-      resolve(rootDir, "modules/client", clientName, "index.html"),
+    getClientModuleDir: (clientName: string) => resolve(rootDir, "modules/client", clientName),
+    getClientModulePagesDir: (clientName: string) => resolve(rootDir, "modules/client", clientName, "pages"),
+    getClientModulePublicDir: (clientName: string) => resolve(rootDir, "modules/client", clientName, "public"),
+    getClientModuleIndexHtmlFile: (clientName: string) => resolve(rootDir, "modules/client", clientName, "index.html"),
     backendModulesDir: resolve(rootDir, "modules/backend"),
-    getBackendModuleFunctionsDir: (backendName: string) =>
-      resolve(rootDir, "modules/backend", backendName, "functions"),
+    getBackendModuleDir: (backendName: string) => resolve(rootDir, "modules/backend", backendName),
+    getBackendModuleFunctionsDir: (backendName: string) => resolve(rootDir, "modules/backend", backendName, "functions"),
     workspaceDir: resolve(rootDir, "firedeck"),
-    workspaceEnvTypesFile: resolve(rootDir, "firedeck/env.d.ts"),
+    workspaceClientEnvTypesFile: resolve(rootDir, "firedeck/env-client.d.ts"),
+    workspaceBackendEnvTypesFile: resolve(rootDir, "firedeck/env-backend.d.ts"),
     workspaceConfigFile: resolve(rootDir, "firedeck/firedeck.config.mjs"),
     workspaceConfigTypesFile: resolve(rootDir, "firedeck/firedeck.config.d.mts"),
     runtimeDir: resolve(rootDir, "firedeck/runtime"),
     runtimeModulesDir: resolve(rootDir, "firedeck/runtime/modules"),
+    getRuntimeClientModuleDir: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName),
+    getRuntimeClientModuleDistDir: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "dist"),
+    getRuntimeClientModuleFiredeckConfigFile: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "firedeck.config.mjs"),
+    getRuntimeClientModuleFiredeckConfigTypesFile: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "firedeck.config.mts"),
+    getRuntimeClientModuleIndexHtmlFile: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "index.html"),
+    getRuntimeClientModuleEnvFile: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, ".env"),
+    getRuntimeClientModuleRoutesFile: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "src/routes.ts"),
+    getRuntimeClientModulePublicDir: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "public"),
+    getRuntimeBackendModuleDir: (backendName: string) => resolve(rootDir, "firedeck/runtime/modules", backendName),
+    getRuntimeBackendModuleFunctionsFile: (backendName: string) => resolve(rootDir, "firedeck/runtime/modules", backendName, "src/functions.ts"),
+    getRuntimeBackendModuleEnvFile: (backendName: string) => resolve(rootDir, "firedeck/runtime/modules", backendName, ".env"),
     runtimeFirebaseRcFile: resolve(rootDir, "firedeck/runtime/.firebaserc"),
     runtimeFirebaseJsonFile: resolve(rootDir, "firedeck/runtime/firebase.json"),
     runtimeFirebaseFirestoreJsonFile: resolve(rootDir, "firedeck/runtime/firestore.json"),
     runtimeFirebaseFirestoreRulesFile: resolve(rootDir, "firedeck/runtime/firestore.rules"),
     runtimeFirebaseStorageRulesFile: resolve(rootDir, "firedeck/runtime/storage.rules"),
-    clientSdkDir: resolve(rootDir, "firedeck/sdk/client"),
-    clientSdkRoutesFile: resolve(rootDir, "firedeck/sdk/client/routes.ts"),
-    getClientSdkClientModuleApiFile: (clientName: string) =>
-      resolve(rootDir, `firedeck/sdk/client/${clientName}-api.ts`),
+    clientSdkDir: resolve(rootDir, "firedeck/client-sdk"),
+    getClientSdkFile: (clientName: string) => resolve(rootDir, `firedeck/client-sdk/${kebabCase(clientName)}.ts`),
   };
 }
 
@@ -154,18 +127,6 @@ export function warn(msg: unknown, ...args: unknown[]) {
  */
 export function error(msg: unknown, ...args: unknown[]) {
   console.log(`${chalk.red.bold("firedeck")}: ${chalk.red(msg)}`, ...args);
-}
-
-/** Generates a non-negative deterministic hash for the given string */
-export function generateStringHash(str: string) {
-  let hash = 0;
-
-  for (const char of str) {
-    hash = (hash << 5) - hash + char.charCodeAt(0);
-    hash |= 0;
-  }
-
-  return Math.abs(hash);
 }
 
 /** Converts the string to pascal case */

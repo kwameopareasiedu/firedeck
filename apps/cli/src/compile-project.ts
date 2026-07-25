@@ -1,19 +1,22 @@
 import { assertFiredeckRootDir, info } from "@/utils";
 import { analyzeProject } from "@/analyze-project";
-import { compareProjectModels } from "@/compare-project-models";
+import { compareProjects } from "@/compare-projects";
 import { applyProjectMutations } from "@/apply-project-mutations";
-import { CompileProjectOptions, ProjectModel } from "@/types";
+import { CompileProjectOptions, FiredeckProject } from "@/types";
 
 /** Compiles a Firedeck project */
 export async function compileProject(
   rootDir: string,
-  model?: ProjectModel | null,
+  project?: FiredeckProject | null,
   opts?: CompileProjectOptions,
 ) {
   assertFiredeckRootDir(rootDir);
 
-  const updatedModel = await analyzeProject(rootDir);
-  const mutations = compareProjectModels(model ?? null, updatedModel);
+  const updatedProject = await analyzeProject(rootDir, {
+    firebaseProjectAlias: opts?.firebaseProjectAlias,
+  });
+
+  const mutations = compareProjects(project ?? null, updatedProject);
 
   if (opts?.explain) {
     info(`Pending Mutations (${mutations.length})`);
@@ -24,9 +27,9 @@ export async function compileProject(
     }
   }
 
-  await applyProjectMutations(rootDir, mutations, {
+  await applyProjectMutations(rootDir, updatedProject, mutations, {
     firebaseProjectAlias: opts?.firebaseProjectAlias,
   });
 
-  return [updatedModel, mutations] as const;
+  return [updatedProject, mutations] as const;
 }

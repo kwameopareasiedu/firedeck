@@ -1,7 +1,13 @@
-import { assertFiredeckRootDir, getProjectPaths, NOT_FOUND_URL_PATH, pascalCase } from "@/utils";
+import {
+  assertFiredeckRootDir,
+  DEMO_FIREBASE_PROJECT_ALIAS,
+  getProjectPaths,
+  NOT_FOUND_URL_PATH,
+  pascalCase,
+} from "@/utils";
 import { relative, resolve, sep } from "node:path";
 import fs from "fs-extra";
-import { camelCase } from "lodash";
+import { camelCase, cloneDeep } from "lodash";
 import { rollup, RollupOptions } from "rollup";
 import { dts } from "rollup-plugin-dts";
 import nodeResolve from "@rollup/plugin-node-resolve";
@@ -13,7 +19,7 @@ import {
   BackendModuleFunction,
   ClientModule,
   ClientModuleRoute,
-  ProjectModel,
+  FiredeckProject,
 } from "@/types";
 
 /** Regex matcher for a line of the root .env file (E.g. MAIN__VITE_FOO=bar) */
@@ -24,47 +30,68 @@ const ENV_VAR_LINE_SPLIT_REGEX = /^.+?__/;
 const ENV_VAR_KEY_VALUE_SEPARATOR = "__";
 /** Pages-level not-found directory name */
 const NOT_FOUND_DIR_SUFFIX = "404";
-/** Reserved firedeck firebase project ids */
-const RESERVED_FIREBASE_PROJECT_IDS = ["demo-firedeck"];
-/** Reserved firedeck firebase project aliases */
-const RESERVED_FIREBASE_PROJECT_ALIASES = ["demo"];
 
 /** Analyzes a Firedeck project and generates a `ProjectModel` object from it */
-export async function analyzeProject(rootDir: string): Promise<ProjectModel> {
+export async function analyzeProject(
+  rootDir: string,
+  opts?: { firebaseProjectAlias?: string },
+): Promise<FiredeckProject> {
   assertFiredeckRootDir(rootDir);
 
+  const { clientModulesDir, backendModulesDir, getClientModuleDir, getBackendModuleDir } =
+    getProjectPaths(rootDir);
   const firedeckConfig = await getFiredeckConfig(rootDir);
-  const { clientModulesDir, backendModulesDir } = getProjectPaths(rootDir);
+  const firebaseProjectAlias = opts?.firebaseProjectAlias ?? DEMO_FIREBASE_PROJECT_ALIAS;
+  const firebaseProject = firedeckConfig.firebase?.projects[firebaseProjectAlias];
+
+  if (!firebaseProject) throw `invalid firebase project alias: ${opts?.firebaseProjectAlias}`;
 
   const clientModuleDirs = fs.existsSync(clientModulesDir)
     ? fs
         .readdirSync(clientModulesDir, { encoding: "utf-8" })
-        .map((moduleName) => resolve(clientModulesDir, moduleName))
+        .map((moduleName) => getClientModuleDir(moduleName))
         .filter((moduleDir) => fs.lstatSync(moduleDir).isDirectory())
     : [];
 
   const backendModuleDirs = fs.existsSync(backendModulesDir)
     ? fs
         .readdirSync(backendModulesDir, { encoding: "utf-8" })
-        .map((moduleName) => resolve(backendModulesDir, moduleName))
+        .map((moduleName) => getBackendModuleDir(moduleName))
         .filter((moduleDir) => fs.lstatSync(moduleDir).isDirectory())
     : [];
 
-  if (clientModuleDirs.length === 0 && backendModuleDirs.length === 0)
-    throw "no modules found in project";
-
-  const projectClients = clientModuleDirs.map((clientModulesDir) =>
+  const clients = clientModuleDirs.map((clientModulesDir) =>
     analyzeClientModule(rootDir, clientModulesDir),
   );
 
-  const projectBackends = backendModuleDirs.map((backendModuleDir) =>
+  const backends = backendModuleDirs.map((backendModuleDir) =>
     analyzeBackendModule(rootDir, backendModuleDir),
   );
 
+  if (clients.length === 0 && backends.length === 0) throw "no modules found in project";
+
+  for (const client of clients) {
+    if (!firebaseProject.hosting[client.name])
+      throw `no firebase hosting site provided for client module: ${client.name}`;
+
+    if (!firebaseProject.apps[client.name] && backends.length > 0)
+      throw `no firebase app provided for client module: ${client.name}`;
+
+    for (const backend of backends) {
+      if (backend.name === client.name)
+        throw `duplicate module names not allowed: ${backend.name} `;
+    }
+  }
+
+  if (backends.length > 0) {
+    if (!firebaseProject.firestore.rules) throw `invalid firebase firestore config`;
+    if (!firebaseProject.storage.rules) throw `invalid firebase storage config`;
+  }
+
   return {
     config: firedeckConfig,
-    clients: projectClients,
-    backends: projectBackends,
+    clients: clients,
+    backends: backends,
   };
 }
 
@@ -289,28 +316,21 @@ export async function getFiredeckConfig(rootDir: string) {
 
   await Promise.all([codeBundle.close(), typesBundle.close()]);
 
-  const firedeckConfig = await import(workspaceConfigFile).then(
-    (mod) => mod.default as FiredeckConfig,
+  const firedeckConfig = cloneDeep(
+    await import(workspaceConfigFile).then((mod) => mod.default as FiredeckConfig),
   );
 
   if (firedeckConfig.firebase?.projects) {
-    const uniqueFirebaseProjectIds = new Set<string>();
-    const uniqueFirebaseProjectAliases = new Set<string>();
+    const uniqueProjectIds = new Set<string>();
 
-    for (const project of firedeckConfig.firebase.projects) {
-      if (RESERVED_FIREBASE_PROJECT_IDS.includes(project.projectId))
-        throw `firebase project id: ${project.projectId} is reserved`;
+    for (const projectAlias in firedeckConfig.firebase.projects) {
+      const firebaseProject = firedeckConfig.firebase.projects[projectAlias];
 
-      if (RESERVED_FIREBASE_PROJECT_ALIASES.includes(project.projectAlias))
-        throw `firebase project alias: ${project.projectAlias} is reserved`;
-
-      if (!uniqueFirebaseProjectIds.has(project.projectId))
-        uniqueFirebaseProjectIds.add(project.projectId);
-      else throw `firebase project id: ${project.projectId} duplicated in firedeck config`;
-
-      if (!uniqueFirebaseProjectAliases.has(project.projectAlias))
-        uniqueFirebaseProjectAliases.add(project.projectAlias);
-      else throw `firebase project alias: ${project.projectAlias} duplicated in firedeck config`;
+      if (!uniqueProjectIds.has(firebaseProject.projectId)) {
+        uniqueProjectIds.add(firebaseProject.projectId);
+      } else {
+        throw `duplicate firebase project id: ${firebaseProject.projectId} in firebase config`;
+      }
     }
   }
 

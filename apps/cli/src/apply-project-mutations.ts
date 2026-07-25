@@ -5,12 +5,13 @@ import {
   ClientModule,
   ClientModuleRoute,
   FileTree,
+  FiredeckProject,
   ProjectMutation,
   RouterRoute,
 } from "@/types";
 import {
   assertFiredeckRootDir,
-  demoFirebaseProjectConfig,
+  DEMO_FIREBASE_PROJECT_ALIAS,
   getPrettierConfig,
   getProjectPaths,
   NOT_FOUND_URL_PATH,
@@ -18,50 +19,64 @@ import {
   screamingSnakeCase,
   writeFileTree,
 } from "@/utils";
-import { relative, resolve } from "node:path";
+import { relative } from "node:path";
 import { format } from "prettier";
 import { FiredeckConfig } from "shared/firedeck-config";
+import { kebabCase } from "lodash";
 
 /** Applies a list of `ProjectMutation` items to the project file system */
 export async function applyProjectMutations(
   rootDir: string,
+  firedeckProject: FiredeckProject,
   mutations: ProjectMutation[],
   opts?: { firebaseProjectAlias?: string },
 ) {
   assertFiredeckRootDir(rootDir);
 
+  const firebaseProjectAlias = opts?.firebaseProjectAlias ?? DEMO_FIREBASE_PROJECT_ALIAS;
+
   const {
     getClientModulePublicDir,
-    clientSdkRoutesFile,
-    getClientSdkClientModuleApiFile,
+    getClientSdkFile,
     runtimeDir,
-    runtimeModulesDir,
+    getRuntimeClientModuleDir,
+    getRuntimeClientModuleDistDir,
+    getRuntimeClientModuleFiredeckConfigFile,
+    getRuntimeClientModuleFiredeckConfigTypesFile,
+    getRuntimeClientModuleIndexHtmlFile,
+    getRuntimeClientModuleEnvFile,
+    getRuntimeClientModuleRoutesFile,
+    getRuntimeClientModulePublicDir,
+    getRuntimeBackendModuleDir,
+    getRuntimeBackendModuleFunctionsFile,
+    getRuntimeBackendModuleEnvFile,
     runtimeFirebaseRcFile,
     runtimeFirebaseJsonFile,
     runtimeFirebaseFirestoreJsonFile,
     runtimeFirebaseFirestoreRulesFile,
     runtimeFirebaseStorageRulesFile,
-    workspaceEnvTypesFile,
+    workspaceClientEnvTypesFile,
+    workspaceBackendEnvTypesFile,
     workspaceConfigFile,
     workspaceConfigTypesFile,
   } = getProjectPaths(rootDir);
 
   for (const mut of mutations) {
     switch (mut.type) {
-      case "update-workspace-env-types": {
-        const envTypesSource = await generateWorkspaceEnvTypesSource(mut.clients);
-        fs.writeFileSync(workspaceEnvTypesFile, envTypesSource);
-
+      case "update-workspace-client-env-types": {
+        const envTypesSource = await generateWorkspaceClientsEnvTypesSource(
+          firedeckProject.clients,
+        );
+        fs.ensureFileSync(workspaceClientEnvTypesFile);
+        fs.writeFileSync(workspaceClientEnvTypesFile, envTypesSource);
         break;
       }
-      case "update-runtime-clients-config": {
-        for (const client of mut.clients) {
-          const configDestPath = resolve(runtimeModulesDir, client.name, "firedeck.config.mjs");
-          const typesDestPath = resolve(runtimeModulesDir, client.name, "firedeck.config.d.mts");
-          fs.copyFileSync(workspaceConfigFile, configDestPath);
-          fs.copyFileSync(workspaceConfigTypesFile, typesDestPath);
-        }
-
+      case "update-workspace-backend-env-types": {
+        const envTypesSource = await generateWorkspaceBackendsEnvTypesSource(
+          firedeckProject.backends,
+        );
+        fs.ensureFileSync(workspaceBackendEnvTypesFile);
+        fs.writeFileSync(workspaceBackendEnvTypesFile, envTypesSource);
         break;
       }
       case "create-runtime": {
@@ -69,162 +84,209 @@ export async function applyProjectMutations(
         fs.ensureDirSync(runtimeDir);
 
         const runtimeFileTree = generateRuntimeFileTree(
-          mut.config.packageManager.name,
-          mut.config.packageManager.version,
-          mut.backends,
-          opts?.firebaseProjectAlias,
+          firedeckProject.config.packageManager.name,
+          firedeckProject.config.packageManager.version,
+          firedeckProject.backends,
+          firebaseProjectAlias,
         );
         await writeFileTree(runtimeDir, runtimeFileTree);
         break;
       }
       case "update-runtime": {
         const runtimeFileTree = generateRuntimeFileTree(
-          mut.config.packageManager.name,
-          mut.config.packageManager.version,
-          mut.backends,
-          opts?.firebaseProjectAlias,
+          firedeckProject.config.packageManager.name,
+          firedeckProject.config.packageManager.version,
+          firedeckProject.backends,
+          firebaseProjectAlias,
         );
         await writeFileTree(runtimeDir, runtimeFileTree);
-        break;
-      }
-      case "update-runtime-firebase-config": {
-        const firebaseRcSource = await generateFirebaseRcSource(mut.config, mut.clients);
+
+        for (const client of firedeckProject.clients) {
+          const configDestPath = getRuntimeClientModuleFiredeckConfigFile(client.name);
+          const typesDestPath = getRuntimeClientModuleFiredeckConfigTypesFile(client.name);
+          fs.copyFileSync(workspaceConfigFile, configDestPath);
+          fs.copyFileSync(workspaceConfigTypesFile, typesDestPath);
+        }
+
+        const firebaseRcSource = await generateFirebaseRcSource(
+          firedeckProject.config,
+          firedeckProject.clients,
+        );
+        fs.ensureFileSync(runtimeFirebaseRcFile);
         fs.writeFileSync(runtimeFirebaseRcFile, firebaseRcSource);
 
         const firebaseJsonSource = await generateFirebaseJsonSource(
-          mut.clients,
-          mut.backends,
+          firedeckProject.clients,
+          firedeckProject.backends,
           runtimeDir,
-          runtimeModulesDir,
+          getRuntimeClientModuleDistDir,
+          getRuntimeBackendModuleDir,
         );
-
+        fs.ensureFileSync(runtimeFirebaseJsonFile);
         fs.writeFileSync(runtimeFirebaseJsonFile, firebaseJsonSource);
 
         const firestoreJsonSource = await generateFirebaseFirestoreJsonSource(
-          mut.config,
-          opts?.firebaseProjectAlias,
+          firedeckProject.config,
+          firebaseProjectAlias,
         );
-
+        fs.ensureFileSync(runtimeFirebaseFirestoreJsonFile);
         fs.writeFileSync(runtimeFirebaseFirestoreJsonFile, firestoreJsonSource);
 
         const firestoreRulesSource = generateFirebaseFirestoreRulesSource(
-          mut.config,
-          opts?.firebaseProjectAlias,
+          firedeckProject.config,
+          firebaseProjectAlias,
         );
-
+        fs.ensureFileSync(runtimeFirebaseFirestoreRulesFile);
         fs.writeFileSync(runtimeFirebaseFirestoreRulesFile, firestoreRulesSource);
 
         const storageRuleSource = generateFirebaseStorageRulesSource(
-          mut.config,
-          opts?.firebaseProjectAlias,
+          firedeckProject.config,
+          firebaseProjectAlias,
         );
-
+        fs.ensureFileSync(runtimeFirebaseStorageRulesFile);
         fs.writeFileSync(runtimeFirebaseStorageRulesFile, storageRuleSource);
 
         break;
       }
       case "add-runtime-client": {
-        const clientRoot = resolve(runtimeModulesDir, mut.clientName);
-        const clientFileTree = generateRuntimeClientFileTree(mut.clientName, mut.backends);
+        const clientRoot = getRuntimeClientModuleDir(mut.clientName);
+        const clientFileTree = generateRuntimeClientFileTree(
+          mut.clientName,
+          firedeckProject.backends,
+        );
         await writeFileTree(clientRoot, clientFileTree);
         break;
       }
-      case "rename-runtime-client": {
-        const oldClientRoot = resolve(runtimeModulesDir, mut.oldClientName);
-        const newClientRoot = resolve(runtimeModulesDir, mut.newClientName);
-        fs.renameSync(oldClientRoot, newClientRoot);
-        break;
-      }
-      case "update-runtime-client-routes": {
-        const clientRoutesFile = resolve(runtimeModulesDir, mut.clientName, "src/routes.ts");
-        const runtimeClientRoutesSource = await generateRuntimeClientRoutesSource(mut.clientRoutes);
-        fs.writeFileSync(clientRoutesFile, runtimeClientRoutesSource);
-        break;
-      }
       case "update-runtime-client-html": {
-        const htmlDest = resolve(runtimeModulesDir, mut.clientName, "index.html");
-        fs.writeFileSync(htmlDest, mut.html);
+        const htmlDest = getRuntimeClientModuleIndexHtmlFile(mut.clientName);
+        const client = firedeckProject.clients.find((mod) => mod.name === mut.clientName);
+        fs.ensureFileSync(htmlDest);
+        fs.writeFileSync(htmlDest, client!.indexHtml);
         break;
       }
       case "update-runtime-client-env": {
-        const envDest = resolve(runtimeModulesDir, mut.clientName, ".env");
-        fs.writeFileSync(envDest, mut.env);
+        const envDest = getRuntimeClientModuleEnvFile(mut.clientName);
+        const client = firedeckProject.clients.find((mod) => mod.name === mut.clientName);
+        fs.ensureFileSync(envDest);
+        fs.writeFileSync(envDest, client!.env);
         break;
       }
       case "update-runtime-client-public-dir": {
         const clientPublicDir = getClientModulePublicDir(mut.clientName);
-        const clientRuntimePublicDir = resolve(runtimeModulesDir, mut.clientName, "public");
+        const clientRuntimePublicDir = getRuntimeClientModulePublicDir(mut.clientName);
         fs.removeSync(clientRuntimePublicDir);
         fs.copySync(clientPublicDir, clientRuntimePublicDir);
         break;
       }
+      case "update-runtime-client-sdk": {
+        const client = firedeckProject.clients.find((mod) => mod.name === mut.clientName);
+
+        const clientSdkFile = getClientSdkFile(mut.clientName);
+        const { config, backends, alias } = { ...firedeckProject, alias: firebaseProjectAlias };
+        const sdkSource = await generateClientSdkSource(config, client!, backends, alias);
+        fs.ensureFileSync(clientSdkFile);
+        fs.writeFileSync(clientSdkFile, sdkSource);
+
+        const clientRoutesFile = getRuntimeClientModuleRoutesFile(mut.clientName);
+        const runtimeClientRoutesSource = await generateRuntimeClientRoutesSource(client!.routes);
+        fs.ensureFileSync(clientRoutesFile);
+        fs.writeFileSync(clientRoutesFile, runtimeClientRoutesSource);
+        break;
+      }
+      case "rename-runtime-client": {
+        const oldClientRoot = getRuntimeClientModuleDir(mut.oldName);
+        const newClientRoot = getRuntimeClientModuleDir(mut.newName);
+        fs.renameSync(oldClientRoot, newClientRoot);
+        break;
+      }
       case "remove-runtime-client": {
-        const clientRoot = resolve(runtimeModulesDir, mut.clientName);
+        const clientRoot = getRuntimeClientModuleDir(mut.clientName);
         fs.removeSync(clientRoot);
         break;
       }
       case "add-runtime-backend": {
-        const backendRoot = resolve(runtimeModulesDir, mut.backendName);
+        const backendRoot = getRuntimeBackendModuleDir(mut.backendName);
         const backendFileTree = generateRuntimeBackendFileTree(mut.backendName);
         await writeFileTree(backendRoot, backendFileTree);
         break;
       }
       case "rename-runtime-backend": {
-        const oldBackendRoot = resolve(runtimeModulesDir, mut.oldBackendName);
-        const newBackendRoot = resolve(runtimeModulesDir, mut.newBackendName);
+        const oldBackendRoot = getRuntimeBackendModuleDir(mut.oldName);
+        const newBackendRoot = getRuntimeBackendModuleDir(mut.newName);
         fs.renameSync(oldBackendRoot, newBackendRoot);
         break;
       }
       case "update-runtime-backend-functions": {
-        const { backendName, backendFunctions } = mut;
-        const backendFunctionsFile = resolve(runtimeModulesDir, backendName, "src/functions.ts");
-        const runtimeBackendFunctionsSource =
-          await generateRuntimeBackendFunctionsSource(backendFunctions);
-        fs.writeFileSync(backendFunctionsFile, runtimeBackendFunctionsSource);
+        const { backendName } = mut;
+        const backendFunctionsFile = getRuntimeBackendModuleFunctionsFile(backendName);
+        const backend = firedeckProject.backends.find((mod) => mod.name === mut.backendName);
+        const functionsSource = await generateRuntimeBackendFunctionsSource(backend!.functions);
+        fs.ensureFileSync(backendFunctionsFile);
+        fs.writeFileSync(backendFunctionsFile, functionsSource);
         break;
       }
       case "update-runtime-backend-env": {
-        const envDest = resolve(runtimeModulesDir, mut.backendName, ".env");
-        fs.writeFileSync(envDest, mut.env);
+        const envDest = getRuntimeBackendModuleEnvFile(mut.backendName);
+        const backend = firedeckProject.backends.find((mod) => mod.name === mut.backendName);
+        fs.ensureFileSync(envDest);
+        fs.writeFileSync(envDest, backend!.env);
         break;
       }
       case "remove-runtime-backend": {
-        const backendRoot = resolve(runtimeModulesDir, mut.backendName);
+        const backendRoot = getRuntimeBackendModuleDir(mut.backendName);
         fs.removeSync(backendRoot);
         break;
       }
-      case "update-client-sdk-routes": {
-        const routesSource = await generateClientSdkRoutesSource(mut.clients);
-        fs.ensureFileSync(clientSdkRoutesFile);
-        fs.writeFileSync(clientSdkRoutesFile, routesSource);
-        break;
-      }
-      case "update-client-sdk-api":
-        for (const client of mut.clients) {
-          const clientModuleSdkApiFile = getClientSdkClientModuleApiFile(client.name);
-          const clientModuleSdkApiSource = await generateClientSdkApiSource(
-            mut.config,
-            client,
-            mut.backends,
-            opts?.firebaseProjectAlias,
-          );
-          fs.ensureFileSync(clientModuleSdkApiFile);
-          fs.writeFileSync(clientModuleSdkApiFile, clientModuleSdkApiSource);
-        }
-        break;
     }
   }
 }
 
-function generateWorkspaceEnvTypesSource(clients: ClientModule[]) {
-  const allClientEnvs = clients
-    .reduce((envs, client) => `${envs}${client.env}\n`, "")
+function generateWorkspaceClientsEnvTypesSource(clients: ClientModule[]) {
+  const envLines = generateModuleEnvLinesSource(clients);
+
+  const finalSource = `
+  interface ViteTypeOptions {
+    strictImportMetaEnv: unknown
+  }
+
+  interface ImportMetaEnv {
+    ${envLines.join("\n")}
+  }
+  
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }`;
+
+  return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
+}
+
+function generateWorkspaceBackendsEnvTypesSource(backends: BackendModule[]) {
+  const envLines = generateModuleEnvLinesSource(backends);
+
+  const finalSource = `
+  declare global {
+    namespace NodeJS {
+      interface ProcessEnv {
+        NODE_ENV: string;
+        ${envLines.join("\n")}
+      }
+    }
+  }
+  
+  export {};`;
+
+  return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
+}
+
+function generateModuleEnvLinesSource(modules: { env: string }[]) {
+  const allModuleEnvs = modules
+    .reduce((envs, mod) => `${envs}${mod.env}\n`, "")
     .split("\n")
     .filter((line) => !!line);
 
   const keySet = new Set<string>();
 
-  const envLines = allClientEnvs.reduce((lines, line) => {
+  return allModuleEnvs.reduce((lines, line) => {
     const [key] = line.split("=");
     const value = line.substring(key.length + 1);
     const entry = `readonly ${key}: "${value}";`.replace(/""/g, '"');
@@ -243,29 +305,13 @@ function generateWorkspaceEnvTypesSource(clients: ClientModule[]) {
     keySet.add(key);
     return [...lines];
   }, [] as string[]);
-
-  const finalSource = `
-    interface ViteTypeOptions {
-      strictImportMetaEnv: unknown
-    }
-
-    interface ImportMetaEnv {
-      ${envLines.join("\n")}
-    }
-    
-    interface ImportMeta {
-      readonly env: ImportMetaEnv;
-    }
-  `;
-
-  return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
 }
 
 function generateRuntimeFileTree(
   packageManagerName: string,
   packageManagerVersion: string,
   backends: BackendModule[],
-  firebaseProjectAlias?: string,
+  firebaseProjectAlias: string,
 ): FileTree {
   return {
     "package.json": {
@@ -287,9 +333,9 @@ function generateRuntimeFileTree(
           }
           "build": "../../node_modules/.bin/turbo build",
           ${
-            firebaseProjectAlias
-              ? `"emulate": "../../node_modules/.bin/kill-port 4000 8080 8085 && firebase use ${firebaseProjectAlias} && firebase emulators:start --import ../../temp/firebase/emulator --export-on-exit"`
-              : `"emulate": "../../node_modules/.bin/kill-port 4000 8080 8085 && firebase emulators:start --project demo-firedeck --import ../../temp/firebase/emulator --export-on-exit"`
+            firebaseProjectAlias === DEMO_FIREBASE_PROJECT_ALIAS
+              ? `"emulate": "../../node_modules/.bin/kill-port 4000 8080 8085 && firebase emulators:start --project demo-firedeck --import ../../temp/firebase/emulator --export-on-exit"`
+              : `"emulate": "../../node_modules/.bin/kill-port 4000 8080 8085 && firebase use ${firebaseProjectAlias} && firebase emulators:start --import ../../temp/firebase/emulator --export-on-exit"`
           }
         }
       }`,
@@ -397,7 +443,7 @@ function generateRuntimeClientFileTree(clientName: string, backends: BackendModu
             plugins: [react(), tailwindcss()],
             resolve: {
               alias: {
-                "@/sdk/client": resolve(__dirname, "../../../../firedeck/sdk/client"),
+                "@/client-sdk": resolve(__dirname, "../../../../firedeck/client-sdk"),
                 "@": resolve(__dirname, "../../../../modules"),
               },
             }
@@ -501,7 +547,7 @@ function generateRuntimeClientFileTree(clientName: string, backends: BackendModu
           import { connectFunctionsEmulator } from "firebase/functions";
           import { connectFirestoreEmulator } from "firebase/firestore";
           import { connectStorageEmulator } from "firebase/storage";
-          import { auth, firestore, functions, storage } from "@/sdk/client/${clientName}-api.ts";
+          import { auth, firestore, functions, storage } from "@/client-sdk/${kebabCase(clientName)}";
       
           if (import.meta.env.MODE === "development") {
             connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
@@ -722,47 +768,25 @@ function generateRuntimeBackendFunctionsSource(functions: BackendModuleFunction[
   return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
 }
 
-function generateClientSdkRoutesSource(clients: ClientModule[]) {
-  const routerSource = clients.reduce((source, client) => {
-    const routeEnumSource = flattenRoutes(client.routes).reduce((source, route) => {
-      if (!route.pageName || !route.urlPath || route.urlPath === NOT_FOUND_URL_PATH) return source;
-
-      return source + `${screamingSnakeCase(route.pageName)} = "${route.urlPath}",\n`;
-    }, "");
-
-    const clientSource = `
-      export enum ${pascalCase(client.name)}Route { 
-        ${routeEnumSource} 
-      };\n`;
-
-    return source + clientSource + "\n";
-  }, "");
-
-  const finalSource = `
-  /**
-   * ------------------------------------------------
-   * This file was generated by Firedeck. Do not edit
-   * ------------------------------------------------
-   */
-   
-   ${routerSource}`;
-
-  return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
-}
-
-function generateClientSdkApiSource(
+function generateClientSdkSource(
   firedeckConfig: FiredeckConfig,
   client: ClientModule,
   backends: BackendModule[],
-  firebaseProjectAlias?: string,
+  firebaseProjectAlias: string,
 ) {
-  const firebaseProjectConfigs = firedeckConfig.firebase?.projects ?? [];
+  const firebaseProject = firedeckConfig.firebase?.projects[firebaseProjectAlias];
+  if (!firebaseProject) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
 
-  const firebaseProjectConfig = firebaseProjectAlias
-    ? firebaseProjectConfigs.find((project) => project.projectAlias === firebaseProjectAlias)
-    : demoFirebaseProjectConfig;
+  const routeEnumMembersSource = flattenRoutes(client.routes).reduce((source, route) => {
+    if (!route.pageName || !route.urlPath || route.urlPath === NOT_FOUND_URL_PATH) return source;
 
-  if (!firebaseProjectConfig) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
+    return source + `${screamingSnakeCase(route.pageName)} = "${route.urlPath}",\n`;
+  }, "");
+
+  const routeEnumSource = `
+    export enum ${pascalCase(client.name)}Route { 
+      ${routeEnumMembersSource} 
+    };`;
 
   const backendSource = backends.reduce((src, backend) => {
     return backend.functions.reduce((backendSrc, backendFunction) => {
@@ -785,58 +809,62 @@ function generateClientSdkApiSource(
    * This file was generated by Firedeck. Do not edit
    * ------------------------------------------------
    */
-   
-  import { initializeApp } from "firebase/app";
-  import { browserSessionPersistence, initializeAuth } from "firebase/auth";
-  import { initializeFirestore } from "firebase/firestore";
-  import { getFunctions, httpsCallable } from "firebase/functions";
-  import { getStorage } from "firebase/storage";
-  import { initializeAnalytics } from "firebase/analytics";
-  import type { CallableFunction } from "firebase-functions/https";
   
-  type GetBackendFnArgs<T> = T extends CallableFunction<infer A, unknown> ? A : never;
-  type GetBackendFnReturn<T> = T extends CallableFunction<unknown, infer R> ? R : never;
+  ${
+    backends.length > 0
+      ? `import { initializeApp } from "firebase/app";
+        import { browserSessionPersistence, initializeAuth } from "firebase/auth";
+        import { initializeFirestore } from "firebase/firestore";
+        import { getFunctions, httpsCallable } from "firebase/functions";
+        import { getStorage } from "firebase/storage";
+        import { initializeAnalytics } from "firebase/analytics";
+        import type { CallableFunction } from "firebase-functions/https";
+        
+        type GetBackendFnArgs<T> = T extends CallableFunction<infer A, unknown> ? A : never;
+        type GetBackendFnReturn<T> = T extends CallableFunction<unknown, infer R> ? R : never;
+        
+        const firebaseConfig = ${JSON.stringify(firebaseProject.apps[client.name])};
+        
+        // Initialize Firebase
+        export const app = initializeApp(firebaseConfig);
+        export const auth = initializeAuth(app, { persistence: browserSessionPersistence });
+        export const firestore = initializeFirestore(app, {});
+        export const functions = getFunctions(app);
+        export const storage = getStorage(app);
+        export const analytics = initializeAnalytics(app);
+      
+        ${backendSource}
+        `
+      : ""
+  }
   
-  const firebaseConfig = ${JSON.stringify(firebaseProjectConfig.apps({ moduleName: client.name }))};
-  
-  // Initialize Firebase
-  export const app = initializeApp(firebaseConfig);
-  export const auth = initializeAuth(app, { persistence: browserSessionPersistence });
-  export const firestore = initializeFirestore(app, {});
-  export const functions = getFunctions(app);
-  export const storage = getStorage(app);
-  export const analytics = initializeAnalytics(app);
-
-  ${backendSource}
+  ${routeEnumSource}
   `;
 
   return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
 }
 
 function generateFirebaseRcSource(firedeckConfig: FiredeckConfig, clients: ClientModule[]) {
-  const firebaseProjectConfigs = [
-    demoFirebaseProjectConfig,
-    ...(firedeckConfig.firebase?.projects ?? []),
-  ];
-
-  const projectConfig = firebaseProjectConfigs.reduce(
-    (projectConfig, project) => ({ ...projectConfig, [project.projectAlias]: project.projectId }),
+  const projectsConfig = Object.keys(firedeckConfig.firebase?.projects ?? {}).reduce(
+    (map, alias) => ({ ...map, [alias]: firedeckConfig.firebase!.projects[alias].projectId }),
     {} as Record<string, string>,
   );
 
-  const hostingTargetConfig = firebaseProjectConfigs.reduce(
-    (targetConfig, project) => {
-      const hostingTargetConfig = clients.reduce(
-        (hostingTargetConfig, client) => ({
-          ...hostingTargetConfig,
-          [client.name]: [project.hosting({ moduleName: client.name }).siteId],
-        }),
-        {} as Record<string, string[]>,
-      );
+  const targetsConfig = Object.keys(firedeckConfig.firebase?.projects ?? {}).reduce(
+    (map, alias) => {
+      const firebaseProject = firedeckConfig.firebase!.projects[alias];
 
       return {
-        ...targetConfig,
-        [project.projectId]: { hosting: hostingTargetConfig },
+        ...map,
+        [firebaseProject.projectId]: {
+          hosting: clients.reduce(
+            (map, client) => {
+              const clientHostingTarget = firebaseProject.hosting[client.name];
+              return { ...map, [client.name]: [clientHostingTarget.siteId] };
+            },
+            {} as Record<string, string[]>,
+          ),
+        },
       };
     },
     {} as Record<string, Record<string, Record<string, string[]>>>,
@@ -844,8 +872,8 @@ function generateFirebaseRcSource(firedeckConfig: FiredeckConfig, clients: Clien
 
   const finalSource = JSON.stringify(
     {
-      projects: projectConfig,
-      targets: hostingTargetConfig,
+      projects: projectsConfig,
+      targets: targetsConfig,
     },
     null,
     2,
@@ -858,45 +886,61 @@ async function generateFirebaseJsonSource(
   clients: ClientModule[],
   backends: BackendModule[],
   runtimeDir: string,
-  runtimeModulesDir: string,
+  getRuntimeClientDistDir: (clientName: string) => string,
+  getRuntimeBackendDir: (clientName: string) => string,
 ) {
-  const hostingConfig = clients.map((client) => {
-    return {
-      target: client.name,
-      public: relative(runtimeDir, resolve(runtimeModulesDir, client.name, "dist")),
-      rewrites: [{ source: "**", destination: "/index.html" }],
-    };
-  });
+  const hostingConfig =
+    clients.length > 0
+      ? clients.map((client) => {
+          return {
+            target: client.name,
+            public: relative(runtimeDir, getRuntimeClientDistDir(client.name)),
+            rewrites: [{ source: "**", destination: "/index.html" }],
+          };
+        })
+      : undefined;
 
-  const functionsConfig = backends.map((backend) => {
-    return {
-      source: relative(runtimeDir, resolve(runtimeModulesDir, backend.name)),
-      codebase: backend.name,
-      ignore: ["src", "node_modules", ".env.sample", "rollup.config.mjs", "tsconfig.json", "*.log"],
-    };
-  });
+  const functionsConfig =
+    backends.length > 0
+      ? backends.map((backend) => {
+          return {
+            source: relative(runtimeDir, getRuntimeBackendDir(backend.name)),
+            codebase: backend.name,
+            ignore: [
+              "src",
+              "node_modules",
+              ".env.sample",
+              "rollup.config.mjs",
+              "tsconfig.json",
+              "*.log",
+            ],
+          };
+        })
+      : undefined;
+
+  const firestoreConfig =
+    backends.length > 0 ? { rules: "firestore.rules", indexes: "firestore.json" } : undefined;
+
+  const storageConfig = backends.length > 0 ? { rules: "storage.rules" } : undefined;
+
+  const emulatorsConfig = {
+    auth: backends.length > 0 ? { port: 9099 } : undefined,
+    functions: backends.length > 0 ? { port: 5001 } : undefined,
+    firestore: backends.length > 0 ? { port: 8080 } : undefined,
+    hosting: clients.length > 0 ? { port: 5000 } : undefined,
+    storage: backends.length > 0 ? { port: 9199 } : undefined,
+    pubsub: backends.length > 0 ? { port: 8085 } : undefined,
+    ui: { enabled: true },
+    singleProjectMode: true,
+  };
 
   const finalSource = JSON.stringify(
     {
-      functions: functionsConfig,
       hosting: hostingConfig,
-      firestore: {
-        rules: "firestore.rules",
-        indexes: "firestore.json",
-      },
-      storage: {
-        rules: "storage.rules",
-      },
-      emulators: {
-        auth: { port: 9099 },
-        functions: { port: 5001 },
-        firestore: { port: 8080 },
-        hosting: { port: 5000 },
-        storage: { port: 9199 },
-        pubsub: { port: 8085 },
-        ui: { enabled: true },
-        singleProjectMode: true,
-      },
+      functions: functionsConfig,
+      firestore: firestoreConfig,
+      storage: storageConfig,
+      emulators: emulatorsConfig,
     },
     null,
     2,
@@ -907,18 +951,13 @@ async function generateFirebaseJsonSource(
 
 function generateFirebaseFirestoreJsonSource(
   firedeckConfig: FiredeckConfig,
-  firebaseProjectAlias?: string,
+  firebaseProjectAlias: string,
 ) {
-  const firebaseProjectConfigs = firedeckConfig.firebase?.projects ?? [];
-
-  const firebaseProjectConfig = firebaseProjectAlias
-    ? firebaseProjectConfigs.find((project) => project.projectAlias === firebaseProjectAlias)
-    : demoFirebaseProjectConfig;
-
-  if (!firebaseProjectConfig) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
+  const firebaseProject = firedeckConfig.firebase?.projects[firebaseProjectAlias];
+  if (!firebaseProject) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
 
   const finalSource = JSON.stringify(
-    { indexes: firebaseProjectConfig.firestore?.indexes ?? [] },
+    { indexes: firebaseProject.firestore?.indexes ?? [] },
     null,
     2,
   );
@@ -928,32 +967,22 @@ function generateFirebaseFirestoreJsonSource(
 
 function generateFirebaseFirestoreRulesSource(
   firedeckConfig: FiredeckConfig,
-  firebaseProjectAlias?: string,
+  firebaseProjectAlias: string,
 ) {
-  const firebaseProjectConfigs = firedeckConfig.firebase?.projects ?? [];
+  const firebaseProject = firedeckConfig.firebase?.projects[firebaseProjectAlias];
+  if (!firebaseProject) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
 
-  const firebaseProjectConfig = firebaseProjectAlias
-    ? firebaseProjectConfigs.find((project) => project.projectAlias === firebaseProjectAlias)
-    : demoFirebaseProjectConfig;
-
-  if (!firebaseProjectConfig) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
-
-  return firebaseProjectConfig.firestore?.rules ?? "";
+  return firebaseProject.firestore?.rules ?? "";
 }
 
 function generateFirebaseStorageRulesSource(
   firedeckConfig: FiredeckConfig,
-  firebaseProjectAlias?: string,
+  firebaseProjectAlias: string,
 ) {
-  const firebaseProjectConfigs = firedeckConfig.firebase?.projects ?? [];
+  const firebaseProject = firedeckConfig.firebase?.projects[firebaseProjectAlias];
+  if (!firebaseProject) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
 
-  const firebaseProjectConfig = firebaseProjectAlias
-    ? firebaseProjectConfigs.find((project) => project.projectAlias === firebaseProjectAlias)
-    : demoFirebaseProjectConfig;
-
-  if (!firebaseProjectConfig) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
-
-  return firebaseProjectConfig.storage?.rules ?? "";
+  return firebaseProject.storage?.rules ?? "";
 }
 
 function flattenRoutes(route: ClientModuleRoute): ClientModuleRoute[] {

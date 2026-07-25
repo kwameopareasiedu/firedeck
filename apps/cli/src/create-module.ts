@@ -2,7 +2,7 @@ import { FileTree, ModuleType } from "@/types";
 import { relative, resolve } from "node:path";
 import fs from "fs-extra";
 import { assertFiredeckRootDir, getProjectPaths, writeFileTree } from "@/utils";
-import { startCase } from "lodash";
+import { kebabCase, startCase } from "lodash";
 
 /** Creates a client/backend module within a Firedeck project, if it doesn't exist */
 export async function createModule(rootDir: string, opts: { name: string; type: ModuleType }) {
@@ -104,7 +104,7 @@ function generateClientModuleFileTree(args: { name: string }): FileTree {
     [`modules/client/${args.name}/pages/404/not-found-page.tsx`]: {
       content: `
         import React from "react";
-        import { ${startCase(args.name).replaceAll(" ", "")}Route } from "@/sdk/client/routes";
+        import { ${startCase(args.name).replaceAll(" ", "")}Route } from "@/client-sdk/${kebabCase(args.name)}";
         import { Link } from "react-router";
         
         export default function NotFoundPage() {

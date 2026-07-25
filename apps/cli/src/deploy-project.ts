@@ -1,4 +1,4 @@
-import { assertFiredeckRootDir, demoFirebaseProjectConfig, getProjectPaths, info } from "@/utils";
+import { assertFiredeckRootDir, DEMO_FIREBASE_PROJECT_ALIAS, getProjectPaths, info } from "@/utils";
 import { analyzeProject, getFiredeckConfig } from "@/analyze-project";
 import { execSync } from "node:child_process";
 import { buildProject } from "@/build-project";
@@ -16,58 +16,66 @@ interface DeployProjectOptions extends CompileProjectOptions {
 export async function deployProject(rootDir: string, opts?: DeployProjectOptions) {
   assertFiredeckRootDir(rootDir);
 
-  const alias = opts?.firebaseProjectAlias;
+  const alias = opts?.firebaseProjectAlias ?? DEMO_FIREBASE_PROJECT_ALIAS;
   const { runtimeDir } = getProjectPaths(rootDir);
   const firedeckConfig = await getFiredeckConfig(rootDir);
-  const firebaseProjectConfigs = firedeckConfig.firebase?.projects ?? [];
 
-  const localProjectConfig = await (async () => {
-    const aliasProjectConfig = alias
-      ? firebaseProjectConfigs.find((project) => project.projectAlias === alias)
-      : demoFirebaseProjectConfig;
+  const localFirebaseProject = await (async () => {
+    const firebaseProjects = firedeckConfig.firebase?.projects[alias];
 
-    if (!aliasProjectConfig) throw `invalid firebase project alias: ${alias}`;
-    if (aliasProjectConfig.projectId.toLowerCase().startsWith("demo"))
+    if (!firebaseProjects) throw `invalid firebase project alias: ${alias}`;
+    if (firebaseProjects.projectId.toLowerCase().startsWith("demo"))
       throw `cannot deploy using a demo firebase project alias: ${alias}`;
 
-    return aliasProjectConfig;
+    return firebaseProjects;
   })();
 
-  const firebaseAuthUser = (() => {
-    const res = runFirebaseCmd<NestedRecord>("login:list", localProjectConfig.projectId);
+  const remoteFirebaseAuthUser = (() => {
+    const res = runFirebaseCmd<NestedRecord>("login:list", localFirebaseProject.projectId);
     if (!res?.[0]) throw 'run "firebase login" to sign into firebase first';
     return res[0].user;
   })();
 
-  info(`firebase user: ${firebaseAuthUser.email}\n`);
+  info(`firebase user: ${remoteFirebaseAuthUser.email}\n`);
 
-  const remoteProjects = runFirebaseCmd<NestedArray>("projects:list", localProjectConfig.projectId);
-  if (!remoteProjects?.find((p) => p.projectId === localProjectConfig.projectId))
-    throw `firebase project not found: ${localProjectConfig.projectId}`;
+  const remoteFirebaseProjects = runFirebaseCmd<NestedArray>(
+    "projects:list",
+    localFirebaseProject.projectId,
+  );
+  if (!remoteFirebaseProjects?.find((p) => p.projectId === localFirebaseProject.projectId))
+    throw `firebase project not found: ${localFirebaseProject.projectId}`;
 
-  info(`firebase project: ${localProjectConfig.projectId} (${alias})\n`);
+  info(`firebase project: ${localFirebaseProject.projectId} (${alias})\n`);
 
-  const projectModel = await analyzeProject(rootDir);
-  const remoteApps = runFirebaseCmd<NestedArray>("apps:list", localProjectConfig.projectId);
-  const remoteHostingSites = runFirebaseCmd<NestedRecord>(
+  const remoteFirebaseApps = runFirebaseCmd<NestedArray>(
+    "apps:list",
+    localFirebaseProject.projectId,
+  );
+
+  const remoteFirebaseHostingSites = runFirebaseCmd<NestedRecord>(
     "hosting:sites:list",
-    localProjectConfig.projectId,
+    localFirebaseProject.projectId,
   )?.sites as NestedArray | undefined;
 
-  for (const client of projectModel.clients) {
-    const clientLocalApp = localProjectConfig.apps({ moduleName: client.name });
-    if (!clientLocalApp) throw `no configured firebase app for client module: ${client.name}`;
+  const firedeckProject = await analyzeProject(rootDir, {
+    firebaseProjectAlias: opts?.firebaseProjectAlias,
+  });
 
-    const clientRemoteApp = remoteApps?.find(
-      (app) => app.platform === "WEB" && app.appId === clientLocalApp.appId,
+  for (const client of firedeckProject.clients) {
+    const clientLocalFirebaseApp = localFirebaseProject.apps[client.name];
+    if (!clientLocalFirebaseApp)
+      throw `no configured firebase app for client module: ${client.name}`;
+
+    const clientRemoteFirebaseApp = remoteFirebaseApps?.find(
+      (app) => app.platform === "WEB" && app.appId === clientLocalFirebaseApp.appId,
     );
-    if (!clientRemoteApp) throw `no remote firebase app for client module: ${client.name}`;
+    if (!clientRemoteFirebaseApp) throw `no remote firebase app for client module: ${client.name}`;
 
-    const clientLocalHostingSite = localProjectConfig.hosting({ moduleName: client.name });
+    const clientLocalHostingSite = localFirebaseProject.hosting[client.name];
     if (!clientLocalHostingSite)
       throw `no configured firebase hosting site for client module: ${client.name}`;
 
-    const clientRemoteHostingSite = remoteHostingSites?.find((site) =>
+    const clientRemoteHostingSite = remoteFirebaseHostingSites?.find((site) =>
       site.name.endsWith(clientLocalHostingSite.siteId),
     );
     if (!clientRemoteHostingSite)
@@ -78,11 +86,11 @@ export async function deployProject(rootDir: string, opts?: DeployProjectOptions
 
   runFirebaseCmd(
     `deploy --except functions ${opts?.dryRun ? "--dry-run" : ""} -f`,
-    localProjectConfig.projectId,
+    localFirebaseProject.projectId,
     { cwd: runtimeDir, noJson: true },
   );
 
-  const backendFunctions = projectModel.backends.reduce(
+  const backendFunctions = firedeckProject.backends.reduce(
     (fns, backend) => [...fns, ...backend.functions.map((fn) => ({ ...fn, module: backend.name }))],
     [] as (BackendModuleFunction & { module: string })[],
   );
@@ -101,7 +109,7 @@ export async function deployProject(rootDir: string, opts?: DeployProjectOptions
 
     runFirebaseCmd(
       `deploy --only ${functionDeployCommands} ${opts?.dryRun ? "--dry-run" : ""} -f`,
-      localProjectConfig.projectId,
+      localFirebaseProject.projectId,
       { cwd: runtimeDir, noJson: true },
     );
   }

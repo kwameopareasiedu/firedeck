@@ -1,7 +1,7 @@
 import test from "ava";
 import { compareProjectModels } from "../temp/compare-project-models.js";
 
-test("compare-project-models", async (t) => {
+test("compare-projects", async (t) => {
   const p1 = {
     config: {},
     clients: [
@@ -352,143 +352,50 @@ test("compare-project-models", async (t) => {
 
   // console.dir(p1p4Changes, { depth: null });
 
-  t.deepEqual(p1p2Changes, [
-    {
-      type: "update-runtime-client-routes",
-      clientName: p2.clients[0].name,
-      clientRoutes: p2.clients[0].routes,
-    },
-    {
-      type: "update-client-sdk-routes",
-      clients: p2.clients,
-    },
-  ]);
+  t.deepEqual(p1p2Changes, [{ type: "update-runtime-client-sdk", clientName: "main" }]);
 
   t.deepEqual(p1p3Changes, [
-    { type: "remove-runtime-client", clientName: p1.clients[0].name },
-    {
-      type: "update-runtime-backend-functions",
-      backendName: p3.backends[0].name,
-      backendFunctions: p3.backends[0].functions,
-    },
-    { type: "add-runtime-backend", backendName: p3.backends[1].name },
-    {
-      type: "update-runtime-backend-functions",
-      backendName: p3.backends[1].name,
-      backendFunctions: p3.backends[1].functions,
-    },
-    {
-      type: "update-runtime-backend-env",
-      backendName: p3.backends[1].name,
-      env: p3.backends[1].env,
-    },
-    { type: "update-workspace-env-types", clients: p3.clients },
-    { type: "update-runtime", config: p3.config, backends: p3.backends },
-    { type: "update-runtime-clients-config", config: p3.config, clients: p3.clients },
-    {
-      type: "update-runtime-firebase-config",
-      config: p3.config,
-      clients: p3.clients,
-      backends: p3.backends,
-    },
-    { type: "update-client-sdk-routes", clients: p3.clients },
-    {
-      type: "update-client-sdk-api",
-      clients: p3.clients,
-      backends: p3.backends,
-      config: p3.config,
-    },
+    { type: "remove-runtime-client", clientName: "main" },
+    { type: "update-runtime-backend-functions", backendName: "api" },
+    { type: "add-runtime-backend", backendName: "admin" },
+    { type: "update-runtime-backend-functions", backendName: "admin" },
+    { type: "update-runtime-backend-env", backendName: "admin" },
+    { type: "update-workspace-client-env-types" },
+    { type: "update-workspace-backend-env-types" },
+    { type: "update-runtime" },
   ]);
 
   t.deepEqual(p1p4Changes, [
-    { type: "add-runtime-client", clientName: p4.clients[0].name, backends: p4.backends },
-    {
-      type: "update-runtime-client-routes",
-      clientName: p4.clients[0].name,
-      clientRoutes: p4.clients[0].routes,
-    },
-    {
-      type: "update-runtime-client-html",
-      clientName: p4.clients[0].name,
-      html: p4.clients[0].indexHtml,
-    },
-    { type: "update-runtime-client-env", clientName: p4.clients[0].name, env: p4.clients[0].env },
-    { type: "update-runtime-client-public-dir", clientName: p4.clients[0].name },
-    { type: "add-runtime-client", clientName: p4.clients[1].name, backends: p4.backends },
-    {
-      type: "update-runtime-client-routes",
-      clientName: p4.clients[1].name,
-      clientRoutes: p4.clients[1].routes,
-    },
-    {
-      type: "update-runtime-client-html",
-      clientName: p4.clients[1].name,
-      html: p4.clients[1].indexHtml,
-    },
-    { type: "update-runtime-client-env", clientName: p4.clients[1].name, env: p4.clients[1].env },
-    { type: "update-runtime-client-public-dir", clientName: p4.clients[1].name },
-    { type: "remove-runtime-client", clientName: p1.clients[0].name },
-    { type: "remove-runtime-backend", backendName: p1.backends[0].name },
-    { type: "update-workspace-env-types", clients: p4.clients },
-    { type: "update-runtime", config: p4.config, backends: p4.backends },
-    { type: "update-runtime-clients-config", config: p4.config, clients: p4.clients },
-    {
-      type: "update-runtime-firebase-config",
-      config: p4.config,
-      clients: p4.clients,
-      backends: p4.backends,
-    },
-    { type: "update-client-sdk-routes", clients: p4.clients },
-    {
-      type: "update-client-sdk-api",
-      clients: p4.clients,
-      backends: p4.backends,
-      config: p4.config,
-    },
+    { type: "add-runtime-client", clientName: "admin" },
+    { type: "update-runtime-client-sdk", clientName: "admin" },
+    { type: "update-runtime-client-html", clientName: "admin" },
+    { type: "update-runtime-client-env", clientName: "admin" },
+    { type: "update-runtime-client-public-dir", clientName: "admin" },
+    { type: "add-runtime-client", clientName: "external" },
+    { type: "update-runtime-client-sdk", clientName: "external" },
+    { type: "update-runtime-client-html", clientName: "external" },
+    { type: "update-runtime-client-env", clientName: "external" },
+    { type: "update-runtime-client-public-dir", clientName: "external" },
+    { type: "remove-runtime-client", clientName: "main" },
+    { type: "remove-runtime-backend", backendName: "api" },
+    { type: "update-workspace-client-env-types" },
+    { type: "update-workspace-backend-env-types" },
+    { type: "update-runtime" },
   ]);
 
   t.deepEqual(nullP4Changes, [
-    { type: "create-runtime", config: p4.config, backends: p4.backends },
-    { type: "add-runtime-client", clientName: p4.clients[0].name, backends: p4.backends },
-    {
-      type: "update-runtime-client-routes",
-      clientName: p4.clients[0].name,
-      clientRoutes: p4.clients[0].routes,
-    },
-    {
-      type: "update-runtime-client-html",
-      clientName: p4.clients[0].name,
-      html: p4.clients[0].indexHtml,
-    },
-    { type: "update-runtime-client-env", clientName: p4.clients[0].name, env: p4.clients[0].env },
-    { type: "update-runtime-client-public-dir", clientName: p4.clients[0].name },
-    { type: "add-runtime-client", clientName: p4.clients[1].name, backends: p4.backends },
-    {
-      type: "update-runtime-client-routes",
-      clientName: p4.clients[1].name,
-      clientRoutes: p4.clients[1].routes,
-    },
-    {
-      type: "update-runtime-client-html",
-      clientName: p4.clients[1].name,
-      html: p4.clients[1].indexHtml,
-    },
-    { type: "update-runtime-client-env", clientName: p4.clients[1].name, env: p4.clients[1].env },
-    { type: "update-runtime-client-public-dir", clientName: p4.clients[1].name },
-    { type: "update-workspace-env-types", clients: p4.clients },
-    { type: "update-runtime-clients-config", config: p4.config, clients: p4.clients },
-    {
-      type: "update-runtime-firebase-config",
-      config: p4.config,
-      clients: p4.clients,
-      backends: p4.backends,
-    },
-    { type: "update-client-sdk-routes", clients: p4.clients },
-    {
-      type: "update-client-sdk-api",
-      clients: p4.clients,
-      backends: p4.backends,
-      config: p4.config,
-    },
+    { type: "create-runtime" },
+    { type: "add-runtime-client", clientName: "admin" },
+    { type: "update-runtime-client-sdk", clientName: "admin" },
+    { type: "update-runtime-client-html", clientName: "admin" },
+    { type: "update-runtime-client-env", clientName: "admin" },
+    { type: "update-runtime-client-public-dir", clientName: "admin" },
+    { type: "add-runtime-client", clientName: "external" },
+    { type: "update-runtime-client-sdk", clientName: "external" },
+    { type: "update-runtime-client-html", clientName: "external" },
+    { type: "update-runtime-client-env", clientName: "external" },
+    { type: "update-runtime-client-public-dir", clientName: "external" },
+    { type: "update-workspace-client-env-types" },
+    { type: "update-runtime" },
   ]);
 });
