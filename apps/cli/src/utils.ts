@@ -4,6 +4,7 @@ import fs from "fs-extra";
 import chalk from "chalk";
 import { FileTree } from "@/types";
 import { camelCase, kebabCase, snakeCase } from "lodash";
+import { execSync } from "node:child_process";
 
 /** React router catch-all route path */
 export const NOT_FOUND_URL_PATH = "/*";
@@ -31,13 +32,12 @@ export function getProjectPaths(rootDir: string) {
     workspaceClientEnvTypesFile: resolve(rootDir, "firedeck/env-client.d.ts"),
     workspaceBackendEnvTypesFile: resolve(rootDir, "firedeck/env-backend.d.ts"),
     workspaceConfigFile: resolve(rootDir, "firedeck/firedeck.config.mjs"),
-    workspaceConfigTypesFile: resolve(rootDir, "firedeck/firedeck.config.d.mts"),
     runtimeDir: resolve(rootDir, "firedeck/runtime"),
     runtimeModulesDir: resolve(rootDir, "firedeck/runtime/modules"),
     getRuntimeClientModuleDir: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName),
     getRuntimeClientModuleDistDir: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "dist"),
-    getRuntimeClientModuleFiredeckConfigFile: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "firedeck.config.mjs"),
-    getRuntimeClientModuleFiredeckConfigTypesFile: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "firedeck.config.mts"),
+    // getRuntimeClientModuleFiredeckConfigFile: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "firedeck.config.mjs"),
+    // getRuntimeClientModuleFiredeckConfigTypesFile: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "firedeck.config.mts"),
     getRuntimeClientModuleIndexHtmlFile: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "index.html"),
     getRuntimeClientModuleEnvFile: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, ".env"),
     getRuntimeClientModuleRoutesFile: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "src/routes.ts"),
@@ -148,4 +148,31 @@ export function getFiredeckAsciiArt() {
 █████╗   ██║ ██████╝  █████╗   ██║  ██║ █████╗   ██║      █████╔╝ 
 ██║      ██║ ██║  ██║ ███████╗ ██████╔╝ ███████╗ ╚██████╗ ██║  ██╗
 ╚═╝      ╚═╝ ╚═╝  ╚═╝ ╚══════╝ ╚═════╝  ╚══════╝  ╚═════╝ ╚═╝  ╚═╝`;
+}
+
+/** Async version of reduce function on arrays */
+export async function reduceAsync<T, R>(
+  items: T[],
+  map: (acc: R, item: T) => Promise<R>,
+  initial: R,
+) {
+  let results = initial;
+
+  for (const item of items) {
+    results = await map(results, item);
+  }
+
+  return results;
+}
+
+/** Runs a firebase CLI command via child_process and returns the results in JSON format */
+export function runFirebaseCmd<T>(subCommand: string, projectId: string, opts?: { cwd?: string }) {
+  const script = `firebase ${subCommand} --project ${projectId} --json`;
+  info(script);
+
+  const response = execSync(script, { cwd: opts?.cwd, encoding: "utf-8" });
+  const parsedResponse = JSON.parse(response);
+
+  if (parsedResponse.status === "error") throw parsedResponse.error;
+  return parsedResponse.result as T;
 }

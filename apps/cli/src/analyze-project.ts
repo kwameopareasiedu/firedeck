@@ -1,26 +1,49 @@
 import {
   assertFiredeckRootDir,
-  DEMO_FIREBASE_PROJECT_ALIAS,
   getProjectPaths,
   NOT_FOUND_URL_PATH,
   pascalCase,
+  reduceAsync,
+  runFirebaseCmd,
 } from "@/utils";
 import { relative, resolve, sep } from "node:path";
+import { parseEnv } from "node:util";
 import fs from "fs-extra";
-import { camelCase, cloneDeep } from "lodash";
-import { rollup, RollupOptions } from "rollup";
-import { dts } from "rollup-plugin-dts";
+import { camelCase } from "lodash";
+import { rollup } from "rollup";
 import nodeResolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import typescript from "@rollup/plugin-typescript";
-import { FiredeckConfig } from "shared/firedeck-config";
+import {
+  FirebaseAppConfig,
+  FiredeckResolvedConfig,
+  FiredeckUserConfig,
+  ModuleFirebaseConfig,
+} from "shared/firedeck-config";
 import {
   BackendModule,
   BackendModuleFunction,
   ClientModule,
   ClientModuleRoute,
+  FiredeckMode,
   FiredeckProject,
 } from "@/types";
+import type { UserConfig as ViteModuleConfig } from "vite";
+
+interface FirebaseApp {
+  name: string;
+  displayName: string;
+  appId: string;
+  apiKeyId: string;
+  state: string;
+  expireTime: string;
+}
+
+interface FirebaseHostingSite {
+  name: string;
+  defaultUrl: string;
+  type: string;
+}
 
 /** Regex matcher for a line of the root .env file (E.g. MAIN__VITE_FOO=bar) */
 const ENV_VAR_LINE_MATCH_REGEX = /^.+?__\w+=.+$/;
@@ -30,21 +53,43 @@ const ENV_VAR_LINE_SPLIT_REGEX = /^.+?__/;
 const ENV_VAR_KEY_VALUE_SEPARATOR = "__";
 /** Pages-level not-found directory name */
 const NOT_FOUND_DIR_SUFFIX = "404";
+/** Id for demo firebase project */
+const DEMO_FIREBASE_PROJECT_ID = "demo-firedeck";
+/** Alias for demo firebase project */
+const DEMO_FIREBASE_PROJECT_ALIAS = "demo";
+/** Default Firestore rules */
+const DEFAULT_FIRESTORE_RULES = `
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}`;
+/** Default Storage rules */
+const DEFAULT_STORAGE_RULES = `
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /** {
+      allow read, write: if false;
+    }
+  }
+}`;
 
 /** Analyzes a Firedeck project and generates a `ProjectModel` object from it */
 export async function analyzeProject(
   rootDir: string,
+  mode: FiredeckMode,
   opts?: { firebaseProjectAlias?: string },
 ): Promise<FiredeckProject> {
   assertFiredeckRootDir(rootDir);
 
   const { clientModulesDir, backendModulesDir, getClientModuleDir, getBackendModuleDir } =
     getProjectPaths(rootDir);
-  const firedeckConfig = await getFiredeckConfig(rootDir);
-  const firebaseProjectAlias = opts?.firebaseProjectAlias ?? DEMO_FIREBASE_PROJECT_ALIAS;
-  const firebaseProject = firedeckConfig.firebase?.projects[firebaseProjectAlias];
-
-  if (!firebaseProject) throw `invalid firebase project alias: ${opts?.firebaseProjectAlias}`;
 
   const clientModuleDirs = fs.existsSync(clientModulesDir)
     ? fs
@@ -70,13 +115,14 @@ export async function analyzeProject(
 
   if (clients.length === 0 && backends.length === 0) throw "no modules found in project";
 
+  const firedeckConfig = await getFiredeckConfig(
+    rootDir,
+    clients,
+    mode,
+    opts?.firebaseProjectAlias,
+  );
+
   for (const client of clients) {
-    if (!firebaseProject.hosting[client.name])
-      throw `no firebase hosting site provided for client module: ${client.name}`;
-
-    if (!firebaseProject.apps[client.name] && backends.length > 0)
-      throw `no firebase app provided for client module: ${client.name}`;
-
     for (const backend of backends) {
       if (backend.name === client.name)
         throw `duplicate module names not allowed: ${backend.name} `;
@@ -84,8 +130,8 @@ export async function analyzeProject(
   }
 
   if (backends.length > 0) {
-    if (!firebaseProject.firestore.rules) throw `invalid firebase firestore config`;
-    if (!firebaseProject.storage.rules) throw `invalid firebase storage config`;
+    if (!firedeckConfig.firebase.firestore.rules) throw `invalid firebase firestore config`;
+    if (!firedeckConfig.firebase.storage.rules) throw `invalid firebase storage config`;
   }
 
   return {
@@ -286,55 +332,154 @@ function discoverRoutes(rootDir: string, dir: string, pagesDir: string): ClientM
 }
 
 /** Transpiles and executes the root `firedeck.config.ts`, returning the configuration object */
-export async function getFiredeckConfig(rootDir: string) {
+async function getFiredeckConfig(
+  rootDir: string,
+  clients: ClientModule[],
+  mode: FiredeckMode,
+  firebaseProjectAlias?: string,
+) {
   assertFiredeckRootDir(rootDir);
 
-  const { configFile, workspaceConfigFile, workspaceConfigTypesFile } = getProjectPaths(rootDir);
-  const onWarn: RollupOptions["onwarn"] = (warning, defaultHandler) => {
-    if (!warning.message.includes("allowImportingTsExtensions")) defaultHandler(warning);
-  };
+  const { configFile, workspaceConfigFile } = getProjectPaths(rootDir);
 
-  const [codeBundle, typesBundle] = await Promise.all([
-    rollup({
-      input: configFile,
-      plugins: [nodeResolve(), commonjs(), typescript()],
-      treeshake: { moduleSideEffects: false },
-      onwarn: onWarn,
-    }),
-    rollup({
-      input: configFile,
-      plugins: [typescript(), dts({})],
-      external: ["firedeck"],
-      onwarn: onWarn,
-    }),
-  ]);
+  await rollup({
+    input: configFile,
+    plugins: [nodeResolve(), commonjs(), typescript()],
+    treeshake: { moduleSideEffects: false },
+    onwarn: (warning, defaultHandler) => {
+      if (!warning.message.includes("allowImportingTsExtensions")) {
+        defaultHandler(warning);
+      }
+    },
+  })
+    .then((bundle) => bundle.write({ file: workspaceConfigFile, format: "esm" }).then(() => bundle))
+    .then((bundle) => bundle.close());
 
-  await Promise.all([
-    codeBundle.write({ file: workspaceConfigFile, format: "esm" }),
-    typesBundle.write({ file: workspaceConfigTypesFile }),
-  ]);
-
-  await Promise.all([codeBundle.close(), typesBundle.close()]);
-
-  const firedeckConfig = cloneDeep(
-    await import(workspaceConfigFile).then((mod) => mod.default as FiredeckConfig),
+  const userFiredeckConfig = await import(workspaceConfigFile).then(
+    (exports) => exports.default as FiredeckUserConfig,
   );
 
-  if (firedeckConfig.firebase?.projects) {
-    const uniqueProjectIds = new Set<string>();
+  fs.removeSync(workspaceConfigFile);
 
-    for (const projectAlias in firedeckConfig.firebase.projects) {
-      const firebaseProject = firedeckConfig.firebase.projects[projectAlias];
+  const clientViteConfigMap = await reduceAsync(
+    clients,
+    async (config, client) => {
+      const clientViteConfig: ViteModuleConfig = !userFiredeckConfig.vite
+        ? {}
+        : typeof userFiredeckConfig.vite === "function"
+          ? await userFiredeckConfig.vite({
+              mode: mode,
+              moduleName: client.name,
+              env: parseEnv(client.env),
+            })
+          : userFiredeckConfig.vite;
 
-      if (!uniqueProjectIds.has(firebaseProject.projectId)) {
-        uniqueProjectIds.add(firebaseProject.projectId);
-      } else {
-        throw `duplicate firebase project id: ${firebaseProject.projectId} in firebase config`;
+      return { ...config, [client.name]: clientViteConfig };
+    },
+    {} as Record<string, ViteModuleConfig>,
+  );
+
+  let fetchedFirebaseApps = false;
+  const firebaseApps: FirebaseApp[] = [];
+
+  let fetchedFirebaseHostingSites = false;
+  const firebaseHostingSites: FirebaseHostingSite[] = [];
+
+  const firebaseProjectTuple = firebaseProjectAlias
+    ? userFiredeckConfig.firebase?.projects?.[firebaseProjectAlias]
+    : ([DEMO_FIREBASE_PROJECT_ID, ""] as const);
+  if (!firebaseProjectTuple) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
+
+  const [firebaseProjectId, uniqueSuffix] = firebaseProjectTuple;
+
+  const clientFirebaseConfigMap = clients.reduce(
+    (configs, client) => {
+      if (firebaseProjectId === DEMO_FIREBASE_PROJECT_ID) {
+        return {
+          ...configs,
+          [client.name]: {
+            app: {
+              apiKey: "demo-firedeck-api-key",
+              authDomain: "demo-firedeck.firebaseapp.com",
+              projectId: "demo-firedeck",
+              storageBucket: "demo-firedeck.firebasestorage.app",
+              messagingSenderId: "demo-firedeck-messaging-sender-id",
+              appId: "demo-firedeck-app-id",
+              measurementId: "demo-firedeck-measurement-id",
+              projectNumber: "123456789",
+              version: "2",
+            },
+            hosting: {
+              siteId: `demo-firedeck-${client.name}-site`,
+            },
+          },
+        };
       }
-    }
-  }
 
-  return firedeckConfig;
+      const clientEntityName = `${client.name}-${uniqueSuffix}`;
+
+      if (!fetchedFirebaseApps) {
+        firebaseApps.push(...runFirebaseCmd<FirebaseApp[]>("apps:list", firebaseProjectId));
+        fetchedFirebaseApps = true;
+      }
+
+      const clientFirebaseApp =
+        firebaseApps.find((app) => app.displayName === clientEntityName) ??
+        runFirebaseCmd<FirebaseApp>(`apps:create WEB ${clientEntityName}`, firebaseProjectId);
+
+      const clientFirebaseAppConfig = runFirebaseCmd<{ sdkConfig: FirebaseAppConfig }>(
+        `apps:sdkconfig WEB ${clientFirebaseApp.appId}`,
+        firebaseProjectId,
+      ).sdkConfig;
+
+      if (!fetchedFirebaseHostingSites) {
+        firebaseHostingSites.push(
+          ...runFirebaseCmd<{ sites: FirebaseHostingSite[] }>(
+            "hosting:sites:list",
+            firebaseProjectId,
+          ).sites,
+        );
+        fetchedFirebaseHostingSites = true;
+      }
+
+      if (!firebaseHostingSites.find((site) => site.name.endsWith(clientEntityName))) {
+        runFirebaseCmd<FirebaseHostingSite>(
+          `hosting:sites:create ${clientEntityName}`,
+          firebaseProjectId,
+        );
+      }
+
+      return {
+        ...configs,
+        [client.name]: {
+          app: clientFirebaseAppConfig,
+          hosting: { siteId: clientEntityName },
+        },
+      };
+    },
+    {} as Record<string, ModuleFirebaseConfig>,
+  );
+
+  const resolvedFiredeckConfig: FiredeckResolvedConfig = {
+    packageManager: userFiredeckConfig.packageManager,
+    vite: { modules: clientViteConfigMap },
+    firebase: {
+      project: {
+        id: firebaseProjectId,
+        alias: firebaseProjectAlias ?? DEMO_FIREBASE_PROJECT_ALIAS,
+      },
+      modules: clientFirebaseConfigMap,
+      firestore: {
+        indexes: userFiredeckConfig.firebase?.firestore?.indexes ?? [],
+        rules: userFiredeckConfig.firebase?.firestore?.rules ?? DEFAULT_FIRESTORE_RULES,
+      },
+      storage: {
+        rules: userFiredeckConfig.firebase?.storage?.rules ?? DEFAULT_STORAGE_RULES,
+      },
+    },
+  };
+
+  return resolvedFiredeckConfig;
 }
 
 /** Parses the root env file and returns the env string specific to the given module name */

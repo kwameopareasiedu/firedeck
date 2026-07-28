@@ -15,6 +15,13 @@ export function compareProjects(source: FiredeckProject | null, target: Firedeck
           name: "none" as never as PackageManagerName,
           version: "none",
         },
+        vite: { modules: {} },
+        firebase: {
+          project: { id: "", alias: "" },
+          modules: {},
+          firestore: { indexes: [], rules: "" },
+          storage: { rules: "" },
+        },
       },
       clients: [],
       backends: [],
@@ -25,50 +32,50 @@ export function compareProjects(source: FiredeckProject | null, target: Firedeck
 
   const sourceClients = new Map(source.clients.map((client) => [client.name, client]));
 
-  // Check for new and modified clients
-  for (const destClient of target.clients) {
-    const sourceClient = sourceClients.get(destClient.name);
+  // Check for new and/or modified clients
+  for (const targetClient of target.clients) {
+    const sourceClient = sourceClients.get(targetClient.name);
 
     if (!sourceClient) {
       changes.push(
-        { type: "add-runtime-client", clientName: destClient.name },
-        { type: "update-runtime-client-sdk", clientName: destClient.name },
-        { type: "update-runtime-client-html", clientName: destClient.name },
-        { type: "update-runtime-client-env", clientName: destClient.name },
-        { type: "update-runtime-client-public-dir", clientName: destClient.name },
+        { type: "add-runtime-client", clientName: targetClient.name },
+        { type: "update-runtime-client-env", clientName: targetClient.name },
+        { type: "update-runtime-client-html", clientName: targetClient.name },
+        { type: "update-runtime-client-public-dir", clientName: targetClient.name },
+        { type: "update-runtime-client-sdk", clientName: targetClient.name },
       );
     } else {
-      if (sourceClient.name !== destClient.name) {
+      if (sourceClient.name !== targetClient.name) {
         changes.push({
           type: "rename-runtime-client",
           oldName: sourceClient.name,
-          newName: destClient.name,
+          newName: targetClient.name,
         });
       }
 
-      if (JSON.stringify(sourceClient.routes) !== JSON.stringify(destClient.routes)) {
-        changes.push({ type: "update-runtime-client-sdk", clientName: destClient.name });
+      if (sourceClient.env !== targetClient.env) {
+        changes.push({ type: "update-runtime-client-env", clientName: targetClient.name });
       }
 
-      if (sourceClient.indexHtml !== destClient.indexHtml) {
-        changes.push({ type: "update-runtime-client-html", clientName: destClient.name });
+      if (sourceClient.indexHtml !== targetClient.indexHtml) {
+        changes.push({ type: "update-runtime-client-html", clientName: targetClient.name });
       }
 
-      if (sourceClient.env !== destClient.env) {
-        changes.push({ type: "update-runtime-client-env", clientName: destClient.name });
+      if (sourceClient.publicLastModifiedTs !== targetClient.publicLastModifiedTs) {
+        changes.push({ type: "update-runtime-client-public-dir", clientName: targetClient.name });
       }
 
-      if (sourceClient.publicLastModifiedTs !== destClient.publicLastModifiedTs) {
-        changes.push({ type: "update-runtime-client-public-dir", clientName: destClient.name });
+      if (JSON.stringify(sourceClient.routes) !== JSON.stringify(targetClient.routes)) {
+        changes.push({ type: "update-runtime-client-sdk", clientName: targetClient.name });
       }
     }
   }
 
-  const destClients = new Map(target.clients.map((client) => [client.name, client]));
+  const targetClients = new Map(target.clients.map((client) => [client.name, client]));
 
   // Check for deleted clients
   for (const sourceClient of source.clients) {
-    const destClient = destClients.get(sourceClient.name);
+    const destClient = targetClients.get(sourceClient.name);
 
     if (!destClient) {
       changes.push({ type: "remove-runtime-client", clientName: sourceClient.name });
@@ -84,8 +91,8 @@ export function compareProjects(source: FiredeckProject | null, target: Firedeck
     if (!sourceBackend) {
       changes.push(
         { type: "add-runtime-backend", backendName: destBackend.name },
-        { type: "update-runtime-backend-functions", backendName: destBackend.name },
         { type: "update-runtime-backend-env", backendName: destBackend.name },
+        { type: "update-runtime-backend-functions", backendName: destBackend.name },
       );
     } else {
       if (sourceBackend.name !== destBackend.name) {
@@ -96,12 +103,12 @@ export function compareProjects(source: FiredeckProject | null, target: Firedeck
         });
       }
 
-      if (JSON.stringify(sourceBackend.functions) !== JSON.stringify(destBackend.functions)) {
-        changes.push({ type: "update-runtime-backend-functions", backendName: destBackend.name });
-      }
-
       if (sourceBackend.env !== destBackend.env) {
         changes.push({ type: "update-runtime-backend-env", backendName: destBackend.name });
+      }
+
+      if (JSON.stringify(sourceBackend.functions) !== JSON.stringify(destBackend.functions)) {
+        changes.push({ type: "update-runtime-backend-functions", backendName: destBackend.name });
       }
     }
   }
@@ -120,10 +127,8 @@ export function compareProjects(source: FiredeckProject | null, target: Firedeck
   const updateWorkspaceEnvTypes = changes.some((change) => {
     return (
       [
-        "add-runtime-client",
         "update-runtime-client-env",
         "remove-runtime-client",
-        "add-runtime-backend",
         "update-runtime-backend-env",
         "remove-runtime-backend",
       ] as ProjectMutationType[]
@@ -131,7 +136,7 @@ export function compareProjects(source: FiredeckProject | null, target: Firedeck
   });
 
   const updateRuntime =
-    JSON.stringify(source.config, jsonReplacer) !== JSON.stringify(target.config, jsonReplacer) ||
+    JSON.stringify(source.config) !== JSON.stringify(target.config) ||
     changes.some((change) => {
       return (
         [
@@ -146,8 +151,4 @@ export function compareProjects(source: FiredeckProject | null, target: Firedeck
   if (updateRuntime) changes.push({ type: "update-runtime" });
 
   return changes;
-}
-
-function jsonReplacer(_: string, value: unknown) {
-  return typeof value === "function" ? value.toString() : value;
 }

@@ -1,4 +1,4 @@
-import { FiredeckConfig } from "shared/firedeck-config";
+import { FiredeckResolvedConfig, FiredeckUserConfig } from "shared/firedeck-config";
 
 export type ModuleType = "client" | "backend";
 export type FileNode = { content: string; extension?: string | null };
@@ -7,6 +7,8 @@ export type FileTree = { [path: string]: FileNode };
 export type NestedRecord = { [key: string]: any };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type NestedArray = any[];
+
+export type FiredeckMode = "dev" | "build";
 
 export interface ClientModuleRoute {
   pageName: string | null;
@@ -52,7 +54,7 @@ export interface BackendModule {
 }
 
 export interface FiredeckProject {
-  config: FiredeckConfig;
+  config: FiredeckResolvedConfig;
   clients: ClientModule[];
   backends: BackendModule[];
 }

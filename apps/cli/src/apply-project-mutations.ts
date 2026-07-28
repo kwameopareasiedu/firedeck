@@ -11,7 +11,6 @@ import {
 } from "@/types";
 import {
   assertFiredeckRootDir,
-  DEMO_FIREBASE_PROJECT_ALIAS,
   getPrettierConfig,
   getProjectPaths,
   NOT_FOUND_URL_PATH,
@@ -21,19 +20,17 @@ import {
 } from "@/utils";
 import { relative } from "node:path";
 import { format } from "prettier";
-import { FiredeckConfig } from "shared/firedeck-config";
 import { kebabCase } from "lodash";
+import type { UserConfig as ViteModuleConfig } from "vite";
+import { FiredeckResolvedConfig } from "shared/firedeck-config";
 
 /** Applies a list of `ProjectMutation` items to the project file system */
 export async function applyProjectMutations(
   rootDir: string,
-  firedeckProject: FiredeckProject,
+  project: FiredeckProject,
   mutations: ProjectMutation[],
-  opts?: { firebaseProjectAlias?: string },
 ) {
   assertFiredeckRootDir(rootDir);
-
-  const firebaseProjectAlias = opts?.firebaseProjectAlias ?? DEMO_FIREBASE_PROJECT_ALIAS;
 
   const {
     getClientModulePublicDir,
@@ -41,8 +38,6 @@ export async function applyProjectMutations(
     runtimeDir,
     getRuntimeClientModuleDir,
     getRuntimeClientModuleDistDir,
-    getRuntimeClientModuleFiredeckConfigFile,
-    getRuntimeClientModuleFiredeckConfigTypesFile,
     getRuntimeClientModuleIndexHtmlFile,
     getRuntimeClientModuleEnvFile,
     getRuntimeClientModuleRoutesFile,
@@ -57,21 +52,17 @@ export async function applyProjectMutations(
     runtimeFirebaseStorageRulesFile,
     workspaceClientEnvTypesFile,
     workspaceBackendEnvTypesFile,
-    workspaceConfigFile,
-    workspaceConfigTypesFile,
   } = getProjectPaths(rootDir);
 
   for (const mut of mutations) {
     switch (mut.type) {
       case "update-workspace-env-types": {
-        const clientEnvTypesSource = await generateWorkspaceClientsEnvTypesSource(
-          firedeckProject.clients,
-        );
+        const clientEnvTypesSource = await generateWorkspaceClientsEnvTypesSource(project.clients);
         fs.ensureFileSync(workspaceClientEnvTypesFile);
         fs.writeFileSync(workspaceClientEnvTypesFile, clientEnvTypesSource);
 
         const backendEnvTypesSource = await generateWorkspaceBackendsEnvTypesSource(
-          firedeckProject.backends,
+          project.backends,
         );
         fs.ensureFileSync(workspaceBackendEnvTypesFile);
         fs.writeFileSync(workspaceBackendEnvTypesFile, backendEnvTypesSource);
@@ -82,40 +73,30 @@ export async function applyProjectMutations(
         fs.ensureDirSync(runtimeDir);
 
         const runtimeFileTree = generateRuntimeFileTree(
-          firedeckProject.config.packageManager.name,
-          firedeckProject.config.packageManager.version,
-          firedeckProject.backends,
-          firebaseProjectAlias,
+          project.config.packageManager.name,
+          project.config.packageManager.version,
+          project.backends,
+          project.config.firebase.project.alias,
         );
         await writeFileTree(runtimeDir, runtimeFileTree);
         break;
       }
       case "update-runtime": {
         const runtimeFileTree = generateRuntimeFileTree(
-          firedeckProject.config.packageManager.name,
-          firedeckProject.config.packageManager.version,
-          firedeckProject.backends,
-          firebaseProjectAlias,
+          project.config.packageManager.name,
+          project.config.packageManager.version,
+          project.backends,
+          project.config.firebase.project.alias,
         );
         await writeFileTree(runtimeDir, runtimeFileTree);
 
-        for (const client of firedeckProject.clients) {
-          const configDestPath = getRuntimeClientModuleFiredeckConfigFile(client.name);
-          const typesDestPath = getRuntimeClientModuleFiredeckConfigTypesFile(client.name);
-          fs.copyFileSync(workspaceConfigFile, configDestPath);
-          fs.copyFileSync(workspaceConfigTypesFile, typesDestPath);
-        }
-
-        const firebaseRcSource = await generateFirebaseRcSource(
-          firedeckProject.config,
-          firedeckProject.clients,
-        );
+        const firebaseRcSource = await generateFirebaseRcSource(project.config, project.clients);
         fs.ensureFileSync(runtimeFirebaseRcFile);
         fs.writeFileSync(runtimeFirebaseRcFile, firebaseRcSource);
 
         const firebaseJsonSource = await generateFirebaseJsonSource(
-          firedeckProject.clients,
-          firedeckProject.backends,
+          project.clients,
+          project.backends,
           runtimeDir,
           getRuntimeClientModuleDistDir,
           getRuntimeBackendModuleDir,
@@ -123,24 +104,15 @@ export async function applyProjectMutations(
         fs.ensureFileSync(runtimeFirebaseJsonFile);
         fs.writeFileSync(runtimeFirebaseJsonFile, firebaseJsonSource);
 
-        const firestoreJsonSource = await generateFirebaseFirestoreJsonSource(
-          firedeckProject.config,
-          firebaseProjectAlias,
-        );
+        const firestoreJsonSource = await generateFirebaseFirestoreJsonSource(project.config);
         fs.ensureFileSync(runtimeFirebaseFirestoreJsonFile);
         fs.writeFileSync(runtimeFirebaseFirestoreJsonFile, firestoreJsonSource);
 
-        const firestoreRulesSource = generateFirebaseFirestoreRulesSource(
-          firedeckProject.config,
-          firebaseProjectAlias,
-        );
+        const firestoreRulesSource = project.config.firebase.firestore.rules;
         fs.ensureFileSync(runtimeFirebaseFirestoreRulesFile);
         fs.writeFileSync(runtimeFirebaseFirestoreRulesFile, firestoreRulesSource);
 
-        const storageRuleSource = generateFirebaseStorageRulesSource(
-          firedeckProject.config,
-          firebaseProjectAlias,
-        );
+        const storageRuleSource = project.config.firebase.storage.rules;
         fs.ensureFileSync(runtimeFirebaseStorageRulesFile);
         fs.writeFileSync(runtimeFirebaseStorageRulesFile, storageRuleSource);
 
@@ -150,21 +122,22 @@ export async function applyProjectMutations(
         const clientRoot = getRuntimeClientModuleDir(mut.clientName);
         const clientFileTree = generateRuntimeClientFileTree(
           mut.clientName,
-          firedeckProject.backends,
+          project.backends,
+          project.config.vite.modules[mut.clientName],
         );
         await writeFileTree(clientRoot, clientFileTree);
         break;
       }
       case "update-runtime-client-html": {
         const htmlDest = getRuntimeClientModuleIndexHtmlFile(mut.clientName);
-        const client = firedeckProject.clients.find((mod) => mod.name === mut.clientName);
+        const client = project.clients.find((mod) => mod.name === mut.clientName);
         fs.ensureFileSync(htmlDest);
         fs.writeFileSync(htmlDest, client!.indexHtml);
         break;
       }
       case "update-runtime-client-env": {
         const envDest = getRuntimeClientModuleEnvFile(mut.clientName);
-        const client = firedeckProject.clients.find((mod) => mod.name === mut.clientName);
+        const client = project.clients.find((mod) => mod.name === mut.clientName);
         fs.ensureFileSync(envDest);
         fs.writeFileSync(envDest, client!.env);
         break;
@@ -177,11 +150,10 @@ export async function applyProjectMutations(
         break;
       }
       case "update-runtime-client-sdk": {
-        const client = firedeckProject.clients.find((mod) => mod.name === mut.clientName);
+        const client = project.clients.find((mod) => mod.name === mut.clientName);
 
         const clientSdkFile = getClientSdkFile(mut.clientName);
-        const { config, backends, alias } = { ...firedeckProject, alias: firebaseProjectAlias };
-        const sdkSource = await generateClientSdkSource(config, client!, backends, alias);
+        const sdkSource = await generateClientSdkSource(project.config, client!, project.backends);
         fs.ensureFileSync(clientSdkFile);
         fs.writeFileSync(clientSdkFile, sdkSource);
 
@@ -217,7 +189,7 @@ export async function applyProjectMutations(
       case "update-runtime-backend-functions": {
         const { backendName } = mut;
         const backendFunctionsFile = getRuntimeBackendModuleFunctionsFile(backendName);
-        const backend = firedeckProject.backends.find((mod) => mod.name === mut.backendName);
+        const backend = project.backends.find((mod) => mod.name === mut.backendName);
         const functionsSource = await generateRuntimeBackendFunctionsSource(backend!.functions);
         fs.ensureFileSync(backendFunctionsFile);
         fs.writeFileSync(backendFunctionsFile, functionsSource);
@@ -225,7 +197,7 @@ export async function applyProjectMutations(
       }
       case "update-runtime-backend-env": {
         const envDest = getRuntimeBackendModuleEnvFile(mut.backendName);
-        const backend = firedeckProject.backends.find((mod) => mod.name === mut.backendName);
+        const backend = project.backends.find((mod) => mod.name === mut.backendName);
         fs.ensureFileSync(envDest);
         fs.writeFileSync(envDest, backend!.env);
         break;
@@ -331,7 +303,7 @@ function generateRuntimeFileTree(
           }
           "build": "../../node_modules/.bin/turbo build",
           ${
-            firebaseProjectAlias === DEMO_FIREBASE_PROJECT_ALIAS
+            !firebaseProjectAlias
               ? `"emulate": "../../node_modules/.bin/kill-port 4000 8080 8085 && firebase emulators:start --project demo-firedeck --import ../../temp/firebase/emulator --export-on-exit"`
               : `"emulate": "../../node_modules/.bin/kill-port 4000 8080 8085 && firebase use ${firebaseProjectAlias} && firebase emulators:start --import ../../temp/firebase/emulator --export-on-exit"`
           }
@@ -398,7 +370,11 @@ function generateRuntimeFileTree(
   };
 }
 
-function generateRuntimeClientFileTree(clientName: string, backends: BackendModule[]): FileTree {
+function generateRuntimeClientFileTree(
+  clientName: string,
+  backends: BackendModule[],
+  viteConfig: ViteModuleConfig,
+): FileTree {
   return {
     "package.json": {
       content: `
@@ -417,38 +393,25 @@ function generateRuntimeClientFileTree(clientName: string, backends: BackendModu
 
     "vite.config.ts": {
       content: `
-      import { defineConfig, mergeConfig, loadEnv } from "vite";
+      import { mergeConfig } from "vite";
       import react from "@vitejs/plugin-react";
       import tailwindcss from "@tailwindcss/vite";
       import { resolve } from "node:path";
-      import firedeckConfig from "./firedeck.config.mjs";
 
       const __dirname = import.meta.dirname;
 
-      export default defineConfig(async ({ mode }) => {
-        const env = loadEnv(mode, process.cwd(), "");
-        
-        const configOverride = firedeckConfig.vite 
-          ? await firedeckConfig.vite({ 
-              moduleName: "${clientName}",
-              viteMode: mode as never,
-              env
-            })
-          : {};
-      
-        return mergeConfig(
-          {
-            plugins: [react(), tailwindcss()],
-            resolve: {
-              alias: {
-                "@/client-sdk": resolve(__dirname, "../../../../firedeck/client-sdk"),
-                "@": resolve(__dirname, "../../../../modules"),
-              },
-            }
-          },
-          configOverride
-        );
-      })`,
+      export default mergeConfig(
+        {
+          plugins: [react(), tailwindcss()],
+          resolve: {
+            alias: {
+              "@/client-sdk": resolve(__dirname, "../../../../firedeck/client-sdk"),
+              "@": resolve(__dirname, "../../../../modules"),
+            },
+          }
+        },
+        ${JSON.stringify(viteConfig)}
+      );`,
     },
 
     "tsconfig.app.json": {
@@ -768,14 +731,10 @@ function generateRuntimeBackendFunctionsSource(functions: BackendModuleFunction[
 }
 
 function generateClientSdkSource(
-  firedeckConfig: FiredeckConfig,
+  firedeckConfig: FiredeckResolvedConfig,
   client: ClientModule,
   backends: BackendModule[],
-  firebaseProjectAlias: string,
 ) {
-  const firebaseProject = firedeckConfig.firebase?.projects[firebaseProjectAlias];
-  if (!firebaseProject) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
-
   const routeEnumMembersSource = flattenRoutes(client.routes).reduce((source, route) => {
     if (!route.pageName || !route.urlPath || route.urlPath === NOT_FOUND_URL_PATH) return source;
 
@@ -822,7 +781,7 @@ function generateClientSdkSource(
         type GetBackendFnArgs<T> = T extends CallableFunction<infer A, unknown> ? A : never;
         type GetBackendFnReturn<T> = T extends CallableFunction<unknown, infer R> ? R : never;
         
-        const firebaseConfig = ${JSON.stringify(firebaseProject.apps[client.name])};
+        const firebaseConfig = ${JSON.stringify(firedeckConfig.firebase.modules[client.name].app)};
         
         // Initialize Firebase
         export const app = initializeApp(firebaseConfig);
@@ -843,31 +802,22 @@ function generateClientSdkSource(
   return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
 }
 
-function generateFirebaseRcSource(firedeckConfig: FiredeckConfig, clients: ClientModule[]) {
-  const projectsConfig = Object.keys(firedeckConfig.firebase?.projects ?? {}).reduce(
-    (map, alias) => ({ ...map, [alias]: firedeckConfig.firebase!.projects[alias].projectId }),
-    {} as Record<string, string>,
-  );
+function generateFirebaseRcSource(firedeckConfig: FiredeckResolvedConfig, clients: ClientModule[]) {
+  const projectsConfig = {
+    [firedeckConfig.firebase.project.alias]: firedeckConfig.firebase.project.id,
+  };
 
-  const targetsConfig = Object.keys(firedeckConfig.firebase?.projects ?? {}).reduce(
-    (map, alias) => {
-      const firebaseProject = firedeckConfig.firebase!.projects[alias];
-
-      return {
-        ...map,
-        [firebaseProject.projectId]: {
-          hosting: clients.reduce(
-            (map, client) => {
-              const clientHostingTarget = firebaseProject.hosting[client.name];
-              return { ...map, [client.name]: [clientHostingTarget.siteId] };
-            },
-            {} as Record<string, string[]>,
-          ),
+  const targetsConfig = {
+    [firedeckConfig.firebase.project.id]: {
+      hosting: clients.reduce(
+        (map, client) => {
+          const clientHostingTarget = firedeckConfig.firebase.modules[client.name].hosting;
+          return { ...map, [client.name]: [clientHostingTarget.siteId] };
         },
-      };
+        {} as Record<string, string[]>,
+      ),
     },
-    {} as Record<string, Record<string, Record<string, string[]>>>,
-  );
+  };
 
   const finalSource = JSON.stringify(
     {
@@ -948,40 +898,14 @@ async function generateFirebaseJsonSource(
   return format(finalSource, getPrettierConfig({ filePath: "a.json" }));
 }
 
-function generateFirebaseFirestoreJsonSource(
-  firedeckConfig: FiredeckConfig,
-  firebaseProjectAlias: string,
-) {
-  const firebaseProject = firedeckConfig.firebase?.projects[firebaseProjectAlias];
-  if (!firebaseProject) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
-
+function generateFirebaseFirestoreJsonSource(firedeckConfig: FiredeckResolvedConfig) {
   const finalSource = JSON.stringify(
-    { indexes: firebaseProject.firestore?.indexes ?? [] },
+    { indexes: firedeckConfig.firebase.firestore.indexes ?? [] },
     null,
     2,
   );
 
   return format(finalSource, getPrettierConfig({ filePath: "a.json" }));
-}
-
-function generateFirebaseFirestoreRulesSource(
-  firedeckConfig: FiredeckConfig,
-  firebaseProjectAlias: string,
-) {
-  const firebaseProject = firedeckConfig.firebase?.projects[firebaseProjectAlias];
-  if (!firebaseProject) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
-
-  return firebaseProject.firestore?.rules ?? "";
-}
-
-function generateFirebaseStorageRulesSource(
-  firedeckConfig: FiredeckConfig,
-  firebaseProjectAlias: string,
-) {
-  const firebaseProject = firedeckConfig.firebase?.projects[firebaseProjectAlias];
-  if (!firebaseProject) throw `invalid firebase project alias: ${firebaseProjectAlias}`;
-
-  return firebaseProject.storage?.rules ?? "";
 }
 
 function flattenRoutes(route: ClientModuleRoute): ClientModuleRoute[] {

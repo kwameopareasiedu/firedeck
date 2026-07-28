@@ -1,7 +1,7 @@
-import { FiredeckConfig } from "shared/firedeck-config";
+import { FiredeckUserConfig } from "shared/firedeck-config";
 
-export function defineConfig(config: FiredeckConfig) {
+export function defineConfig(config: FiredeckUserConfig) {
   return config;
 }
 
-export { FiredeckConfig };
+export { FiredeckUserConfig };
