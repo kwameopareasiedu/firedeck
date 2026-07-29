@@ -74,7 +74,7 @@ export async function runProject(rootDir: string, opts?: { firebaseProjectAlias?
 
           if (runtimeDevProc.exitCode === null) {
             kill(runtimeDevProc.pid!, "SIGKILL");
-            await new Promise((resolve) => setTimeout(resolve, 1250));
+            await new Promise((resolve) => setTimeout(resolve, 100));
           }
 
           runtimeDevProc = spawn(cmdName, cmdOpts, { cwd: runtimeDir, stdio: "inherit" });
@@ -82,13 +82,13 @@ export async function runProject(rootDir: string, opts?: { firebaseProjectAlias?
       } catch (err) {
         error(err);
       }
-    }, 500);
+    }, 250);
   };
 
   const fileWatcher = chokidar
     .watch([configFile, modulesDir], {
       persistent: true,
-      awaitWriteFinish: { stabilityThreshold: 500 },
+      awaitWriteFinish: { stabilityThreshold: 100 },
     })
     .on("ready", () => info("watching modules"))
     .on("error", (err) => error(`error: ${err}`))
