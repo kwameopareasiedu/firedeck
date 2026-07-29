@@ -115,7 +115,7 @@ export async function analyzeProject(
 
   if (clients.length === 0 && backends.length === 0) throw "no modules found in project";
 
-  const firedeckConfig = await getFiredeckConfig(
+  const firedeckConfig = await analyzeFiredeckConfig(
     rootDir,
     clients,
     mode,
@@ -334,7 +334,7 @@ function analyzeBackendModule(rootDir: string, backendModuleDir: string): Backen
 }
 
 /** Transpiles and executes the root `firedeck.config.ts`, returning the configuration object */
-async function getFiredeckConfig(
+async function analyzeFiredeckConfig(
   rootDir: string,
   clients: ClientModule[],
   mode: FiredeckMode,
@@ -415,7 +415,7 @@ async function getFiredeckConfig(
         };
       }
 
-      const clientEntityName = `${client.name}-${uniqueSuffix}`;
+      const clientEntityName = `${firebaseProjectId}-${client.name}${uniqueSuffix}`;
 
       if (!fetchedFirebaseApps) {
         firebaseApps.push(...runFirebaseCmd<FirebaseApp[]>("apps:list", firebaseProjectId));

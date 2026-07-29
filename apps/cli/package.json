@@ -1,6 +1,6 @@
 {
   "name": "firedeck-cli",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Firedeck CLI",
   "author": "Kwame Opare Asiedu",
   "license": "MIT",
@@ -13,6 +13,12 @@
     "cli": "node --env-file=.env.local bin/index.js",
     "test": "ava --fail-fast --timeout 30s"
   },
+  "files": [
+    "bin",
+    "package.json",
+    "README.md",
+    "yarn.lock"
+  ],
   "dependencies": {
     "@inquirer/prompts": "^8.5.2",
     "chalk": "4.1.2",
