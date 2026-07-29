@@ -57,11 +57,11 @@ function generateClientModuleFileTree(args: { name: string }): FileTree {
       content: '@source "./pages/**/*.tsx";',
     },
 
-    [`modules/client/${args.name}/root.tsx`]: {
+    [`modules/client/${args.name}/index.tsx`]: {
       content: `
       import React, { type ReactNode, StrictMode } from "react";
       
-      export default function RootBuilder(appRouter: ReactNode) {
+      export default function Root(appRouter: ReactNode) {
         return <StrictMode>{appRouter}</StrictMode>;
       }`,
     },

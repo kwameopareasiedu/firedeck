@@ -501,7 +501,7 @@ function generateRuntimeClientFileTree(
       import React from "react";
       import { createRoot } from "react-dom/client";
       import { RouterProvider, createBrowserRouter } from "react-router";
-      import buildRoot from "@/client/${clientName}/root.tsx";
+      import buildRoot from "@/client/${clientName}/index.tsx";
       import routes from "./routes.ts";
       
       ${

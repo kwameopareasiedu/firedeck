@@ -258,11 +258,11 @@ function generateNewProjectFileTree(args: {
       content: '@source "./pages/**/*.tsx";',
     },
 
-    "modules/client/main/root.tsx": {
+    "modules/client/main/index.tsx": {
       content: `
       import React, { type ReactNode, StrictMode } from "react";
       
-      export default function RootBuilder(appRouter: ReactNode) {
+      export default function Root(appRouter: ReactNode) {
         return <StrictMode>{appRouter}</StrictMode>;
       }`,
     },
