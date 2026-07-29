@@ -150,7 +150,135 @@ function analyzeClientModule(rootDir: string, clientModuleDir: string): ClientMo
   const pagesDir = getClientModulePagesDir(moduleName);
   if (!fs.existsSync(pagesDir)) throw `${relative(rootDir, pagesDir)}: directory not found`;
 
-  const clientRoutes = discoverRoutes(rootDir, pagesDir, pagesDir);
+  /**
+   * Recursively traverses the given `dir` directory path, building a nested `ClientModuleRoute`
+   * object, which is later used to create the nested route object for React Router.
+   */
+  const discoverRoutes = (rootDir: string, dir: string): ClientModuleRoute => {
+    const { modulesDir } = getProjectPaths(rootDir);
+
+    const relativeDir = relative(rootDir, dir);
+    const dirContents = fs
+      .readdirSync(dir, { encoding: "utf-8" })
+      .map((name) => resolve(dir, name));
+    const dirDirs = dirContents.filter((item) => fs.lstatSync(item).isDirectory());
+    const dirFiles = dirContents.filter((item) => fs.lstatSync(item).isFile());
+    const dirIsRoutable = !/\(\w+\)/.test(dir.split(sep).slice(-1)[0]);
+
+    const getNameAndImportPath = (itemPath?: string): [null, null] | [string, string] => {
+      if (!itemPath) return [null, null];
+
+      const rawItemName = getPathFileName(itemPath);
+      const itemName = pascalCase(rawItemName);
+      if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(itemName))
+        throw `${relative(modulesDir, itemPath)}: filename cannot be resolved to valid variable name: "${itemName}"`;
+
+      const itemImportPath = `@/${relative(modulesDir, itemPath)}`;
+      return [itemName, itemImportPath];
+    };
+
+    const pageFiles = dirFiles.filter((itemPath) => itemPath.endsWith("page.tsx"));
+    if (dirIsRoutable && pageFiles.length > 1) {
+      throw `${relativeDir} contains multiple page files`;
+    } else if (!dirIsRoutable && pageFiles.length > 0) {
+      throw `${relativeDir} is not routable but contains a page file: ${pageFiles[0]}`;
+    }
+    const [pageName, pageImportPath] = getNameAndImportPath(pageFiles[0]);
+
+    const layoutFiles = dirFiles.filter((itemPath) => itemPath.endsWith("layout.tsx"));
+    if (layoutFiles.length > 1) throw `${relativeDir} contains multiple layout files`;
+    const [layoutName, layoutImportPath] = getNameAndImportPath(layoutFiles[0]);
+
+    const placeholderFiles = dirFiles.filter((itemPath) => itemPath.endsWith("placeholder.tsx"));
+    if (placeholderFiles.length > 1) throw `${relativeDir} contains multiple placeholder files`;
+    const [placeholderName, placeholderImportPath] = getNameAndImportPath(placeholderFiles[0]);
+
+    const beforeFiles = dirFiles.filter((itemPath) => itemPath.endsWith("before.ts"));
+    if (beforeFiles.length > 1) throw `${relativeDir} contains multiple before files`;
+    const [beforeName, beforeImportPath] = getNameAndImportPath(beforeFiles[0]);
+
+    const urlPath = (() => {
+      if (!pageImportPath) return null;
+      if (dir.endsWith(NOT_FOUND_DIR_SUFFIX)) return NOT_FOUND_URL_PATH;
+
+      return (
+        "/" +
+        relative(pagesDir, dir)
+          .split(sep)
+          .filter((segment) => !/^\(\w+\)$/.test(segment))
+          .map((segment) => {
+            const pathParamRegex = /^\[(\w+)]$/;
+
+            if (!pathParamRegex.test(segment)) return segment;
+
+            const matches = pathParamRegex.exec(segment);
+            if (!matches) return segment;
+
+            return ":" + matches[1];
+          })
+          .join("/")
+      );
+    })();
+
+    if ((pageImportPath && layoutImportPath) || urlPath === "/") {
+      const dirDirsWith404Last = (() => {
+        if (urlPath !== "/" || dirDirs.every((dir) => !dir.endsWith(NOT_FOUND_DIR_SUFFIX)))
+          return dirDirs;
+
+        const newDirDirs = [...dirDirs];
+        const notFoundDir = newDirDirs.find((dir) => dir.endsWith(NOT_FOUND_DIR_SUFFIX))!;
+        newDirDirs.splice(newDirDirs.indexOf(notFoundDir), 1);
+        newDirDirs.push(notFoundDir);
+        return newDirDirs;
+      })();
+
+      return {
+        pageName: null,
+        pageImportPath: null,
+        layoutName: layoutName,
+        layoutImportPath: layoutImportPath,
+        placeholderName: placeholderName,
+        placeholderImportPath: placeholderImportPath,
+        beforeName: null,
+        beforeImportPath: null,
+        urlPath: null,
+        children: [
+          {
+            pageName: pageName,
+            pageImportPath: pageImportPath,
+            layoutName: null,
+            layoutImportPath: null,
+            placeholderName: null,
+            placeholderImportPath: null,
+            beforeName: beforeName,
+            beforeImportPath: beforeImportPath,
+            urlPath: urlPath,
+            children: [],
+          },
+          ...dirDirsWith404Last.map((childDir) => {
+            return discoverRoutes(rootDir, childDir);
+          }),
+        ],
+      };
+    }
+
+    return {
+      pageName: pageName,
+      pageImportPath: pageImportPath,
+      layoutName: layoutName,
+      layoutImportPath: layoutImportPath,
+      placeholderName: placeholderName,
+      placeholderImportPath: placeholderImportPath,
+      beforeName: beforeName,
+      beforeImportPath: beforeImportPath,
+      urlPath: urlPath,
+      children: dirDirs.map((childDir) => {
+        return discoverRoutes(rootDir, childDir);
+      }),
+    };
+  };
+
+  const clientRoutes = discoverRoutes(rootDir, pagesDir);
 
   const htmlFile = getClientModuleIndexHtmlFile(moduleName);
   if (!fs.existsSync(htmlFile)) throw `${relative(rootDir, htmlFile)}: file not found`;
@@ -205,132 +333,6 @@ function analyzeBackendModule(rootDir: string, backendModuleDir: string): Backen
   };
 }
 
-/**
- * Recursively traverses the given `dir` directory path, building a nested `ClientModuleRoute`
- * object, which is later used to create the nested route object for React Router.
- */
-function discoverRoutes(rootDir: string, dir: string, pagesDir: string): ClientModuleRoute {
-  const { modulesDir } = getProjectPaths(rootDir);
-
-  const relativeDir = relative(rootDir, dir);
-  const dirContents = fs.readdirSync(dir, { encoding: "utf-8" }).map((name) => resolve(dir, name));
-  const dirDirs = dirContents.filter((item) => fs.lstatSync(item).isDirectory());
-  const dirFiles = dirContents.filter((item) => fs.lstatSync(item).isFile());
-  const dirIsRoutable = !/\(\w+\)/.test(dir.split(sep).slice(-1)[0]);
-
-  const getNameAndImportPath = (itemPath?: string): [null, null] | [string, string] => {
-    if (!itemPath) return [null, null];
-
-    const rawItemName = getPathFileName(itemPath);
-    const itemName = pascalCase(rawItemName);
-    if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(itemName))
-      throw `${relative(modulesDir, itemPath)}: filename cannot be resolved to valid variable name: "${itemName}"`;
-
-    const itemImportPath = `@/${relative(modulesDir, itemPath)}`;
-    return [itemName, itemImportPath];
-  };
-
-  const pageFiles = dirFiles.filter((itemPath) => itemPath.endsWith("page.tsx"));
-  if (dirIsRoutable && pageFiles.length > 1) {
-    throw `${relativeDir} contains multiple page files`;
-  } else if (!dirIsRoutable && pageFiles.length > 0) {
-    throw `${relativeDir} is not routable but contains a page file: ${pageFiles[0]}`;
-  }
-  const [pageName, pageImportPath] = getNameAndImportPath(pageFiles[0]);
-
-  const layoutFiles = dirFiles.filter((itemPath) => itemPath.endsWith("layout.tsx"));
-  if (layoutFiles.length > 1) throw `${relativeDir} contains multiple layout files`;
-  const [layoutName, layoutImportPath] = getNameAndImportPath(layoutFiles[0]);
-
-  const placeholderFiles = dirFiles.filter((itemPath) => itemPath.endsWith("placeholder.tsx"));
-  if (placeholderFiles.length > 1) throw `${relativeDir} contains multiple placeholder files`;
-  const [placeholderName, placeholderImportPath] = getNameAndImportPath(placeholderFiles[0]);
-
-  const beforeFiles = dirFiles.filter((itemPath) => itemPath.endsWith("before.ts"));
-  if (beforeFiles.length > 1) throw `${relativeDir} contains multiple before files`;
-  const [beforeName, beforeImportPath] = getNameAndImportPath(beforeFiles[0]);
-
-  const urlPath = (() => {
-    if (!pageImportPath) return null;
-    if (dir.endsWith(NOT_FOUND_DIR_SUFFIX)) return NOT_FOUND_URL_PATH;
-
-    return (
-      "/" +
-      relative(pagesDir, dir)
-        .split(sep)
-        .filter((segment) => !/^\(\w+\)$/.test(segment))
-        .map((segment) => {
-          const pathParamRegex = /^\[(\w+)]$/;
-
-          if (!pathParamRegex.test(segment)) return segment;
-
-          const matches = pathParamRegex.exec(segment);
-          if (!matches) return segment;
-
-          return ":" + matches[1];
-        })
-        .join("/")
-    );
-  })();
-
-  if ((pageImportPath && layoutImportPath) || urlPath === "/") {
-    const dirDirsWith404Last = (() => {
-      if (urlPath !== "/" || dirDirs.every((dir) => !dir.endsWith(NOT_FOUND_DIR_SUFFIX)))
-        return dirDirs;
-
-      const newDirDirs = [...dirDirs];
-      const notFoundDir = newDirDirs.find((dir) => dir.endsWith(NOT_FOUND_DIR_SUFFIX))!;
-      newDirDirs.splice(newDirDirs.indexOf(notFoundDir), 1);
-      newDirDirs.push(notFoundDir);
-      return newDirDirs;
-    })();
-
-    return {
-      pageName: null,
-      pageImportPath: null,
-      layoutName: layoutName,
-      layoutImportPath: layoutImportPath,
-      placeholderName: placeholderName,
-      placeholderImportPath: placeholderImportPath,
-      beforeName: null,
-      beforeImportPath: null,
-      urlPath: null,
-      children: [
-        {
-          pageName: pageName,
-          pageImportPath: pageImportPath,
-          layoutName: null,
-          layoutImportPath: null,
-          placeholderName: null,
-          placeholderImportPath: null,
-          beforeName: beforeName,
-          beforeImportPath: beforeImportPath,
-          urlPath: urlPath,
-          children: [],
-        },
-        ...dirDirsWith404Last.map((childDir) => {
-          return discoverRoutes(rootDir, childDir, pagesDir);
-        }),
-      ],
-    };
-  }
-
-  return {
-    pageName: pageName,
-    pageImportPath: pageImportPath,
-    layoutName: layoutName,
-    layoutImportPath: layoutImportPath,
-    placeholderName: placeholderName,
-    placeholderImportPath: placeholderImportPath,
-    beforeName: beforeName,
-    beforeImportPath: beforeImportPath,
-    urlPath: urlPath,
-    children: dirDirs.map((childDir) => {
-      return discoverRoutes(rootDir, childDir, pagesDir);
-    }),
-  };
-}
-
 /** Transpiles and executes the root `firedeck.config.ts`, returning the configuration object */
 async function getFiredeckConfig(
   rootDir: string,
@@ -342,7 +344,7 @@ async function getFiredeckConfig(
 
   const { configFile, workspaceConfigFile } = getProjectPaths(rootDir);
 
-  await rollup({
+  const userFiredeckConfig = await rollup({
     input: configFile,
     plugins: [nodeResolve(), commonjs(), typescript()],
     treeshake: { moduleSideEffects: false },
@@ -353,11 +355,8 @@ async function getFiredeckConfig(
     },
   })
     .then((bundle) => bundle.write({ file: workspaceConfigFile, format: "esm" }).then(() => bundle))
-    .then((bundle) => bundle.close());
-
-  const userFiredeckConfig = await import(workspaceConfigFile).then(
-    (exports) => exports.default as FiredeckUserConfig,
-  );
+    .then((bundle) => bundle.close())
+    .then(() => import(workspaceConfigFile).then((e) => e.default as FiredeckUserConfig));
 
   fs.removeSync(workspaceConfigFile);
 

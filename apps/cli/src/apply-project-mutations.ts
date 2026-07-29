@@ -544,22 +544,17 @@ function generateRuntimeClientFileTree(
 }
 
 function generateRuntimeClientRoutesSource(routes: ClientModuleRoute) {
-  function createReplaceTarget(str: string) {
-    return `$$${str}$$`;
-  }
+  const createReplaceTarget = (str: string) => `$$${str}$$`;
 
-  function removeReplaceTarget(str: string) {
-    return str.replace(/"?\$\$"?/gm, "");
-  }
+  const removeReplaceTarget = (str: string) => str.replace(/"?\$\$"?/gm, "");
 
-  function createDynamicImportStatement(str: string) {
-    return createReplaceTarget(`() => import('${str}').then((mod) => mod.default)`);
-  }
+  const createDynamicImportStatement = (str: string) =>
+    createReplaceTarget(`() => import('${str}').then((mod) => mod.default)`);
 
-  function generateReactRouterRoute(
+  const generateReactRouterRoute = (
     route: ClientModuleRoute,
     parentPlaceholderName?: string | null,
-  ): RouterRoute {
+  ): RouterRoute => {
     const elementName = route.pageName || route.layoutName || undefined;
 
     return {
@@ -585,7 +580,7 @@ function generateRuntimeClientRoutesSource(routes: ClientModuleRoute) {
           ? route.children.map((child) => generateReactRouterRoute(child, route.placeholderName))
           : undefined,
     };
-  }
+  };
 
   const routeDeclarationSource = removeReplaceTarget(
     JSON.stringify(generateReactRouterRoute(routes)),
