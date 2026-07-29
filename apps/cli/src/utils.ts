@@ -166,11 +166,22 @@ export async function reduceAsync<T, R>(
 }
 
 /** Runs a firebase CLI command via child_process and returns the results in JSON format */
-export function runFirebaseCmd<T>(subCommand: string, projectId: string, opts?: { cwd?: string }) {
-  const script = `firebase ${subCommand} --project ${projectId} --json`;
+export function runFirebaseCmd<T>(
+  subCommand: string,
+  projectId: string,
+  opts?: { cwd?: string; noJson?: boolean },
+) {
+  const script = `firebase ${subCommand} --project ${projectId} ${!opts?.noJson ? "--json" : ""}`;
   info(script);
 
-  const response = execSync(script, { cwd: opts?.cwd, encoding: "utf-8" });
+  const response = execSync(script, {
+    cwd: opts?.cwd,
+    encoding: "utf-8",
+    stdio: !opts?.noJson ? undefined : "inherit",
+  });
+
+  if (opts?.noJson) return null as T;
+
   const parsedResponse = JSON.parse(response);
 
   if (parsedResponse.status === "error") throw parsedResponse.error;

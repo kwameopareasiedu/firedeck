@@ -64,7 +64,7 @@ export async function deployProject(
   runFirebaseCmd(
     `deploy --except functions ${opts?.dryRun ? "--dry-run" : ""} -f`,
     localFirebaseProject.id,
-    { cwd: runtimeDir },
+    { cwd: runtimeDir, noJson: true },
   );
 
   const backendFunctions = firedeckProject.backends.reduce(
@@ -87,7 +87,7 @@ export async function deployProject(
     runFirebaseCmd(
       `deploy --only ${functionDeployCommands} ${opts?.dryRun ? "--dry-run" : ""} -f`,
       localFirebaseProject.id,
-      { cwd: runtimeDir },
+      { cwd: runtimeDir, noJson: true },
     );
   }
 
