@@ -17,7 +17,7 @@ export function compareProjects(source: FiredeckProject | null, target: Firedeck
         },
         vite: { modules: {} },
         firebase: {
-          project: { id: "", alias: "" },
+          project: { id: "", alias: "", demo: false },
           modules: {},
           firestore: { indexes: [], rules: "" },
           storage: { rules: "" },

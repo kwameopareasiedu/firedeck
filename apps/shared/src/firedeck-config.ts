@@ -57,7 +57,7 @@ export interface FiredeckResolvedConfig {
   packageManager: PackageManagerConfig;
   vite: { modules: Record<string, ViteModuleConfig> };
   firebase: {
-    project: { id: string; alias: string };
+    project: { id: string; alias: string; demo: boolean };
     modules: Record<string, ModuleFirebaseConfig>;
     firestore: { indexes: FirestoreIndex[]; rules: string };
     storage: { rules: string };

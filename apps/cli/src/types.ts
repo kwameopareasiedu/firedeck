@@ -1,14 +1,8 @@
-import { FiredeckResolvedConfig, FiredeckUserConfig } from "shared/firedeck-config";
+import { FiredeckResolvedConfig } from "shared/firedeck-config";
 
 export type ModuleType = "client" | "backend";
 export type FileNode = { content: string; extension?: string | null };
 export type FileTree = { [path: string]: FileNode };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type NestedRecord = { [key: string]: any };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type NestedArray = any[];
-
-export type FiredeckMode = "dev" | "build";
 
 export interface ClientModuleRoute {
   pageName: string | null;
@@ -65,30 +59,19 @@ export type ProjectMutation =
   // Runtime mutations
   | { type: "create-runtime" }
   | { type: "update-runtime" }
-  // | { type: "update-runtime-firebase-config"; config: FiredeckConfig; clients: ClientModule[]; backends: BackendModule[]; }
   // Runtime client mutations
   | { type: "add-runtime-client"; clientName: string }
-  // | { type: "update-runtime-client-routes"; clientName: string }
-  | { type: "update-runtime-client-html"; clientName: string }
   | { type: "update-runtime-client-env"; clientName: string }
+  | { type: "update-runtime-client-html"; clientName: string }
   | { type: "update-runtime-client-public-dir"; clientName: string }
   | { type: "update-runtime-client-sdk"; clientName: string }
   | { type: "rename-runtime-client"; oldName: string; newName: string }
   | { type: "remove-runtime-client"; clientName: string }
-  // | { type: "update-runtime-clients-config"; clients: ClientModule[]; config: FiredeckConfig }
   // Runtime backend mutations
   | { type: "add-runtime-backend"; backendName: string }
   | { type: "update-runtime-backend-functions"; backendName: string }
   | { type: "update-runtime-backend-env"; backendName: string }
   | { type: "rename-runtime-backend"; oldName: string; newName: string }
   | { type: "remove-runtime-backend"; backendName: string };
-// Client SDK mutations
-// | { type: "update-client-sdk-routes"; clients: ClientModule[] }
-// | { type: "update-client-sdk-api" };
 
 export type ProjectMutationType = ProjectMutation["type"];
-
-export interface CompileProjectOptions {
-  explain?: boolean;
-  firebaseProjectAlias?: string;
-}

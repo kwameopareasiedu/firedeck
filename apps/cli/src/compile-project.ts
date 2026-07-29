@@ -1,24 +1,27 @@
-import { assertFiredeckRootDir, info } from "@/utils";
+import { assertFiredeckRootDir, FiredeckMode, info } from "@/utils";
 import { analyzeProject } from "@/analyze-project";
 import { compareProjects } from "@/compare-projects";
 import { applyProjectMutations } from "@/apply-project-mutations";
-import { CompileProjectOptions, FiredeckProject } from "@/types";
+import { FiredeckProject } from "@/types";
+
+const DEBUG = false;
 
 /** Compiles a Firedeck project */
 export async function compileProject(
   rootDir: string,
+  mode: FiredeckMode,
   project?: FiredeckProject | null,
-  opts?: CompileProjectOptions,
+  opts?: { firebaseProjectAlias?: string },
 ) {
   assertFiredeckRootDir(rootDir);
 
-  const updatedProject = await analyzeProject(rootDir, {
+  const updatedProject = await analyzeProject(rootDir, mode, {
     firebaseProjectAlias: opts?.firebaseProjectAlias,
   });
 
   const mutations = compareProjects(project ?? null, updatedProject);
 
-  if (opts?.explain) {
+  if (DEBUG) {
     info(`Pending Mutations (${mutations.length})`);
 
     for (let i = 0; i < mutations.length; i++) {
@@ -27,9 +30,7 @@ export async function compileProject(
     }
   }
 
-  await applyProjectMutations(rootDir, updatedProject, mutations, {
-    firebaseProjectAlias: opts?.firebaseProjectAlias,
-  });
+  await applyProjectMutations(rootDir, updatedProject, mutations);
 
   return [updatedProject, mutations] as const;
 }

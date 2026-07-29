@@ -1,93 +1,70 @@
-import { assertFiredeckRootDir, DEMO_FIREBASE_PROJECT_ALIAS, getProjectPaths, info } from "@/utils";
-import { analyzeProject, getFiredeckConfig } from "@/analyze-project";
-import { execSync } from "node:child_process";
+import {
+  assertFiredeckRootDir,
+  FiredeckMode,
+  getProjectPaths,
+  info,
+  runFirebaseCmd,
+} from "@/utils";
+import { analyzeProject } from "@/analyze-project";
 import { buildProject } from "@/build-project";
-import { BackendModuleFunction, CompileProjectOptions, NestedArray, NestedRecord } from "@/types";
+import { BackendModuleFunction } from "@/types";
+
+interface FirebaseUser {
+  email: string;
+}
+
+interface FirebaseProject {
+  projectId: string;
+  displayName: string;
+  name: string;
+}
 
 const DEFAULT_FUNCTION_BATCH_SIZE = 25;
 
-interface DeployProjectOptions extends CompileProjectOptions {
-  functionsBatchSize?: number | null;
-  build?: boolean;
-  dryRun?: boolean;
-}
-
 /** Builds and deploys a Firedeck project to Firebase using the global `firebase` command */
-export async function deployProject(rootDir: string, opts?: DeployProjectOptions) {
+export async function deployProject(
+  rootDir: string,
+  opts?: {
+    firebaseProjectAlias?: string;
+    functionsBatchSize?: number | null;
+    build?: boolean;
+    dryRun?: boolean;
+  },
+) {
   assertFiredeckRootDir(rootDir);
 
-  const alias = opts?.firebaseProjectAlias ?? DEMO_FIREBASE_PROJECT_ALIAS;
   const { runtimeDir } = getProjectPaths(rootDir);
-  const firedeckConfig = await getFiredeckConfig(rootDir);
+  const firedeckProject = await analyzeProject(rootDir, FiredeckMode.BUILD, opts);
 
   const localFirebaseProject = await (async () => {
-    const firebaseProjects = firedeckConfig.firebase?.projects[alias];
-
-    if (!firebaseProjects) throw `invalid firebase project alias: ${alias}`;
-    if (firebaseProjects.projectId.toLowerCase().startsWith("demo"))
-      throw `cannot deploy using a demo firebase project alias: ${alias}`;
-
-    return firebaseProjects;
+    if (firedeckProject.config.firebase.project.demo)
+      throw `cannot deploy using a demo firebase project alias: ${opts?.firebaseProjectAlias}`;
+    return firedeckProject.config.firebase.project;
   })();
 
   const remoteFirebaseAuthUser = (() => {
-    const res = runFirebaseCmd<NestedRecord>("login:list", localFirebaseProject.projectId);
+    const res = runFirebaseCmd<{ user: FirebaseUser }[]>("login:list", localFirebaseProject.id);
     if (!res?.[0]) throw 'run "firebase login" to sign into firebase first';
     return res[0].user;
   })();
 
   info(`firebase user: ${remoteFirebaseAuthUser.email}\n`);
 
-  const remoteFirebaseProjects = runFirebaseCmd<NestedArray>(
+  const remoteFirebaseProjects = runFirebaseCmd<FirebaseProject[]>(
     "projects:list",
-    localFirebaseProject.projectId,
+    localFirebaseProject.id,
   );
-  if (!remoteFirebaseProjects?.find((p) => p.projectId === localFirebaseProject.projectId))
-    throw `firebase project not found: ${localFirebaseProject.projectId}`;
+  if (!remoteFirebaseProjects?.find((p) => p.projectId === localFirebaseProject.id))
+    throw `firebase project not found: ${localFirebaseProject.id}`;
 
-  info(`firebase project: ${localFirebaseProject.projectId} (${alias})\n`);
+  info(`firebase project: ${localFirebaseProject.id} (${localFirebaseProject.alias})\n`);
 
-  const remoteFirebaseApps = runFirebaseCmd<NestedArray>(
-    "apps:list",
-    localFirebaseProject.projectId,
-  );
-
-  const remoteFirebaseHostingSites = runFirebaseCmd<NestedRecord>(
-    "hosting:sites:list",
-    localFirebaseProject.projectId,
-  )?.sites as NestedArray | undefined;
-
-  const firedeckProject = await analyzeProject(rootDir, {
-    firebaseProjectAlias: opts?.firebaseProjectAlias,
-  });
-
-  for (const client of firedeckProject.clients) {
-    const clientLocalFirebaseApp = localFirebaseProject.apps[client.name];
-    if (!clientLocalFirebaseApp)
-      throw `no configured firebase app for client module: ${client.name}`;
-
-    const clientRemoteFirebaseApp = remoteFirebaseApps?.find(
-      (app) => app.platform === "WEB" && app.appId === clientLocalFirebaseApp.appId,
-    );
-    if (!clientRemoteFirebaseApp) throw `no remote firebase app for client module: ${client.name}`;
-
-    const clientLocalHostingSite = localFirebaseProject.hosting[client.name];
-    if (!clientLocalHostingSite)
-      throw `no configured firebase hosting site for client module: ${client.name}`;
-
-    const clientRemoteHostingSite = remoteFirebaseHostingSites?.find((site) =>
-      site.name.endsWith(clientLocalHostingSite.siteId),
-    );
-    if (!clientRemoteHostingSite)
-      throw `no remote firebase hosting site for client module: ${client.name}`;
-  }
-
-  if (opts?.build ?? true) await buildProject(rootDir, { firebaseProjectAlias: alias });
+  if (opts?.build ?? true) await buildProject(rootDir, opts);
 
   runFirebaseCmd(
     `deploy --except functions ${opts?.dryRun ? "--dry-run" : ""} -f`,
-    localFirebaseProject.projectId,
-    { cwd: runtimeDir, noJson: true },
+    localFirebaseProject.id,
+    { cwd: runtimeDir },
   );
 
   const backendFunctions = firedeckProject.backends.reduce(
@@ -109,32 +86,10 @@ export async function deployProject(rootDir: string, opts?: DeployProjectOptions
 
     runFirebaseCmd(
       `deploy --only ${functionDeployCommands} ${opts?.dryRun ? "--dry-run" : ""} -f`,
-      localFirebaseProject.projectId,
-      { cwd: runtimeDir, noJson: true },
+      localFirebaseProject.id,
+      { cwd: runtimeDir },
     );
   }
 
   info("deployment complete!");
-}
-
-function runFirebaseCmd<T>(
-  command: string,
-  projectId: string,
-  opts?: { cwd?: string; noJson?: boolean },
-) {
-  let fullCommand = `firebase ${command} --project ${projectId}`;
-  if (!opts?.noJson) fullCommand += " --json";
-
-  info(fullCommand);
-
-  if (opts?.noJson) {
-    execSync(fullCommand, { cwd: opts?.cwd, stdio: "inherit" });
-    return;
-  } else {
-    const response = execSync(fullCommand, { cwd: opts?.cwd, encoding: "utf-8" });
-    const parsedResponse = JSON.parse(response);
-
-    if (parsedResponse.status === "error") throw parsedResponse.error;
-    return parsedResponse.result as T;
-  }
 }

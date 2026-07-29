@@ -1,5 +1,6 @@
 import {
   assertFiredeckRootDir,
+  FiredeckMode,
   getProjectPaths,
   NOT_FOUND_URL_PATH,
   pascalCase,
@@ -25,7 +26,6 @@ import {
   BackendModuleFunction,
   ClientModule,
   ClientModuleRoute,
-  FiredeckMode,
   FiredeckProject,
 } from "@/types";
 import type { UserConfig as ViteModuleConfig } from "vite";
@@ -80,7 +80,7 @@ service firebase.storage {
   }
 }`;
 
-/** Analyzes a Firedeck project and generates a `ProjectModel` object from it */
+/** Analyzes a Firedeck project and generates a `FiredeckProject` object from it */
 export async function analyzeProject(
   rootDir: string,
   mode: FiredeckMode,
@@ -467,6 +467,7 @@ async function getFiredeckConfig(
       project: {
         id: firebaseProjectId,
         alias: firebaseProjectAlias ?? DEMO_FIREBASE_PROJECT_ALIAS,
+        demo: (firebaseProjectAlias ?? DEMO_FIREBASE_PROJECT_ALIAS) === DEMO_FIREBASE_PROJECT_ALIAS,
       },
       modules: clientFirebaseConfigMap,
       firestore: {

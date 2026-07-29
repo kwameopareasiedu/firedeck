@@ -1,23 +1,21 @@
-import { assertFiredeckRootDir, error, getProjectPaths, info } from "@/utils";
+import { assertFiredeckRootDir, error, FiredeckMode, getProjectPaths, info } from "@/utils";
 import { relative, resolve } from "node:path";
 import fs from "fs-extra";
 import { spawn } from "node:child_process";
 import kill from "tree-kill";
 import chokidar from "chokidar";
 import { compileProject } from "@/compile-project";
-import { getFiredeckConfig } from "@/analyze-project";
 import { packageManagers } from "shared/package-manager";
-import { CompileProjectOptions, ProjectMutation } from "@/types";
+import { ProjectMutation } from "@/types";
 
 /** Starts a file watcher service and orchestrator thread to run a Firedeck project */
-export async function runProject(rootDir: string, opts?: CompileProjectOptions) {
+export async function runProject(rootDir: string, opts?: { firebaseProjectAlias?: string }) {
   assertFiredeckRootDir(rootDir);
 
-  const { configFile, modulesDir, runtimeDir } = getProjectPaths(rootDir);
-  const firedeckConfig = await getFiredeckConfig(rootDir);
-  const packageManager = packageManagers[firedeckConfig.packageManager.name];
+  let [project] = await compileProject(rootDir, FiredeckMode.DEV, null, opts);
 
-  let [currentProjectModel] = await compileProject(rootDir, null, opts);
+  const { configFile, modulesDir, runtimeDir } = getProjectPaths(rootDir);
+  const packageManager = packageManagers[project.config.packageManager.name];
 
   for (const lockFileName of packageManager.lockFiles) {
     const lockFilePath = resolve(rootDir, lockFileName);
@@ -43,12 +41,13 @@ export async function runProject(rootDir: string, opts?: CompileProjectOptions) 
     changeDebounceTimer = setTimeout(async () => {
       try {
         info(`${eventName}: ${relative(modulesDir, path)}`);
-        const [newProjectModel, projectMutations] = await compileProject(
+        const [newProject, projectMutations] = await compileProject(
           rootDir,
-          currentProjectModel,
+          FiredeckMode.DEV,
+          project,
           opts,
         );
-        currentProjectModel = newProjectModel;
+        project = newProject;
 
         const restartRuntimeDevProc = projectMutations.some((change) => {
           return (

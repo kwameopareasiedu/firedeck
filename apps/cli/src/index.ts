@@ -1,9 +1,16 @@
 #!/usr/bin/env node
 
 import fs from "fs-extra";
-import { isAbsolute, relative, resolve, basename } from "node:path";
+import { basename, isAbsolute, relative, resolve } from "node:path";
 import { Command } from "commander";
-import { error, getFiredeckAsciiArt, getProjectPaths, info, parseErrorMessage } from "@/utils";
+import {
+  error,
+  FiredeckMode,
+  getFiredeckAsciiArt,
+  getProjectPaths,
+  info,
+  parseErrorMessage,
+} from "@/utils";
 import { input, select } from "@inquirer/prompts";
 import { PackageManagerName, packageManagers } from "shared/package-manager";
 import { init } from "@/init";
@@ -103,12 +110,14 @@ cli
 cli
   .command("compile")
   .description("Compile the Firedeck runtime")
+  .option("--mode <mode>", "project mode to compile for ['dev', 'build']")
   .option("--alias <alias>", "firebase project alias to compile for")
-  .option("--explain", "log the mutations applied on the project")
   .action(async (opts) => {
     try {
-      await compileProject(process.cwd(), null, {
-        explain: opts.explain,
+      if (opts.mode && Object.values(FiredeckMode).includes(opts.mode))
+        throw `invalid mode: ${opts.mode}. valid values are ['dev', 'build']`;
+
+      await compileProject(process.cwd(), opts.mode, null, {
         firebaseProjectAlias: opts.alias,
       });
 
@@ -127,10 +136,9 @@ cli
   .command("run")
   .description("Start the Firedeck runtime")
   .option("--alias <alias>", "firebase project alias to run on")
-  .option("--explain", "log the mutations applied on the project")
   .action(async (opts) => {
     try {
-      await runProject(process.cwd(), { explain: opts.explain, firebaseProjectAlias: opts.alias });
+      await runProject(process.cwd(), { firebaseProjectAlias: opts.alias });
     } catch (err) {
       error(parseErrorMessage(err));
       process.exit(-1);
@@ -141,13 +149,9 @@ cli
   .command("build")
   .description("Build all modules for deployment")
   .option("--alias <alias>", "firebase project alias to build for")
-  .option("--explain", "log the mutations applied on the project")
   .action(async (opts) => {
     try {
-      await buildProject(process.cwd(), {
-        explain: opts.explain,
-        firebaseProjectAlias: opts.alias,
-      });
+      await buildProject(process.cwd(), { firebaseProjectAlias: opts.alias });
     } catch (err) {
       error(parseErrorMessage(err));
       process.exit(-1);

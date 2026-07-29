@@ -77,6 +77,7 @@ export async function applyProjectMutations(
           project.config.packageManager.version,
           project.backends,
           project.config.firebase.project.alias,
+          project.config.firebase.project.demo,
         );
         await writeFileTree(runtimeDir, runtimeFileTree);
         break;
@@ -87,6 +88,7 @@ export async function applyProjectMutations(
           project.config.packageManager.version,
           project.backends,
           project.config.firebase.project.alias,
+          project.config.firebase.project.demo,
         );
         await writeFileTree(runtimeDir, runtimeFileTree);
 
@@ -282,6 +284,7 @@ function generateRuntimeFileTree(
   packageManagerVersion: string,
   backends: BackendModule[],
   firebaseProjectAlias: string,
+  demo: boolean,
 ): FileTree {
   return {
     "package.json": {
@@ -303,7 +306,7 @@ function generateRuntimeFileTree(
           }
           "build": "../../node_modules/.bin/turbo build",
           ${
-            !firebaseProjectAlias
+            demo
               ? `"emulate": "../../node_modules/.bin/kill-port 4000 8080 8085 && firebase emulators:start --project demo-firedeck --import ../../temp/firebase/emulator --export-on-exit"`
               : `"emulate": "../../node_modules/.bin/kill-port 4000 8080 8085 && firebase use ${firebaseProjectAlias} && firebase emulators:start --import ../../temp/firebase/emulator --export-on-exit"`
           }
@@ -731,7 +734,7 @@ function generateRuntimeBackendFunctionsSource(functions: BackendModuleFunction[
 }
 
 function generateClientSdkSource(
-  firedeckConfig: FiredeckResolvedConfig,
+  config: FiredeckResolvedConfig,
   client: ClientModule,
   backends: BackendModule[],
 ) {
@@ -781,7 +784,7 @@ function generateClientSdkSource(
         type GetBackendFnArgs<T> = T extends CallableFunction<infer A, unknown> ? A : never;
         type GetBackendFnReturn<T> = T extends CallableFunction<unknown, infer R> ? R : never;
         
-        const firebaseConfig = ${JSON.stringify(firedeckConfig.firebase.modules[client.name].app)};
+        const firebaseConfig = ${JSON.stringify(config.firebase.modules[client.name].app)};
         
         // Initialize Firebase
         export const app = initializeApp(firebaseConfig);
@@ -802,16 +805,16 @@ function generateClientSdkSource(
   return format(finalSource, getPrettierConfig({ filePath: "a.ts" }));
 }
 
-function generateFirebaseRcSource(firedeckConfig: FiredeckResolvedConfig, clients: ClientModule[]) {
+function generateFirebaseRcSource(config: FiredeckResolvedConfig, clients: ClientModule[]) {
   const projectsConfig = {
-    [firedeckConfig.firebase.project.alias]: firedeckConfig.firebase.project.id,
+    [config.firebase.project.alias]: config.firebase.project.id,
   };
 
   const targetsConfig = {
-    [firedeckConfig.firebase.project.id]: {
+    [config.firebase.project.id]: {
       hosting: clients.reduce(
         (map, client) => {
-          const clientHostingTarget = firedeckConfig.firebase.modules[client.name].hosting;
+          const clientHostingTarget = config.firebase.modules[client.name].hosting;
           return { ...map, [client.name]: [clientHostingTarget.siteId] };
         },
         {} as Record<string, string[]>,
@@ -898,12 +901,8 @@ async function generateFirebaseJsonSource(
   return format(finalSource, getPrettierConfig({ filePath: "a.json" }));
 }
 
-function generateFirebaseFirestoreJsonSource(firedeckConfig: FiredeckResolvedConfig) {
-  const finalSource = JSON.stringify(
-    { indexes: firedeckConfig.firebase.firestore.indexes ?? [] },
-    null,
-    2,
-  );
+function generateFirebaseFirestoreJsonSource(config: FiredeckResolvedConfig) {
+  const finalSource = JSON.stringify({ indexes: config.firebase.firestore.indexes ?? [] }, null, 2);
 
   return format(finalSource, getPrettierConfig({ filePath: "a.json" }));
 }

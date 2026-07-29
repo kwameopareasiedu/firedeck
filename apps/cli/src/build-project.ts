@@ -1,21 +1,17 @@
-import { assertFiredeckRootDir, getProjectPaths, info } from "@/utils";
-import { getFiredeckConfig } from "@/analyze-project";
+import { assertFiredeckRootDir, FiredeckMode, getProjectPaths, info } from "@/utils";
 import { packageManagers } from "shared/package-manager";
 import { relative, resolve } from "node:path";
 import fs from "fs-extra";
 import { compileProject } from "@/compile-project";
 import { spawn } from "node:child_process";
-import { CompileProjectOptions } from "@/types";
 
 /** Builds a Firedeck project for deployment to Firebase */
-export async function buildProject(rootDir: string, opts?: CompileProjectOptions) {
+export async function buildProject(rootDir: string, opts?: { firebaseProjectAlias?: string }) {
   assertFiredeckRootDir(rootDir);
 
-  const [projectModel] = await compileProject(rootDir, null, opts);
-
+  const [project] = await compileProject(rootDir, FiredeckMode.BUILD, null, opts);
   const { runtimeDir } = getProjectPaths(rootDir);
-  const firedeckConfig = await getFiredeckConfig(rootDir);
-  const packageManager = packageManagers[firedeckConfig.packageManager.name];
+  const packageManager = packageManagers[project.config.packageManager.name];
 
   for (const lockFileName of packageManager.lockFiles) {
     const lockFilePath = resolve(rootDir, lockFileName);
@@ -32,7 +28,7 @@ export async function buildProject(rootDir: string, opts?: CompileProjectOptions
       .on("error", (err) => reject(err))
       .on("exit", (exitCode) => {
         if (exitCode === 0) {
-          for (const client of projectModel.clients) {
+          for (const client of project.clients) {
             const clientDist = `${runtimeDir}/modules/${client.name}/dist`;
             info(`built client module (${client.name}): ${relative(rootDir, clientDist)}`);
           }

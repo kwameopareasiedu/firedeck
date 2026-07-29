@@ -385,7 +385,7 @@ function generateProjectUpdateFileTree(args: {
   packageManagerVersion: string;
 }): FileTree {
   const existingJson = fs.readJSONSync(args.packageJsonFile);
-  existingJson.devDependencies.firedeck = "^0.1.11";
+  existingJson.devDependencies.firedeck = "^0.1.12";
 
   return {
     "package.json": {
@@ -400,57 +400,6 @@ function generateProjectUpdateFileTree(args: {
         packageManager: {
           name: "${args.packageManagerName}",
           version: "${args.packageManagerVersion}",
-        },
-        // Demo firebase config, enabling true offline mode
-        // (https://firebase.google.com/docs/emulator-suite/connect_auth#choose_a_firebase_project)
-        // Replace with config from your project in the Firebase console when ready to deploy
-        firebase: {
-          projects: {
-            demo: {
-              projectId: "demo-firedeck",
-              apps: {
-                main: {
-                  apiKey: "demo-firedeck-api-key",
-                  authDomain: "demo-firedeck.firebaseapp.com",
-                  projectId: "demo-firedeck",
-                  storageBucket: "demo-firedeck.firebasestorage.app",
-                  messagingSenderId: "demo-firedeck-messaging-sender-id",
-                  appId: "demo-firedeck-app-id",
-                  measurementId: "demo-firedeck-measurement-id",
-                },
-              },
-              hosting: {
-                main: {
-                  siteId: "demo-firedeck-main-site",
-                },
-              },
-              firestore: {
-                indexes: [],
-                rules: \`
-                  rules_version = '2';
-                  
-                  service cloud.firestore {
-                    match /databases/{database}/documents {
-                      match /{document=**} {
-                        allow read, write: if false;
-                      }
-                    }
-                  }\`,
-              },
-              storage: {
-                rules: \`
-                  rules_version = '2';
-                  
-                  service firebase.storage {
-                    match /b/{bucket}/o {
-                      match /** {
-                        allow read, write: if false;
-                      }
-                    }
-                  }\`,
-              },
-            },
-          },
         },
       });`,
     },

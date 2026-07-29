@@ -6,11 +6,13 @@ import { FileTree } from "@/types";
 import { camelCase, kebabCase, snakeCase } from "lodash";
 import { execSync } from "node:child_process";
 
+export enum FiredeckMode {
+  DEV = "dev",
+  BUILD = "build",
+}
+
 /** React router catch-all route path */
 export const NOT_FOUND_URL_PATH = "/*";
-
-/** Alias for demo firebase project config */
-export const DEMO_FIREBASE_PROJECT_ALIAS = "demo";
 
 /** Returns relevant file paths of a Firedeck project */
 export function getProjectPaths(rootDir: string) {
@@ -36,8 +38,6 @@ export function getProjectPaths(rootDir: string) {
     runtimeModulesDir: resolve(rootDir, "firedeck/runtime/modules"),
     getRuntimeClientModuleDir: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName),
     getRuntimeClientModuleDistDir: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "dist"),
-    // getRuntimeClientModuleFiredeckConfigFile: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "firedeck.config.mjs"),
-    // getRuntimeClientModuleFiredeckConfigTypesFile: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "firedeck.config.mts"),
     getRuntimeClientModuleIndexHtmlFile: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "index.html"),
     getRuntimeClientModuleEnvFile: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, ".env"),
     getRuntimeClientModuleRoutesFile: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName, "src/routes.ts"),
