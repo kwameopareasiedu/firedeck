@@ -17,10 +17,10 @@ working runtime that can be built and deployed to Firebase.
     love to give you a complete Firebase development environment._
 >
 > - _These are:_
->   - [Turbo](https://turborepo.dev) handles runtime monorepo orchestration
->   - [Vite](https://vite.dev)+[React](https://react.dev) handles frontend application bundling
->   - [React Router](https://reactrouter.com) handles frontend routing
->   - [Firebase](https://firebase.google.com) handles API and trigger functions
+>   - [Turbo](https://turborepo.dev) for runtime monorepo orchestration
+>   - [Vite](https://vite.dev)+[React](https://react.dev) for frontend application bundling
+>   - [React Router](https://reactrouter.com) for frontend routing
+>   - [Firebase](https://firebase.google.com) for API and trigger functions
 
 [//]: # (@formatter:on)
 
