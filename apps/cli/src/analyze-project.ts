@@ -2,6 +2,7 @@ import {
   assertFiredeckRootDir,
   FiredeckMode,
   getProjectPaths,
+  info,
   NOT_FOUND_URL_PATH,
   pascalCase,
   reduceAsync,
@@ -43,6 +44,16 @@ interface FirebaseHostingSite {
   name: string;
   defaultUrl: string;
   type: string;
+}
+
+interface FirebaseUser {
+  email: string;
+}
+
+interface FirebaseProject {
+  projectId: string;
+  displayName: string;
+  name: string;
 }
 
 /** Regex matcher for a line of the root .env file (E.g. MAIN__VITE_FOO=bar) */
@@ -418,6 +429,22 @@ async function analyzeFiredeckConfig(
       const clientEntityName = `${firebaseProjectId}-${client.name}${uniqueSuffix}`;
 
       if (!fetchedFirebaseApps) {
+        const remoteFirebaseAuthUser = (() => {
+          const res = runFirebaseCmd<{ user: FirebaseUser }[]>("login:list", firebaseProjectId);
+          if (!res?.[0]) throw 'run "firebase login" to sign into firebase first';
+          return res[0].user;
+        })();
+
+        info(`firebase user: ${remoteFirebaseAuthUser.email}`);
+
+        const remoteFirebaseProjects = runFirebaseCmd<FirebaseProject[]>(
+          "projects:list",
+          firebaseProjectId,
+        );
+
+        if (!remoteFirebaseProjects?.find((p) => p.projectId === firebaseProjectId))
+          throw `firebase project not found: ${firebaseProjectId}`;
+
         firebaseApps.push(...runFirebaseCmd<FirebaseApp[]>("apps:list", firebaseProjectId));
         fetchedFirebaseApps = true;
       }

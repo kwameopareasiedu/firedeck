@@ -1,65 +1,25 @@
-import {
-  assertFiredeckRootDir,
-  FiredeckMode,
-  getProjectPaths,
-  info,
-  runFirebaseCmd,
-} from "@/utils";
-import { analyzeProject } from "@/analyze-project";
+import { assertFiredeckRootDir, getProjectPaths, info, runFirebaseCmd } from "@/utils";
 import { buildProject } from "@/build-project";
 import { BackendModuleFunction } from "@/types";
-
-interface FirebaseUser {
-  email: string;
-}
-
-interface FirebaseProject {
-  projectId: string;
-  displayName: string;
-  name: string;
-}
 
 const DEFAULT_FUNCTION_BATCH_SIZE = 25;
 
 /** Builds and deploys a Firedeck project to Firebase using the global `firebase` command */
 export async function deployProject(
   rootDir: string,
-  opts?: {
-    firebaseProjectAlias?: string;
-    functionsBatchSize?: number | null;
-    build?: boolean;
-    dryRun?: boolean;
-  },
+  opts?: { firebaseProjectAlias?: string; functionsBatchSize?: number | null; dryRun?: boolean },
 ) {
   assertFiredeckRootDir(rootDir);
+  info("deployment started!");
 
   const { runtimeDir } = getProjectPaths(rootDir);
-  const firedeckProject = await analyzeProject(rootDir, FiredeckMode.BUILD, opts);
+  const firedeckProject = await buildProject(rootDir, opts);
 
   const localFirebaseProject = await (async () => {
     if (firedeckProject.config.firebase.project.demo)
       throw `cannot deploy using a demo firebase project alias: ${opts?.firebaseProjectAlias}`;
     return firedeckProject.config.firebase.project;
   })();
-
-  const remoteFirebaseAuthUser = (() => {
-    const res = runFirebaseCmd<{ user: FirebaseUser }[]>("login:list", localFirebaseProject.id);
-    if (!res?.[0]) throw 'run "firebase login" to sign into firebase first';
-    return res[0].user;
-  })();
-
-  info(`firebase user: ${remoteFirebaseAuthUser.email}\n`);
-
-  const remoteFirebaseProjects = runFirebaseCmd<FirebaseProject[]>(
-    "projects:list",
-    localFirebaseProject.id,
-  );
-  if (!remoteFirebaseProjects?.find((p) => p.projectId === localFirebaseProject.id))
-    throw `firebase project not found: ${localFirebaseProject.id}`;
-
-  info(`firebase project: ${localFirebaseProject.id} (${localFirebaseProject.alias})\n`);
-
-  if (opts?.build ?? true) await buildProject(rootDir, opts);
 
   runFirebaseCmd(
     `deploy --except functions ${opts?.dryRun ? "--dry-run" : ""} -f`,

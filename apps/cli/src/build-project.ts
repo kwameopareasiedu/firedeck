@@ -23,7 +23,7 @@ export async function buildProject(rootDir: string, opts?: { firebaseProjectAlia
     }
   }
 
-  return new Promise((resolve, reject) => {
+  await new Promise((resolve, reject) => {
     spawn(packageManager.commands.run, ["build"], { cwd: runtimeDir, stdio: "inherit" })
       .on("error", (err) => reject(err))
       .on("exit", (exitCode) => {
@@ -38,4 +38,6 @@ export async function buildProject(rootDir: string, opts?: { firebaseProjectAlia
         }
       });
   });
+
+  return project;
 }

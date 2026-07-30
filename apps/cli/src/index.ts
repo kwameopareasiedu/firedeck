@@ -163,7 +163,6 @@ cli
   .description("Deploy modules to Firebase")
   .requiredOption("--alias <alias>", "firebase project alias to deploy to")
   .option("--functions-batch-size <fnBatchSize>", "number of cloud functions to deploy in a batch")
-  .option("--no-build", `skip project build ${chalk.yellow("(⚠: may deploy stale project)")}`)
   .option("--dry-run", "validate and build project without actually deploying to firebase")
   .action(async (opts) => {
     try {
@@ -177,7 +176,6 @@ cli
       await deployProject(process.cwd(), {
         firebaseProjectAlias: opts.alias,
         functionsBatchSize: functionsBatchSize,
-        build: opts.build,
         dryRun: opts.dryRun,
       });
     } catch (err) {
