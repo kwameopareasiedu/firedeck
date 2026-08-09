@@ -19,7 +19,6 @@ import { compileProject } from "@/compile-project";
 import { runProject } from "@/run-project";
 import { buildProject } from "@/build-project";
 import { deployProject } from "@/deploy-project";
-import chalk from "chalk";
 
 const packageInfo = JSON.parse(
   fs.readFileSync(resolve(__dirname, "../package.json"), { encoding: "utf-8" }),

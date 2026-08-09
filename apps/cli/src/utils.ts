@@ -33,7 +33,7 @@ export function getProjectPaths(rootDir: string) {
     workspaceDir: resolve(rootDir, "firedeck"),
     workspaceClientEnvTypesFile: resolve(rootDir, "firedeck/env-client.d.ts"),
     workspaceBackendEnvTypesFile: resolve(rootDir, "firedeck/env-backend.d.ts"),
-    workspaceConfigFile: resolve(rootDir, "firedeck/firedeck.config.mjs"),
+    getWorkspaceConfigFile: () => resolve(rootDir, `firedeck/firedeck.config.${Math.random().toString().split(".")[1]}.mjs`),
     runtimeDir: resolve(rootDir, "firedeck/runtime"),
     runtimeModulesDir: resolve(rootDir, "firedeck/runtime/modules"),
     getRuntimeClientModuleDir: (clientName: string) => resolve(rootDir, "firedeck/runtime/modules", clientName),

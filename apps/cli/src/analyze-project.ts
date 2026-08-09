@@ -322,14 +322,24 @@ async function analyzeFiredeckConfig(
 ) {
   assertFiredeckRootDir(rootDir);
 
-  const { configFile, workspaceConfigFile } = getProjectPaths(rootDir);
+  const { packageJsonFile, configFile, getWorkspaceConfigFile } = getProjectPaths(rootDir);
+  const workspaceConfigFile = getWorkspaceConfigFile();
+  const packageJson = fs.readJSONSync(packageJsonFile);
+  const externalDeps = [
+    ...Object.keys(packageJson.dependencies),
+    ...Object.keys(packageJson.devDependencies),
+  ];
 
   const userFiredeckConfig = await rollup({
     input: configFile,
-    plugins: [nodeResolve(), commonjs(), typescript()],
+    external: externalDeps,
+    plugins: [nodeResolve(), commonjs(), typescript({ tsconfig: false })],
     treeshake: { moduleSideEffects: false },
     onwarn: (warning, defaultHandler) => {
-      if (!warning.message.includes("allowImportingTsExtensions")) {
+      if (
+        !warning.message.includes("allowImportingTsExtensions") &&
+        !warning.message.includes("moduleResolution=node10")
+      ) {
         defaultHandler(warning);
       }
     },
