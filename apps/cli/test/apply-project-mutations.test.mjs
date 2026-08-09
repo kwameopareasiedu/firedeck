@@ -301,16 +301,11 @@ VITE_FOO=bar`,
               ],
             },
             {
+              id: "NotFoundPage",
               path: "/*",
-              children: [
-                {
-                  index: true,
-                  id: "NotFoundPage",
-                  lazy: {
-                    Component: () => import("@/client/main/pages/404/not-found-page.tsx").then((mod) => mod.default),
-                  },
-                },
-              ],
+              lazy: {
+                Component: () => import("@/client/main/pages/404/not-found-page.tsx").then((mod) => mod.default),
+              },
             },
           ],
         },
