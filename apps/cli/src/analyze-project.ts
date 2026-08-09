@@ -231,47 +231,16 @@ function analyzeClientModule(rootDir: string, clientModuleDir: string): ClientMo
       );
     })();
 
-    if ((pageImportPath && layoutImportPath) || urlPath === "/") {
-      const dirDirsWith404Last = (() => {
-        if (urlPath !== "/" || dirDirs.every((dir) => !dir.endsWith(NOT_FOUND_DIR_SUFFIX)))
-          return dirDirs;
+    const dirDirsWith404Last = (() => {
+      if (urlPath !== "/" || dirDirs.every((dir) => !dir.endsWith(NOT_FOUND_DIR_SUFFIX)))
+        return dirDirs;
 
-        const newDirDirs = [...dirDirs];
-        const notFoundDir = newDirDirs.find((dir) => dir.endsWith(NOT_FOUND_DIR_SUFFIX))!;
-        newDirDirs.splice(newDirDirs.indexOf(notFoundDir), 1);
-        newDirDirs.push(notFoundDir);
-        return newDirDirs;
-      })();
-
-      return {
-        pageName: null,
-        pageImportPath: null,
-        layoutName: layoutName,
-        layoutImportPath: layoutImportPath,
-        placeholderName: placeholderName,
-        placeholderImportPath: placeholderImportPath,
-        beforeName: null,
-        beforeImportPath: null,
-        urlPath: null,
-        children: [
-          {
-            pageName: pageName,
-            pageImportPath: pageImportPath,
-            layoutName: null,
-            layoutImportPath: null,
-            placeholderName: null,
-            placeholderImportPath: null,
-            beforeName: beforeName,
-            beforeImportPath: beforeImportPath,
-            urlPath: urlPath,
-            children: [],
-          },
-          ...dirDirsWith404Last.map((childDir) => {
-            return discoverRoutes(rootDir, childDir);
-          }),
-        ],
-      };
-    }
+      const newDirDirs = [...dirDirs];
+      const notFoundDir = newDirDirs.find((dir) => dir.endsWith(NOT_FOUND_DIR_SUFFIX))!;
+      newDirDirs.splice(newDirDirs.indexOf(notFoundDir), 1);
+      newDirDirs.push(notFoundDir);
+      return newDirDirs;
+    })();
 
     return {
       pageName: pageName,
@@ -283,7 +252,7 @@ function analyzeClientModule(rootDir: string, clientModuleDir: string): ClientMo
       beforeName: beforeName,
       beforeImportPath: beforeImportPath,
       urlPath: urlPath,
-      children: dirDirs.map((childDir) => {
+      children: dirDirsWith404Last.map((childDir) => {
         return discoverRoutes(rootDir, childDir);
       }),
     };

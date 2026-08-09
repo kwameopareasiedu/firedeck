@@ -1,6 +1,6 @@
 {
   "name": "firedeck",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "An opinionated, batteries-included application compiler for Firebase-backed React SPAs",
   "main": "index.js",
   "repository": "https://github.com/kwameopareasiedu/firedeck",

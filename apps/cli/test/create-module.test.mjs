@@ -28,7 +28,7 @@ test("create-module", async (t) => {
 
   t.true(fs.existsSync(resolve(testDir, "modules/client/admin/index.html")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/admin/index.css")));
-  t.true(fs.existsSync(resolve(testDir, "modules/client/admin/root.tsx")));
+  t.true(fs.existsSync(resolve(testDir, "modules/client/admin/index.tsx")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/admin/pages/index-page.tsx")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/admin/pages/404/not-found-page.tsx")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/admin/public/favicon.svg")));

@@ -548,37 +548,45 @@ function generateRuntimeClientRoutesSource(routes: ClientModuleRoute) {
 
   const removeReplaceTarget = (str: string) => str.replace(/"?\$\$"?/gm, "");
 
-  const createDynamicImportStatement = (str: string) =>
+  const createDynamicImport = (str: string) =>
     createReplaceTarget(`() => import('${str}').then((mod) => mod.default)`);
 
   const generateReactRouterRoute = (
     route: ClientModuleRoute,
     parentPlaceholderName?: string | null,
   ): RouterRoute => {
-    const elementName = route.pageName || route.layoutName || undefined;
+    if (route.urlPath === NOT_FOUND_URL_PATH) {
+      return {
+        id: route.pageName || undefined,
+        path: NOT_FOUND_URL_PATH,
+        lazy: route.pageImportPath
+          ? { Component: createDynamicImport(route.pageImportPath) }
+          : undefined,
+      };
+    }
 
     return {
-      id: elementName,
+      id: route.layoutName || undefined,
       path: route.pageImportPath ? route.urlPath! : undefined,
       loader: route.beforeImportPath ? createReplaceTarget(route.beforeName!) : undefined,
-      lazy: elementName
-        ? {
-            Component: route.pageImportPath
-              ? createDynamicImportStatement(route.pageImportPath)
-              : route.layoutImportPath
-                ? createDynamicImportStatement(route.layoutImportPath)
-                : undefined,
-          }
+      lazy: route.layoutImportPath
+        ? { Component: createDynamicImport(route.layoutImportPath) }
         : undefined,
       HydrateFallback: route.placeholderImportPath
         ? createReplaceTarget(route.placeholderName!)
         : parentPlaceholderName
           ? createReplaceTarget(parentPlaceholderName)
           : undefined,
-      children:
-        route.children.length > 0
-          ? route.children.map((child) => generateReactRouterRoute(child, route.placeholderName))
+      children: [
+        route.pageImportPath
+          ? {
+              index: true,
+              id: route.pageName,
+              lazy: { Component: createDynamicImport(route.pageImportPath) },
+            }
           : undefined,
+        ...route.children.map((child) => generateReactRouterRoute(child, route.placeholderName)),
+      ].filter(Boolean) as RouterRoute[],
     };
   };
 

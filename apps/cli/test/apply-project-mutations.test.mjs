@@ -73,8 +73,19 @@ API__DB_URL=postgres://user:pass@localhost:5173/db
     },
     "modules/client/main/pages/(dashboard)/dashboard-layout.tsx": {
       content: `
-        export default function DashboardLayout() {
-          return <p>Hello World</p>;
+        import { Outlet } from "react-router";
+
+        export default function UsersPage() {
+          return <Outlet />;
+        }
+      `,
+    },
+    "modules/client/main/pages/(dashboard)/users/users-layout.tsx": {
+      content: `
+        import { Outlet } from "react-router";
+
+        export default function UsersPage() {
+          return <Outlet />;
         }
       `,
     },
@@ -120,6 +131,7 @@ API__DB_URL=postgres://user:pass@localhost:5173/db
   t.true(fs.existsSync(resolve(pagesDir, "(public)/contact/contact-page.tsx")));
   t.true(fs.existsSync(resolve(pagesDir, "(public)/features/features-page.tsx")));
   t.true(fs.existsSync(resolve(pagesDir, "(dashboard)/dashboard-layout.tsx")));
+  t.true(fs.existsSync(resolve(pagesDir, "(dashboard)/users/users-layout.tsx")));
   t.true(fs.existsSync(resolve(pagesDir, "(dashboard)/users/users-page.tsx")));
   t.true(fs.existsSync(resolve(pagesDir, "(dashboard)/users/[userId]/user-details-page.tsx")));
 
@@ -219,10 +231,11 @@ VITE_FOO=bar`,
     await format(
       `export default [
         {
+          path: "/",
           children: [
             {
+              index: true,
               id: "IndexPage",
-              path: "/",
               lazy: { Component: () => import("@/client/main/pages/index-page.tsx").then((mod) => mod.default) },
             },
             {
@@ -230,14 +243,24 @@ VITE_FOO=bar`,
               lazy: { Component: () => import("@/client/main/pages/(dashboard)/dashboard-layout.tsx").then((mod) => mod.default) },
               children: [
                 {
-                  id: "UsersPage",
+                  id: "UsersLayout",
                   path: "/users",
-                  lazy: { Component: () => import("@/client/main/pages/(dashboard)/users/users-page.tsx").then((mod) => mod.default) },
+                  lazy: { Component: () => import("@/client/main/pages/(dashboard)/users/users-layout.tsx").then((mod) => mod.default) },
                   children: [
                     {
-                      id: "UserDetailsPage",
+                      index: true,
+                      id: "UsersPage",
+                      lazy: { Component: () => import("@/client/main/pages/(dashboard)/users/users-page.tsx").then((mod) => mod.default) },
+                    },
+                    {
                       path: "/users/:userId",
-                      lazy: { Component: () => import("@/client/main/pages/(dashboard)/users/[userId]/user-details-page.tsx").then((mod) => mod.default) },
+                      children: [
+                        {
+                          index: true,
+                          id: "UserDetailsPage",
+                          lazy: { Component: () => import("@/client/main/pages/(dashboard)/users/[userId]/user-details-page.tsx").then((mod) => mod.default) },
+                        },
+                      ],
                     },
                   ],
                 },
@@ -246,26 +269,48 @@ VITE_FOO=bar`,
             {
               children: [
                 {
-                  id: "ContactPage",
                   path: "/contact",
-                  lazy: { Component: () => import("@/client/main/pages/(public)/contact/contact-page.tsx").then((mod) => mod.default) },
+                  children: [
+                    {
+                      index: true,
+                      id: "ContactPage",
+                      lazy: { Component: () => import("@/client/main/pages/(public)/contact/contact-page.tsx").then((mod) => mod.default) },
+                    },
+                  ],
                 },
                 {
-                  id: "FeaturesPage",
                   path: "/features",
-                  lazy: { Component: () => import("@/client/main/pages/(public)/features/features-page.tsx").then((mod) => mod.default) },
+                  children: [
+                    {
+                      index: true,
+                      id: "FeaturesPage",
+                      lazy: { Component: () => import("@/client/main/pages/(public)/features/features-page.tsx").then((mod) => mod.default) },
+                    },
+                  ],
                 },
                 {
-                  id: "LandingPage",
                   path: "/landing",
-                  lazy: { Component: () => import("@/client/main/pages/(public)/landing/landing-page.tsx").then((mod) => mod.default) },
+                  children: [
+                    {
+                      index: true,
+                      id: "LandingPage",
+                      lazy: { Component: () => import("@/client/main/pages/(public)/landing/landing-page.tsx").then((mod) => mod.default) },
+                    },
+                  ],
                 },
               ],
             },
             {
-              id: "NotFoundPage",
               path: "/*",
-              lazy: { Component: () => import("@/client/main/pages/404/not-found-page.tsx").then((mod) => mod.default) },
+              children: [
+                {
+                  index: true,
+                  id: "NotFoundPage",
+                  lazy: {
+                    Component: () => import("@/client/main/pages/404/not-found-page.tsx").then((mod) => mod.default),
+                  },
+                },
+              ],
             },
           ],
         },

@@ -64,6 +64,12 @@ ADMIN__VITE_HELLO=world
         return <p>Hello World</p>;
       }`,
     },
+    "modules/client/main/pages/(dashboard)/users/users-layout.tsx": {
+      content: `
+      export default function() {
+        return <p>Hello World</p>;
+      }`,
+    },
     "modules/client/main/pages/(dashboard)/users/users-page.tsx": {
       content: `
       export default function() {
@@ -106,28 +112,16 @@ ADMIN__VITE_HELLO=world
 
   t.is(projectModel.clients[0].name, "main");
   t.deepEqual(projectModel.clients[0].routes, {
-    pageName: null,
-    pageImportPath: null,
+    pageName: "IndexPage",
+    pageImportPath: "@/client/main/pages/index-page.tsx",
     layoutName: null,
     layoutImportPath: null,
     placeholderName: null,
     placeholderImportPath: null,
     beforeName: null,
     beforeImportPath: null,
-    urlPath: null,
+    urlPath: "/",
     children: [
-      {
-        pageName: "IndexPage",
-        pageImportPath: "@/client/main/pages/index-page.tsx",
-        layoutName: null,
-        layoutImportPath: null,
-        placeholderName: null,
-        placeholderImportPath: null,
-        beforeName: null,
-        beforeImportPath: null,
-        urlPath: "/",
-        children: [],
-      },
       {
         pageName: null,
         pageImportPath: null,
@@ -142,8 +136,8 @@ ADMIN__VITE_HELLO=world
           {
             pageName: "UsersPage",
             pageImportPath: "@/client/main/pages/(dashboard)/users/users-page.tsx",
-            layoutName: null,
-            layoutImportPath: null,
+            layoutName: "UsersLayout",
+            layoutImportPath: "@/client/main/pages/(dashboard)/users/users-layout.tsx",
             placeholderName: null,
             placeholderImportPath: null,
             beforeName: null,

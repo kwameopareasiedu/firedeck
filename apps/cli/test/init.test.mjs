@@ -35,7 +35,7 @@ test("init", async (t) => {
   t.true(fs.existsSync(resolve(testDir, "modules/client/main")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/main/index.html")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/main/index.css")));
-  t.true(fs.existsSync(resolve(testDir, "modules/client/main/root.tsx")));
+  t.true(fs.existsSync(resolve(testDir, "modules/client/main/index.tsx")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/main/pages/index-page.tsx")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/main/pages/404/not-found-page.tsx")));
   t.true(fs.existsSync(resolve(testDir, "modules/client/main/public/favicon.svg")));
