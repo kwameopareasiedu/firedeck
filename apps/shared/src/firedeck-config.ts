@@ -1,4 +1,4 @@
-import type { UserConfig as ViteModuleConfig } from "vite";
+import type { UserConfig as ViteUserConfig } from "vite";
 import { PackageManagerName } from "./package-manager";
 
 export interface FirestoreIndex {
@@ -12,13 +12,21 @@ export interface PackageManagerConfig {
   version: string;
 }
 
+export interface ViteCustomConfig {
+  /** Import statements to include in `vite.config.ts` */
+  imports?: string[];
+  objectCode: string;
+}
+
+export type ViteResolvedConfig = ViteUserConfig | ViteCustomConfig;
+
 export type ViteConfig =
   | ((args: {
       mode: "dev" | "build";
       moduleName: string;
       env: Record<string, string | undefined>;
-    }) => Promise<ViteModuleConfig>)
-  | ViteModuleConfig;
+    }) => Promise<ViteResolvedConfig>)
+  | ViteResolvedConfig;
 
 export interface FirebaseConfig {
   projects: Record<string, [string, string]>;
@@ -55,7 +63,7 @@ export interface ModuleFirebaseConfig {
 
 export interface FiredeckResolvedConfig {
   packageManager: PackageManagerConfig;
-  vite: { modules: Record<string, ViteModuleConfig> };
+  vite: { modules: Record<string, ViteResolvedConfig> };
   firebase: {
     project: { id: string; alias: string; demo: boolean };
     modules: Record<string, ModuleFirebaseConfig>;

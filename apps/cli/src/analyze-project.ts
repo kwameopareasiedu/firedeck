@@ -21,6 +21,7 @@ import {
   FiredeckResolvedConfig,
   FiredeckUserConfig,
   ModuleFirebaseConfig,
+  ViteResolvedConfig,
 } from "shared/firedeck-config";
 import {
   BackendModule,
@@ -29,7 +30,6 @@ import {
   ClientModuleRoute,
   FiredeckProject,
 } from "@/types";
-import type { UserConfig as ViteModuleConfig } from "vite";
 
 interface FirebaseApp {
   name: string;
@@ -353,7 +353,7 @@ async function analyzeFiredeckConfig(
   const clientViteConfigMap = await reduceAsync(
     clients,
     async (config, client) => {
-      const clientViteConfig: ViteModuleConfig = !userFiredeckConfig.vite
+      const clientViteConfig = !userFiredeckConfig.vite
         ? {}
         : typeof userFiredeckConfig.vite === "function"
           ? await userFiredeckConfig.vite({
@@ -365,7 +365,7 @@ async function analyzeFiredeckConfig(
 
       return { ...config, [client.name]: clientViteConfig };
     },
-    {} as Record<string, ViteModuleConfig>,
+    {} as Record<string, ViteResolvedConfig>,
   );
 
   let fetchedFirebaseApps = false;

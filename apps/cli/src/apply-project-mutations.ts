@@ -21,8 +21,11 @@ import {
 import { relative } from "node:path";
 import { format } from "prettier";
 import { kebabCase } from "lodash";
-import type { UserConfig as ViteModuleConfig } from "vite";
-import { FiredeckResolvedConfig } from "shared/firedeck-config";
+import {
+  FiredeckResolvedConfig,
+  ViteCustomConfig,
+  ViteResolvedConfig,
+} from "shared/firedeck-config";
 
 /** Applies a list of `ProjectMutation` items to the project file system */
 export async function applyProjectMutations(
@@ -376,7 +379,7 @@ function generateRuntimeFileTree(
 function generateRuntimeClientFileTree(
   clientName: string,
   backends: BackendModule[],
-  viteConfig: ViteModuleConfig,
+  viteConfig: ViteResolvedConfig,
 ): FileTree {
   return {
     "package.json": {
@@ -400,6 +403,7 @@ function generateRuntimeClientFileTree(
       import react from "@vitejs/plugin-react";
       import tailwindcss from "@tailwindcss/vite";
       import { resolve } from "node:path";
+      ${Object.prototype.hasOwnProperty.call(viteConfig, "imports") ? (viteConfig as ViteCustomConfig).imports?.join("\n") : ""}
 
       const __dirname = import.meta.dirname;
 
@@ -413,7 +417,7 @@ function generateRuntimeClientFileTree(
             },
           }
         },
-        ${JSON.stringify(viteConfig)}
+        ${Object.prototype.hasOwnProperty.call(viteConfig, "objectCode") ? unraw((viteConfig as ViteCustomConfig).objectCode) : JSON.stringify(viteConfig)}
       );`,
     },
 
@@ -544,12 +548,8 @@ function generateRuntimeClientFileTree(
 }
 
 function generateRuntimeClientRoutesSource(routes: ClientModuleRoute) {
-  const createReplaceTarget = (str: string) => `$$${str}$$`;
-
-  const removeReplaceTarget = (str: string) => str.replace(/"?\$\$"?/gm, "");
-
   const createDynamicImport = (str: string) =>
-    createReplaceTarget(`() => import('${str}').then((mod) => mod.default)`);
+    raw(`() => import('${str}').then((mod) => mod.default)`);
 
   const generateReactRouterRoute = (
     route: ClientModuleRoute,
@@ -568,14 +568,14 @@ function generateRuntimeClientRoutesSource(routes: ClientModuleRoute) {
     return {
       id: route.layoutName || undefined,
       path: route.pageImportPath ? route.urlPath! : undefined,
-      loader: route.beforeImportPath ? createReplaceTarget(route.beforeName!) : undefined,
+      loader: route.beforeImportPath ? raw(route.beforeName!) : undefined,
       lazy: route.layoutImportPath
         ? { Component: createDynamicImport(route.layoutImportPath) }
         : undefined,
       HydrateFallback: route.placeholderImportPath
-        ? createReplaceTarget(route.placeholderName!)
+        ? raw(route.placeholderName!)
         : parentPlaceholderName
-          ? createReplaceTarget(parentPlaceholderName)
+          ? raw(parentPlaceholderName)
           : undefined,
       children: [
         route.pageImportPath
@@ -590,9 +590,7 @@ function generateRuntimeClientRoutesSource(routes: ClientModuleRoute) {
     };
   };
 
-  const routeDeclarationSource = removeReplaceTarget(
-    JSON.stringify(generateReactRouterRoute(routes)),
-  );
+  const routeDeclarationSource = unraw(JSON.stringify(generateReactRouterRoute(routes)));
 
   const routeImportSource = flattenRoutes(routes).reduce((importSrc, route) => {
     const imports = [];
@@ -917,4 +915,14 @@ function flattenRoutes(route: ClientModuleRoute): ClientModuleRoute[] {
       return [...flats, ...flattenRoutes(childRoute)];
     }, [] as ClientModuleRoute[]),
   ];
+}
+
+/** Creates a raw code string, which will be used as-is at its destination */
+export function raw(str: string) {
+  return `$$${str}$$`;
+}
+
+/** Decodes a raw codes string */
+export function unraw(str: string) {
+  return str.replace(/"?\$\$"?/gm, "");
 }
